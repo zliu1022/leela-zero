@@ -57,7 +57,7 @@
  * faster if you have a recent GPU. Don't use it on CPUs even if they have
  * OpenCL drivers - the BLAS version is much faster for those.
  */
-#define USE_OPENCL
+//#define USE_OPENCL
 /*
  * USE_HALF: Use 16-bit floating point storage for network parameters.
  * Only works for OpenCL implementations. Gives a slight speedup on some
