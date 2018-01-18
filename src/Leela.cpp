@@ -18,20 +18,25 @@
 
 #include "config.h"
 
+#include <cstdint>
+#include <algorithm>
+#include <boost/format.hpp>
+#include <boost/program_options.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <boost/program_options.hpp>
-#include <boost/format.hpp>
-#include "Network.h"
+#include <string>
+#include <vector>
 
-#include "Zobrist.h"
 #include "GTP.h"
-#include "SMP.h"
+#include "GameState.h"
+#include "Network.h"
+#include "NNCache.h"
 #include "Random.h"
-#include "Utils.h"
 #include "ThreadPool.h"
+#include "Utils.h"
+#include "Zobrist.h"
 
 using namespace Utils;
 
@@ -64,7 +69,7 @@ static void parse_commandline(int argc, char *argv[], bool & gtp_mode) {
         ("randomcnt,m", po::value<int>()->default_value(cfg_random_cnt),
                         "Play more randomly the first x moves.")
         ("noise,n", "Enable policy network randomization.")
-        ("seed,s", po::value<uint64>(),
+        ("seed,s", po::value<std::uint64_t>(),
                    "Random number generation seed.")
         ("dumbpass,d", "Don't use heuristics for smarter passing.")
         ("weights,w", po::value<std::string>(), "File with network weights.")
@@ -161,7 +166,7 @@ static void parse_commandline(int argc, char *argv[], bool & gtp_mode) {
     }
 
     if (vm.count("seed")) {
-        cfg_rng_seed = vm["seed"].as<uint64>();
+        cfg_rng_seed = vm["seed"].as<std::uint64_t>();
         if (cfg_num_threads > 1) {
             myprintf("Seed specified but multiple threads enabled.\n");
             myprintf("Games will likely not be reproducible.\n");
@@ -224,6 +229,25 @@ static void parse_commandline(int argc, char *argv[], bool & gtp_mode) {
 #endif
 }
 
+// Setup global objects after command line has been parsed
+void init_global_objects() {
+    thread_pool.initialize(cfg_num_threads);
+
+    // Use deterministic random numbers for hashing
+    auto rng = std::make_unique<Random>(5489);
+    Zobrist::init_zobrist(*rng);
+
+    // Initialize the main thread RNG.
+    // Doing this here avoids mixing in the thread_id, which
+    // improves reproducibility across platforms.
+    Random::get_Rng().seedrandom(cfg_rng_seed);
+
+    NNCache::get_NNCache().set_size_from_playouts(cfg_max_playouts);
+
+    // Initialize network
+    Network::initialize();
+}
+
 int main (int argc, char *argv[]) {
     bool gtp_mode = false;
     std::string input;
@@ -247,19 +271,7 @@ int main (int argc, char *argv[]) {
         license_blurb();
     }
 
-    thread_pool.initialize(cfg_num_threads);
-
-    // Use deterministic random numbers for hashing
-    auto rng = std::make_unique<Random>(5489);
-    Zobrist::init_zobrist(*rng);
-
-    // Initialize the main thread RNG.
-    // Doing this here avoids mixing in the thread_id, which
-    // improves reproducibility across platforms.
-    Random::get_Rng().seedrandom(cfg_rng_seed);
-
-    // Initialize network
-    Network::initialize();
+    init_global_objects();
 
     auto maingame = std::make_unique<GameState>();
 
