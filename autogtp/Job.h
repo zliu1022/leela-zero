@@ -23,7 +23,7 @@
 #include <QObject>
 #include <QAtomicInt>
 class Management;
-using VersionTuple = std::tuple<int, int>;
+using VersionTuple = std::tuple<int, int, int>;
 
 class Job : public QObject {
     Q_OBJECT
@@ -73,6 +73,17 @@ public:
 private:
     QString m_firstNet;
     QString m_secondNet;
+};
+
+class WaitJob : public Job {
+    Q_OBJECT
+public:
+    WaitJob(QString gpu, Management *parent);
+    ~WaitJob() = default;
+    void init(const QMap<QString,QString> &l);
+    Result execute();
+private:
+    int m_minutes;
 };
 
 #endif // JOB_H

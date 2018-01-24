@@ -29,10 +29,11 @@
 #include "Management.h"
 #include "Game.h"
 
+
 constexpr int RETRY_DELAY_MIN_SEC = 30;
 constexpr int RETRY_DELAY_MAX_SEC = 60 * 60;  // 1 hour
 constexpr int MAX_RETRIES = 3;           // Stop retrying after 3 times
-const QString Leelaz_min_version = "0.10";
+const QString Leelaz_min_version = "0.11";
 
 Management::Management(const int gpus,
                        const int games,
@@ -56,8 +57,36 @@ Management::Management(const int gpus,
     m_fallBack(Order::Error) {
 }
 
+void Management::runTuningProcess(const QString &tuneCmdLine) {
+    QTextStream(stdout) << tuneCmdLine << endl;
+    QProcess tuneProcess;
+    tuneProcess.start(tuneCmdLine);
+    tuneProcess.waitForStarted(-1);
+    while(tuneProcess.state() == QProcess::Running) {
+        tuneProcess.waitForReadyRead(1000);
+        QTextStream(stdout) << tuneProcess.readAllStandardError();
+    }
+    tuneProcess.waitForFinished(-1);
+}
+
 void Management::giveAssignments() {
     sendAllGames();
+
+    //Make the OpenCl tuning before starting the threads
+    QTextStream(stdout) << "Starting tuning process, please wait..." << endl;
+
+    Order tuneOrder = getWork(true);
+    QString tuneCmdLine("./leelaz --tune-only -w ");
+    tuneCmdLine.append(tuneOrder.parameters()["network"]);
+    if (m_gpusList.isEmpty()) {
+        runTuningProcess(tuneCmdLine);
+    } else {
+        for (auto i = 0; i < m_gpusList.size(); ++i) {
+            runTuningProcess(tuneCmdLine + " --gpu=" + m_gpusList.at(i));
+        }
+    }
+    QTextStream(stdout) << "Tuning process finished" << endl;
+
     m_start = std::chrono::high_resolution_clock::now();
     m_mainMutex->lock();
     QString myGpu;
@@ -93,15 +122,16 @@ void Management::getResult(Order ord, Result res, int index, int duration) {
     case Result::File:
         m_selfGames++,
         uploadData(res.parameters(), ord.parameters());
+        printTimingInfo(duration);
         break;
     case Result::Win:
     case Result::Loss:
         m_matchGames++,
         uploadResult(res.parameters(), ord.parameters());
+        printTimingInfo(duration);
         break;
     }
     sendAllGames();
-    printTimingInfo(duration);
     m_gamesThreads[index]->order(getWork());
     m_syncMutex.unlock();
 
@@ -152,8 +182,23 @@ QString Management::getBoolOption(const QJsonObject &ob, const QString &key, con
     return res;
 }
 
+QString Management::getOptionsString(const QJsonObject &opt, const QString &rnd) {
+    QString options;
+    options.append(getOption(opt, "playouts", " -p ", "1600"));
+    options.append(getOption(opt, "visits", " -v ", ""));
+    options.append(getOption(opt, "resignation_percent", " -r ", "1"));
+    options.append(getOption(opt, "randomcnt", " -m ", "30"));
+    options.append(getOption(opt, "threads", " -t ", "1"));
+    options.append(getBoolOption(opt, "dumbpass", " -d ", true));
+    options.append(getBoolOption(opt, "noise", " -n ", true));
+    options.append(" --noponder ");
+    if (rnd != "") {
+        options.append(" -s " + rnd + " ");
+    }
+    return options;
+}
 
-Order Management::getWorkInternal() {
+Order Management::getWorkInternal(bool tuning) {
     Order o(Order::Error);
 
     /*
@@ -188,14 +233,24 @@ Order Management::getWorkInternal() {
        "randomcnt" : "30"
     }
 }
+
+{
+   "cmd" : "wait",
+   "minutes" : "5",
+}
+
     */
     QString prog_cmdline("curl");
 #ifdef WIN32
     prog_cmdline.append(".exe");
 #endif
     prog_cmdline.append(" -s -J");
-    prog_cmdline.append(" http://zero.sjeng.org/get-task/7");
-
+    prog_cmdline.append(" http://zero.sjeng.org/get-task/");
+    if (tuning) {
+        prog_cmdline.append("0");
+    } else {
+        prog_cmdline.append(QString::number(AUTOGTP_VERSION));
+    }
     QProcess curl;
     curl.start(prog_cmdline);
     curl.waitForFinished(-1);
@@ -213,12 +268,12 @@ Order Management::getWorkInternal() {
         throw NetworkException("JSON parse error: " + errorString);
     }
 
-    QTextStream(stdout) << doc.toJson() << endl;
+    if (!tuning) {
+        QTextStream(stdout) << doc.toJson() << endl;
+    }
+    QMap<QString,QString> parameters;
     QJsonObject ob = doc.object();
-    QJsonObject opt = ob.value("options").toObject();
-    QString options;
-    QString optionsHash =  ob.value("options_hash").toString();
-
+    //checking client version
     if (ob.contains("required_client_version")) {
         if (ob.value("required_client_version").toString().toInt() > m_version) {
             QTextStream(stdout) << "Required client version: " << ob.value("required_client_version").toString() << endl;
@@ -231,29 +286,34 @@ Order Management::getWorkInternal() {
             exit(EXIT_FAILURE);
         }
     }
+
+    //passing leela version
     QString leelazVersion = Leelaz_min_version;
     if (ob.contains("leelaz_version")) {
         leelazVersion = ob.value("leelaz_version").toString();
     }
-    options.append(getOption(opt, "playouts", " -p ", "1600"));
-    options.append(getOption(opt, "resignation_percent", " -r ", "1"));
-    options.append(getOption(opt, "randomcnt", " -m ", "30"));
-    options.append(getOption(opt, "threads", " -t ", "1"));
-    options.append(getBoolOption(opt, "dumbpass", " -d ", true));
-    options.append(getBoolOption(opt, "noise", " -n ", true));
-    options.append(" --noponder ");
-    options.append(getOption(ob, "random_seed", " -s ", ""));
+    parameters["leelazVer"] = leelazVersion;
+
+    //getting the random seed
     QString rndSeed = "0";
     if (ob.contains("random_seed"))
          rndSeed = ob.value("random_seed").toString();
-    QMap<QString,QString> parameters;
-    parameters["leelazVer"] = leelazVersion;
-    parameters["options"] = options;
-    parameters["optHash"] = optionsHash;
     parameters["rndSeed"] = rndSeed;
+    if (rndSeed == "0") {
+        rndSeed = "";
+    }
+
+    //parsing options
+    if (ob.contains("options")) {
+        parameters["optHash"] = ob.value("options_hash").toString();
+        parameters["options"] = getOptionsString(ob.value("options").toObject(), rndSeed);
+    }
+
     parameters["debug"] = !m_debugPath.isEmpty() ? "true" : "false";
 
-    QTextStream(stdout) << "Got new job: " << ob.value("cmd").toString() << endl;
+    if (!tuning) {
+        QTextStream(stdout) << "Got new job: " << ob.value("cmd").toString() << endl;
+    }
     if (ob.value("cmd").toString() == "selfplay") {
         QString net = ob.value("hash").toString();
         fetchNetwork(net);
@@ -275,13 +335,19 @@ Order Management::getWorkInternal() {
         QTextStream(stdout) << "first network: " << net1 << "." << endl;
         QTextStream(stdout) << "second network " << net2 << "." << endl;
     }
+    if (ob.value("cmd").toString() == "wait") {
+        o.type(Order::Wait);
+        parameters["minutes"] = ob.value("minutes").toString();
+        o.parameters(parameters);
+        QTextStream(stdout) << "minutes: " << parameters["minutes"]  << "." << endl;
+    }
     return o;
 }
 
-Order Management::getWork() {
+Order Management::getWork(bool tuning) {
     for (auto retries = 0; retries < MAX_RETRIES; retries++) {
         try {
-            return getWorkInternal();
+            return getWorkInternal(tuning);
         } catch (NetworkException ex) {
             QTextStream(stdout)
                 << "Network connection to server failed." << endl;
@@ -300,8 +366,9 @@ Order Management::getWork() {
                         << endl;
     if (m_fallBack.type() != Order::Error) {
         QMap<QString,QString> map = m_fallBack.parameters();
-        QString rs = "-s " + QString::number(QUuid::createUuid().toRfc4122().toHex().left(8).toLongLong(Q_NULLPTR, 16)) + " ";
-        map["rndSeed"] = rs;
+        QString seed = QString::number(QUuid::createUuid().toRfc4122().toHex().left(8).toLongLong(Q_NULLPTR, 16));
+        QString rs = "-s " + seed + " ";
+        map["rndSeed"] = seed;
         QString opt = map["options"];
         QRegularExpression re("-s .* ");
         opt.replace(re, rs);

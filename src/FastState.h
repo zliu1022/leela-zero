@@ -19,7 +19,7 @@
 #ifndef FASTSTATE_H_INCLUDED
 #define FASTSTATE_H_INCLUDED
 
-#include <stddef.h>
+#include <cstddef>
 #include <array>
 #include <string>
 #include <vector>
@@ -47,7 +47,7 @@ public:
     void set_passes(int val);
     void increment_passes();
 
-    float final_score();
+    float final_score() const;
 
     size_t get_movenum() const;
     int get_last_move() const;
@@ -61,7 +61,7 @@ public:
     int m_passes;
     int m_komove;
     size_t m_movenum;
-    std::array<int, 2> m_lastmove;
+    int m_lastmove;
 
 protected:
     void play_move(int color, int vertex);
