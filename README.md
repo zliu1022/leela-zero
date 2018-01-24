@@ -1,3 +1,8 @@
+[![Linux Build Status](https://travis-ci.org/gcp/leela-zero.svg?branch=next)](https://travis-ci.org/gcp/leela-zero)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/pf1hcgly8f1a8iu0/branch/next?svg=true)](https://ci.appveyor.com/project/gcp/leela-zero/branch/next)
+
+
+
 # What
 
 A Go program with no human provided knowledge. Using MCTS (but without
@@ -113,6 +118,24 @@ source and remove the line that says "#define USE_OPENCL".
     # Build from Visual Studio 2015 or 2017
     # Download and extract <https://sjeng.org/zero/best_v1.txt.zip> to msvc/x64/Release
     # msvc/x64/Release/leela-zero --weights weights.txt
+
+## Example of compiling and running - CMake (macOS/Ubuntu)
+
+    # Clone github repo
+    git clone https://github.com/gcp/leela-zero
+    cd leela-zero
+    git submodule update --init --recursive
+
+    # Use stand alone directory to keep source dir clean
+    mkdir build && cd build
+    cmake ..
+    make leelaz
+    make tests
+    ./tests
+    curl -O https://sjeng.org/zero/best_v1.txt.zip
+    unzip best_v1.txt.zip
+    ./leelaz --weights weights.txt
+
 
 # Usage
 
@@ -253,16 +276,10 @@ If interrupted, training can be resumed with:
 # Todo
 
 - [ ] List of package names for more distros
-- [x] A real build system like CMake would nice
-- [x] Provide or link to self-play tooling
-- [x] CPU support for Xeon Phi and for people without a GPU
-- [ ] Faster GPU usage via batching
-- [ ] Faster GPU usage via Winograd transforms
+- [ ] Multi-GPU support for training
+- [ ] Optimize Winograd transformations
 - [ ] CUDA specific version using cuDNN
 - [ ] AMD specific version using MIOpen
-- [ ] Faster GPU usage via supporting multiple GPU
-(not very urgent, we need to generate the data & network first and this can be
-done with multiple processes each bound to a GPU)
 
 # Related links
 
@@ -270,9 +287,9 @@ done with multiple processes each bound to a GPU)
 http://zero.sjeng.org
 * Watch Leela Zero's training games live in a GUI:
 https://github.com/fsparv/LeelaWatcher
+* Stockfish chess engine ported to Leela Zero framework:
+https://github.com/glinscott/leela-chess
 
 # License
 
-The code is released under the GPLv3 or later, except for ThreadPool.h, half.hpp
-and cl2.hpp, which have specific licenses (compatible with GPLv3) mentioned in
-those files.
+The code is released under the GPLv3 or later, except for ThreadPool.h, cl2.hpp and the clblast_level3 subdir, which have specific licenses (compatible with GPLv3) mentioned in those files.

@@ -21,15 +21,17 @@
 
 #include "config.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 #include <vector>
 
 #include "GameState.h"
 
+extern bool cfg_gtp_mode;
 extern bool cfg_allow_pondering;
 extern int cfg_num_threads;
 extern int cfg_max_playouts;
+extern int cfg_max_visits;
 extern int cfg_lagbuffer_cs;
 extern int cfg_resignpct;
 extern int cfg_noise;
@@ -38,7 +40,8 @@ extern std::uint64_t cfg_rng_seed;
 extern bool cfg_dumbpass;
 #ifdef USE_OPENCL
 extern std::vector<int> cfg_gpus;
-extern int cfg_rowtiles;
+extern bool cfg_sgemm_exhaustive;
+extern bool cfg_tune_only;
 #endif
 extern float cfg_puct;
 extern float cfg_softmax_temp;
@@ -46,6 +49,7 @@ extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;
+extern std::string cfg_options_str;
 
 class GTP {
 public:
@@ -54,7 +58,7 @@ public:
 private:
     static constexpr int GTP_VERSION = 2;
 
-    static std::string get_life_list(GameState & game, bool live);
+    static std::string get_life_list(const GameState & game, bool live);
     static const std::string s_commands[];
 };
 

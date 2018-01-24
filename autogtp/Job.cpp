@@ -40,8 +40,13 @@ void Job::init(const QMap<QString,QString> &l) {
              << "Unexpected Leela Zero version: " << l[0] << endl;
         exit(EXIT_FAILURE);
     }
+   if(version_list.size() < 3) {
+       version_list.append("0");
+   }
     std::get<0>(m_leelazMinVersion) = version_list[0].toInt();
     std::get<1>(m_leelazMinVersion) = version_list[1].toInt();
+    std::get<2>(m_leelazMinVersion) = version_list[2].toInt();
+
 }
 
 ProductionJob::ProductionJob(QString gpu, Management *parent) :
@@ -50,6 +55,11 @@ Job(gpu, parent)
 }
 
 ValidationJob::ValidationJob(QString gpu, Management *parent) :
+Job(gpu, parent)
+{
+}
+
+WaitJob::WaitJob(QString gpu, Management *parent) :
 Job(gpu, parent)
 {
 }
@@ -156,7 +166,15 @@ void ValidationJob::init(const QMap<QString,QString> &l) {
     m_secondNet = l["secondNet"];
 }
 
+Result WaitJob::execute(){
+    Result res(Result::Waited);
+    QThread::sleep(m_minutes * 60);
+    return res;
+}
 
-
+void WaitJob::init(const QMap<QString,QString> &l) {
+    Job::init(l);
+    m_minutes = l["minutes"].toInt();
+}
 
 

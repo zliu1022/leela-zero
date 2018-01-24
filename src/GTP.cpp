@@ -45,9 +45,11 @@
 using namespace Utils;
 
 // Configuration flags
+bool cfg_gtp_mode;
 bool cfg_allow_pondering;
 int cfg_num_threads;
 int cfg_max_playouts;
+int cfg_max_visits;
 int cfg_lagbuffer_cs;
 int cfg_resignpct;
 int cfg_noise;
@@ -56,7 +58,8 @@ std::uint64_t cfg_rng_seed;
 bool cfg_dumbpass;
 #ifdef USE_OPENCL
 std::vector<int> cfg_gpus;
-int cfg_rowtiles;
+bool cfg_sgemm_exhaustive;
+bool cfg_tune_only;
 #endif
 float cfg_puct;
 float cfg_softmax_temp;
@@ -64,19 +67,24 @@ std::string cfg_weightsfile;
 std::string cfg_logfile;
 FILE* cfg_logfile_handle;
 bool cfg_quiet;
+std::string cfg_options_str;
 
 void GTP::setup_default_parameters() {
+    cfg_gtp_mode = false;
     cfg_allow_pondering = true;
     cfg_num_threads = std::max(1, std::min(SMP::get_num_cpus(), MAX_CPUS));
     cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
+    cfg_max_visits = std::numeric_limits<decltype(cfg_max_visits)>::max();
     cfg_lagbuffer_cs = 100;
 #ifdef USE_OPENCL
     cfg_gpus = { };
-    cfg_rowtiles = 5;
+    cfg_sgemm_exhaustive = false;
+    cfg_tune_only = false;
 #endif
     cfg_puct = 0.85f;
     cfg_softmax_temp = 1.0f;
-    cfg_resignpct = 10;
+    // see UCTSearch::should_resign
+    cfg_resignpct = -1;
     cfg_noise = false;
     cfg_random_cnt = 0;
     cfg_dumbpass = false;
@@ -126,10 +134,10 @@ const std::string GTP::s_commands[] = {
     ""
 };
 
-std::string GTP::get_life_list(GameState & game, bool live) {
+std::string GTP::get_life_list(const GameState & game, bool live) {
     std::vector<std::string> stringlist;
     std::string result;
-    FastBoard & board = game.board;
+    const auto& board = game.board;
 
     if (live) {
         for (int i = 0; i < board.get_boardsize(); i++) {
@@ -158,6 +166,7 @@ std::string GTP::get_life_list(GameState & game, bool live) {
 
 bool GTP::execute(GameState & game, std::string xinput) {
     std::string input;
+    static auto search = std::make_unique<UCTSearch>();
 
     bool transform_lowercase = true;
 
@@ -198,7 +207,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
         return true;
     } else if (input == "exit") {
         exit(EXIT_SUCCESS);
-    } else if (input == "#") {
+    } else if (input.find("#") == 0) {
         return true;
     } else if (std::isdigit(input[0])) {
         std::istringstream strm(input);
@@ -271,6 +280,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
     } else if (command.find("clear_board") == 0) {
         Training::clear_training();
         game.reset_game();
+        std::make_unique<UCTSearch>().swap(search);
         gtp_printf(id, "");
         return true;
     } else if (command.find("komi") == 0) {
@@ -338,10 +348,8 @@ bool GTP::execute(GameState & game, std::string xinput) {
             }
             // start thinking
             {
-                auto search = std::make_unique<UCTSearch>(game);
-
                 game.set_to_move(who);
-                int move = search->think(who);
+                int move = search->think(who, game);
                 game.play_move(move);
 
                 std::string vertex = game.move_to_text(move);
@@ -350,8 +358,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
             if (cfg_allow_pondering) {
                 // now start pondering
                 if (!game.has_resigned()) {
-                    auto search = std::make_unique<UCTSearch>(game);
-                    search->ponder();
+                    search->ponder(game);
                 }
             }
         } else {
@@ -377,10 +384,8 @@ bool GTP::execute(GameState & game, std::string xinput) {
             }
             game.set_passes(0);
             {
-                auto search = std::make_unique<UCTSearch>(game);
-
                 game.set_to_move(who);
-                int move = search->think(who, UCTSearch::NOPASS);
+                int move = search->think(who, game, UCTSearch::NOPASS);
                 game.play_move(move);
 
                 std::string vertex = game.move_to_text(move);
@@ -389,8 +394,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
             if (cfg_allow_pondering) {
                 // now start pondering
                 if (!game.has_resigned()) {
-                    auto search = std::make_unique<UCTSearch>(game);
-                    search->ponder();
+                    search->ponder(game);
                 }
             }
         } else {
@@ -473,8 +477,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
                 // KGS sends this after our move
                 // now start pondering
                 if (!game.has_resigned()) {
-                    auto search = std::make_unique<UCTSearch>(game);
-                    search->ponder();
+                    search->ponder(game);
                 }
             }
         } else {
@@ -483,9 +486,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
         return true;
     } else if (command.find("auto") == 0) {
         do {
-            auto search = std::make_unique<UCTSearch>(game);
-
-            int move = search->think(game.get_to_move(), UCTSearch::NORMAL);
+            int move = search->think(game.get_to_move(), game, UCTSearch::NORMAL);
             game.play_move(move);
             game.display_state();
 
@@ -493,9 +494,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
 
         return true;
     } else if (command.find("go") == 0) {
-        auto search = std::make_unique<UCTSearch>(game);
-
-        int move = search->think(game.get_to_move());
+        int move = search->think(game.get_to_move(), game);
         game.play_move(move);
 
         std::string vertex = game.move_to_text(move);
@@ -528,8 +527,8 @@ bool GTP::execute(GameState & game, std::string xinput) {
         cmdstream >> tmp;   // eat fixed_handicap
         cmdstream >> stones;
 
-        if (game.set_fixed_handicap(stones)) {
-            std::string stonestring = game.board.get_stone_list();
+        if (!cmdstream.fail() && game.set_fixed_handicap(stones)) {
+            auto stonestring = game.board.get_stone_list();
             gtp_printf(id, "%s", stonestring.c_str());
         } else {
             gtp_fail_printf(id, "Not a valid number of handicap stones");
@@ -543,10 +542,13 @@ bool GTP::execute(GameState & game, std::string xinput) {
         cmdstream >> tmp;   // eat place_free_handicap
         cmdstream >> stones;
 
-        game.place_free_handicap(stones);
-
-        std::string stonestring = game.board.get_stone_list();
-        gtp_printf(id, "%s", stonestring.c_str());
+        if (!cmdstream.fail()) {
+            game.place_free_handicap(stones);
+            auto stonestring = game.board.get_stone_list();
+            gtp_printf(id, "%s", stonestring.c_str());
+        } else {
+            gtp_fail_printf(id, "Not a valid number of handicap stones");
+        }
 
         return true;
     } else if (command.find("set_free_handicap") == 0) {
