@@ -208,14 +208,14 @@ void UCTNode::dirichlet_noise(float epsilon, float alpha) {
 }
 
 void UCTNode::randomize_first_proportionally() {
-    auto accum = std::uint32_t{0};
+    auto accum = std::uint64_t{0};
     auto accum_vector = std::vector<decltype(accum)>{};
     for (const auto& child : m_children) {
         accum += child->get_visits();
         accum_vector.emplace_back(accum);
     }
 
-    auto pick = Random::get_Rng().randuint32(accum);
+    auto pick = Random::get_Rng().randuint64(accum);
     auto index = size_t{0};
     for (size_t i = 0; i < accum_vector.size(); i++) {
         if (pick < accum_vector[i]) {
@@ -254,10 +254,6 @@ void UCTNode::update(float eval) {
 
 bool UCTNode::has_children() const {
     return m_has_children;
-}
-
-void UCTNode::set_visits(int visits) {
-    m_visits = visits;
 }
 
 float UCTNode::get_score() const {
@@ -303,10 +299,6 @@ double UCTNode::get_blackevals() const {
     return m_blackevals;
 }
 
-void UCTNode::set_blackevals(double blackevals) {
-    m_blackevals = blackevals;
-}
-
 void UCTNode::accumulate_eval(float eval) {
     atomic_add(m_blackevals, (double)eval);
 }
@@ -319,21 +311,30 @@ UCTNode* UCTNode::uct_select_child(int color) {
 
     // Count parentvisits.
     // We do this manually to avoid issues with transpositions.
+    auto total_visited_policy = 0.0f;
     auto parentvisits = size_t{0};
     for (const auto& child : m_children) {
         if (child->valid()) {
             parentvisits += child->get_visits();
+            if (child->get_visits() > 0) {
+                total_visited_policy += child->get_score();
+            }
         }
     }
+
     auto numerator = static_cast<float>(std::sqrt((double)parentvisits));
+    auto fpu_reduction = cfg_fpu_reduction * std::sqrt(total_visited_policy);
 
     for (const auto& child : m_children) {
         if (!child->valid()) {
             continue;
         }
 
-        // get_eval() will automatically set first-play-urgency
         auto winrate = child->get_eval(color);
+        if (child->get_visits() == 0) {
+            // First play urgency
+            winrate -= fpu_reduction;
+        }
         auto psa = child->get_score();
         auto denom = 1.0f + child->get_visits();
         auto puct = cfg_puct * psa * (numerator / denom);
@@ -375,8 +376,7 @@ private:
 
 void UCTNode::sort_children(int color) {
     LOCK(get_mutex(), lock);
-    std::stable_sort(begin(m_children), end(m_children), NodeComp(color));
-    std::reverse(begin(m_children), end(m_children));
+    std::stable_sort(rbegin(m_children), rend(m_children), NodeComp(color));
 }
 
 UCTNode& UCTNode::get_best_root_child(int color) {
@@ -409,8 +409,8 @@ size_t UCTNode::count_nodes() const {
     return nodecount;
 }
 
-// Use this version if you know the child is directly under the parent.
-UCTNode::node_ptr_t UCTNode::find_new_root(const int move) {
+// Used to find new root in UCTSearch
+UCTNode::node_ptr_t UCTNode::find_child(const int move) {
     if (m_has_children) {
         for (auto& child : m_children) {
             if (child->get_move() == move) {
@@ -418,39 +418,16 @@ UCTNode::node_ptr_t UCTNode::find_new_root(const int move) {
             }
         }
     }
-    // Can happen for example if we resigned. Return a clean
-    // root for the next game or position.
-    return std::make_unique<UCTNode>(FastBoard::PASS, 0.0f, 0.5f);
-}
 
-// Use this version if the child could be anywhere.
-// Also updates the GameState.
-// Gives up after searching the direct children.
-UCTNode::node_ptr_t UCTNode::find_new_root(const GameState& g_new,
-                                           GameState& g_curr) {
-    if (m_has_children) {
-        for (auto& child : m_children) {
-            auto move = child->get_move();
-            if (g_new.get_last_move() == move) {
-                g_curr.play_move(move);
-                if (g_curr.board.get_hash() == g_new.board.get_hash()) {
-                    return std::move(child);
-                }
-                g_curr.undo_move();
-            }
-        }
-    }
-
-    // No match. Copy new GameState and create a new root.
-    g_curr = g_new;
-    return std::make_unique<UCTNode>(FastBoard::PASS, 0.0f, 0.5f);
+    // Can happen if we resigned or children are not expanded
+    return nullptr;
 }
 
 UCTNode* UCTNode::get_nopass_child(FastState& state) const {
     for (const auto& child : m_children) {
         /* If we prevent the engine from passing, we must bail out when
            we only have unreasonable moves to pick, like filling eyes.
-           Note that this isn't knowledge isn't required by the engine,
+           Note that this knowledge isn't required by the engine,
            we require it because we're overruling its moves. */
         if (child->m_move != FastBoard::PASS
             && !state.board.is_eye(state.get_to_move(), child->m_move)) {

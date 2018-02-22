@@ -22,9 +22,10 @@
 #include <QRegularExpression>
 #include "Game.h"
 
-Game::Game(const QString& weights, const QString& opt) :
+Game::Game(const QString& weights, const QString& opt, const QString& binary) :
     QProcess(),
-    m_cmdLine("./leelaz"),
+    m_cmdLine(""),
+    m_binary(binary),
     m_timeSettings("time_settings 0 1 0"),
     m_resignation(false),
     m_blackToMove(true),
@@ -33,10 +34,9 @@ Game::Game(const QString& weights, const QString& opt) :
     m_moveNum(0)
 {
 #ifdef WIN32
-    m_cmdLine.append(".exe");
+    m_binary.append(".exe");
 #endif
-    m_cmdLine.append(opt);
-    m_cmdLine.append(weights);
+    m_cmdLine = m_binary + " " + opt + " " + weights;
     m_fileName = QUuid::createUuid().toRfc4122().toHex();
 }
 
@@ -192,6 +192,11 @@ void Game::move() {
     waitForBytesWritten(-1);
 }
 
+void Game::setMovesCount(int moves) {
+    m_moveNum = moves;
+    m_blackToMove = (moves % 2) == 0;
+}
+
 bool Game::waitReady() {
     while (!canReadLine() && state() == QProcess::Running) {
         waitForReadyRead(-1);
@@ -318,6 +323,23 @@ int Game::getWinner() {
 
 bool Game::writeSgf() {
     return sendGtpCommand(qPrintable("printsgf " + m_fileName + ".sgf"));
+}
+
+bool Game::loadTraining(const QString &fileName) {
+    QTextStream(stdout) << "Loading " << fileName + ".train" << endl;
+    return sendGtpCommand(qPrintable("load_training " + fileName + ".train"));
+
+}
+
+bool Game::saveTraining() {
+     QTextStream(stdout) << "Saving " << m_fileName + ".train" << endl;
+     return sendGtpCommand(qPrintable("save_training " + m_fileName + ".train"));
+}
+
+
+bool Game::loadSgf(const QString &fileName) {
+    QTextStream(stdout) << "Loading " << fileName + ".sgf" << endl;
+    return sendGtpCommand(qPrintable("loadsgf " + fileName + ".sgf"));
 }
 
 bool Game::fixSgf(QString& weightFile, bool resignation) {

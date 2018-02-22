@@ -26,12 +26,14 @@
 #include <vector>
 
 #include "GameState.h"
+#include "UCTSearch.h"
 
 extern bool cfg_gtp_mode;
 extern bool cfg_allow_pondering;
 extern int cfg_num_threads;
 extern int cfg_max_playouts;
 extern int cfg_max_visits;
+extern TimeManagement::enabled_t cfg_timemanage;
 extern int cfg_lagbuffer_cs;
 extern int cfg_resignpct;
 extern int cfg_noise;
@@ -45,12 +47,18 @@ extern bool cfg_tune_only;
 #endif
 extern float cfg_puct;
 extern float cfg_softmax_temp;
+extern float cfg_fpu_reduction;
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;
 extern std::string cfg_options_str;
 
+/*
+    A list of all valid GTP2 commands is defined here:
+    https://www.lysator.liu.se/~gunnar/gtp/gtp2-spec-draft2/gtp2-spec.html
+    GTP is meant to be used between programs. It's not a human interface.
+*/
 class GTP {
 public:
     static bool execute(GameState & game, std::string xinput);

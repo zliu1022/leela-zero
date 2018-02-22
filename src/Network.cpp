@@ -30,6 +30,7 @@
 #include <string>
 #include <boost/utility.hpp>
 #include <boost/format.hpp>
+#include <boost/spirit/home/x3.hpp>
 
 #ifdef __APPLE__
 #include <Accelerate/Accelerate.h>
@@ -57,6 +58,7 @@
 #include "Timing.h"
 #include "Utils.h"
 
+namespace x3 = boost::spirit::x3;
 using namespace Utils;
 
 // Input + residual block tower
@@ -200,7 +202,7 @@ std::pair<int, int>  Network::load_v1_network(std::ifstream& wtfile) {
         auto iss = std::stringstream{line};
         // Third line of parameters are the convolution layer biases,
         // so this tells us the amount of channels in the residual layers.
-        // (Provided they're all equally large - that's not actually required!)
+        // We are assuming all layers have the same amount of filters.
         if (linecount == 2) {
             auto count = std::distance(std::istream_iterator<std::string>(iss),
                                        std::istream_iterator<std::string>());
@@ -231,10 +233,13 @@ std::pair<int, int>  Network::load_v1_network(std::ifstream& wtfile) {
     linecount = 0;
     while (std::getline(wtfile, line)) {
         std::vector<float> weights;
-        float weight;
-        std::istringstream iss(line);
-        while (iss >> weight) {
-            weights.emplace_back(weight);
+        auto it_line = line.begin();
+        auto ok = phrase_parse(it_line, line.end(),
+                               *x3::float_, x3::space, weights);
+        if (!ok || it_line != line.end()) {
+            myprintf("\nFailed to parse weight file. Error on line %d.\n",
+                    linecount + 2); //+1 from version line, +1 from 0-indexing
+            return {0,0};
         }
         if (linecount < plain_conv_wts) {
             if (linecount % 4 == 0) {
@@ -344,13 +349,30 @@ void Network::initialize(void) {
         weight_index++;
     }
 
+    // Biases are not calculated and are typically zero but some networks might
+    // still have non-zero biases.
+    // Move biases to batchnorm means to make the output match without having
+    // to separately add the biases.
+    for (auto i = size_t{0}; i < conv_biases.size(); i++) {
+        for (auto j = size_t{0}; j < batchnorm_means[i].size(); j++) {
+            batchnorm_means[i][j] -= conv_biases[i][j];
+            conv_biases[i][j] = 0.0f;
+        }
+    }
+
+    for (auto i = size_t{0}; i < bn_val_w1.size(); i++) {
+        bn_val_w1[i] -= conv_val_b[i];
+        conv_val_b[i] = 0.0f;
+    }
+
+    for (auto i = size_t{0}; i < bn_pol_w1.size(); i++) {
+        bn_pol_w1[i] -= conv_pol_b[i];
+        conv_pol_b[i] = 0.0f;
+    }
+
 #ifdef USE_OPENCL
     myprintf("Initializing OpenCL.\n");
     opencl.initialize(channels);
-
-    if (cfg_tune_only) {
-        exit(EXIT_SUCCESS);
-    }
 
     for(auto & opencl_net : opencl.get_networks()) {
         auto tuners = opencl_net->getOpenCL().get_sgemm_tuners();
@@ -361,17 +383,16 @@ void Network::initialize(void) {
 
         weight_index = 0;
 
-        size_t m_ceil = lcm(lcm(channels, mwg), vwm);
-        size_t k_ceil = lcm(lcm(INPUT_CHANNELS, kwg), vwm);
+        size_t m_ceil = ceilMultiple(ceilMultiple(channels, mwg), vwm);
+        size_t k_ceil = ceilMultiple(ceilMultiple(INPUT_CHANNELS, kwg), vwm);
 
         auto Upad = zeropad_U(conv_weights[weight_index],
                               channels, INPUT_CHANNELS,
                               m_ceil, k_ceil);
 
         // Winograd filter transformation changes filter size to 4x4
-        opencl_net->push_convolve(WINOGRAD_ALPHA, INPUT_CHANNELS, channels, Upad);
-        opencl_net->push_batchnorm(361, batchnorm_means[weight_index],
-                                    batchnorm_stddivs[weight_index]);
+        opencl_net->push_input_convolution(WINOGRAD_ALPHA, INPUT_CHANNELS, channels,
+                Upad, batchnorm_means[weight_index], batchnorm_stddivs[weight_index]);
         weight_index++;
 
         // residual blocks
@@ -391,6 +412,10 @@ void Network::initialize(void) {
                                       batchnorm_stddivs[weight_index + 1]);
             weight_index += 2;
         }
+
+        // Output head convolutions
+        opencl_net->push_convolve1(channels, OUTPUTS_POLICY, conv_pol_w);
+        opencl_net->push_convolve1(channels, OUTPUTS_VALUE, conv_val_w);
     }
 #endif
 #ifdef USE_BLAS
@@ -704,16 +729,20 @@ void batchnorm(size_t channels,
 }
 
 void Network::forward_cpu(std::vector<float>& input,
-                          std::vector<float>& output) {
+                          std::vector<float>& output_pol,
+                          std::vector<float>& output_val) {
     // Input convolution
     constexpr int width = 19;
     constexpr int height = 19;
     constexpr int tiles = (width + 1) * (height + 1) / 4;
     // Calculate output channels
     const auto output_channels = conv_biases[0].size();
-    // Assumes that residual blocks are identical and have same
-    // number of inputs and outputs
-    const auto input_channels = output_channels;
+    //input_channels is the maximum number of input channels of any convolution.
+    //Residual blocks are identical, but the first convolution might be bigger
+    //when the network has very few filters
+    const auto input_channels = std::max(
+            static_cast<size_t>(output_channels),
+            static_cast<size_t>(INPUT_CHANNELS));
     auto conv_out = std::vector<float>(output_channels * width * height);
 
     auto V = std::vector<float>(WINOGRAD_TILE * input_channels * tiles);
@@ -746,7 +775,8 @@ void Network::forward_cpu(std::vector<float>& input,
                        batchnorm_stddivs[i + 1].data(),
                        res.data());
     }
-    std::copy(begin(conv_out), end(conv_out), begin(output));
+    convolve<1>(OUTPUTS_POLICY, conv_out, conv_pol_w, conv_pol_b, output_pol);
+    convolve<1>(OUTPUTS_VALUE, conv_out, conv_val_w, conv_val_b, output_val);
 }
 
 template<typename T>
@@ -755,19 +785,23 @@ T relative_difference(T a, T b) {
     if (std::isnan(a) || std::isnan(b)) {
         return std::numeric_limits<T>::max();
     }
-    // Handle sign difference
-    if (((a < 0) != (b < 0)) && (a != 0) && (b != 0)) {
-        return std::numeric_limits<T>::max();
+
+    constexpr auto small_number = 1e-3f;
+    auto fa = std::fabs(a);
+    auto fb = std::fabs(b);
+
+    if (fa > small_number && fb > small_number) {
+        // Handle sign difference
+        if (((a < 0) != (b < 0)) && (a != 0) && (b != 0)) {
+            return std::numeric_limits<T>::max();
+        }
     }
-    a = std::fabs(a);
-    b = std::fabs(b);
 
     // Handle underflow
-    constexpr float small_number = 1e-3f;
-    a = std::max(a, small_number);
-    b = std::max(b, small_number);
+    fa = std::max(fa, small_number);
+    fb = std::max(fb, small_number);
 
-    return std::max(fabs((a - b) / a), fabs((a - b) / b));
+    return std::max(fabs((fa - fb) / fa), fabs((fa - fb) / fb));
 }
 
 void compare_net_outputs(std::vector<float>& data,
@@ -816,15 +850,15 @@ Network::Netresult Network::get_scored_moves(
         return result;
     }
 
-    NNPlanes planes;
-    gather_features(state, planes);
-
     // See if we already have this in the cache.
     if (!skip_cache) {
-      if (NNCache::get_NNCache().lookup(planes, result)) {
+      if (NNCache::get_NNCache().lookup(state->board.get_hash(), result)) {
         return result;
       }
     }
+
+    NNPlanes planes;
+    gather_features(state, planes);
 
     if (ensemble == DIRECT) {
         assert(rotation >= 0 && rotation <= 7);
@@ -837,7 +871,7 @@ Network::Netresult Network::get_scored_moves(
     }
 
     // Insert result into cache.
-    NNCache::get_NNCache().insert(planes, result);
+    NNCache::get_NNCache().insert(state->board.get_hash(), result);
 
     return result;
 }
@@ -851,8 +885,8 @@ Network::Netresult Network::get_scored_moves_internal(
     const auto convolve_channels = conv_pol_w.size() / conv_pol_b.size();
     std::vector<net_t> input_data;
     std::vector<net_t> output_data(convolve_channels * width * height);
-    std::vector<float> policy_data(2 * width * height);
-    std::vector<float> value_data(1 * width * height);
+    std::vector<float> policy_data(OUTPUTS_POLICY * width * height);
+    std::vector<float> value_data(OUTPUTS_VALUE * width * height);
     std::vector<float> policy_out((width * height) + 1);
     std::vector<float> softmax_data((width * height) + 1);
     std::vector<float> winrate_data(256);
@@ -868,34 +902,30 @@ Network::Netresult Network::get_scored_moves_internal(
         }
     }
 #ifdef USE_OPENCL
-    opencl.forward(input_data, output_data);
+    opencl.forward(input_data, policy_data, value_data);
 #elif defined(USE_BLAS) && !defined(USE_OPENCL)
-    forward_cpu(input_data, output_data);
+    forward_cpu(input_data, policy_data, value_data);
 #endif
 #ifdef USE_OPENCL_SELFCHECK
     // Both implementations are available, self-check the OpenCL driver by
     // running both with a probability of 1/2000.
     if (Random::get_Rng().randfix<SELFCHECK_PROBABILITY>() == 0) {
-        auto cpu_output_data = std::vector<float>(output_data.size());
-        forward_cpu(input_data, cpu_output_data);
-        compare_net_outputs(output_data, cpu_output_data);
+        auto cpu_policy_data = std::vector<float>(policy_data.size());
+        auto cpu_value_data = std::vector<float>(value_data.size());
+        forward_cpu(input_data, cpu_policy_data, cpu_value_data);
+        compare_net_outputs(policy_data, cpu_policy_data);
+        compare_net_outputs(value_data, cpu_value_data);
     }
 #endif
-    // We calculate both network heads on the CPU. They are irregular
-    // and have a much lower compute densitity than the residual layers,
-    // which means they don't get much - if any - speedup from being on the
-    // GPU. See issue #185.
 
     // Get the moves
-    convolve<1>(2, output_data, conv_pol_w, conv_pol_b, policy_data);
-    batchnorm<361>(2, policy_data, bn_pol_w1.data(), bn_pol_w2.data());
-    innerproduct<2*361, 362>(policy_data, ip_pol_w, ip_pol_b, policy_out);
+    batchnorm<361>(OUTPUTS_POLICY, policy_data, bn_pol_w1.data(), bn_pol_w2.data());
+    innerproduct<OUTPUTS_POLICY*361, 362>(policy_data, ip_pol_w, ip_pol_b, policy_out);
     softmax(policy_out, softmax_data, cfg_softmax_temp);
     std::vector<float>& outputs = softmax_data;
 
     // Now get the score
-    convolve<1>(1, output_data, conv_val_w, conv_val_b, value_data);
-    batchnorm<361>(1, value_data, bn_val_w1.data(), bn_val_w2.data());
+    batchnorm<361>(OUTPUTS_VALUE, value_data, bn_val_w1.data(), bn_val_w2.data());
     innerproduct<361, 256>(value_data, ip1_val_w, ip1_val_b, winrate_data);
     innerproduct<256, 1>(winrate_data, ip2_val_w, ip2_val_b, winrate_out);
 

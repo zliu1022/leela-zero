@@ -276,14 +276,14 @@ std::string Tuner::tune_sgemm(const int m, const int n, const int k,
         cfgs *= opts[c].second.size();
     }
 
+    // Don't use thead Rng or determism will depend on if tuner ran.
     auto rng = Random{0};
 
     for (auto i = 0; i < cfgs; i++) {
         Parameters param = get_parameters_by_int(opts, i);
         if (valid_config_sgemm(param, cfg_sgemm_exhaustive)) {
             if (cfg_sgemm_exhaustive) {
-                auto pick = rng.randflt();
-                if (pick > (1.0f / 16.0f)) {
+                if (rng.randfix<16>() != 0) {
                     continue;
                 }
             }
@@ -322,9 +322,9 @@ std::string Tuner::tune_sgemm(const int m, const int n, const int k,
 
         auto sgemm_kernel = cl::Kernel(program, "XgemmBatched");
 
-        auto m_ceil = (int)lcm(lcm(m, p["MWG"]), p["VWM"]);
-        auto n_ceil = (int)lcm(lcm(n, p["NWG"]), p["VWN"]);
-        auto k_ceil = (int)lcm(lcm(k, p["KWG"]), p["VWM"]);
+        auto m_ceil = (int)ceilMultiple(ceilMultiple(m, p["MWG"]), p["VWM"]);
+        auto n_ceil = (int)ceilMultiple(ceilMultiple(n, p["NWG"]), p["VWN"]);
+        auto k_ceil = (int)ceilMultiple(ceilMultiple(k, p["KWG"]), p["VWM"]);
 
         if (m_ceil != m_ceil_prev
             || n_ceil != n_ceil_prev
@@ -439,6 +439,12 @@ void Tuner::store_sgemm_tuners(const int m, const int n, const int k,
 
     // Write new tuning
     file << tuning_line << std::endl;
+
+    if (file.fail()) {
+        myprintf("Could not save the tuning result.\n");
+        myprintf("Do I have write permissions on %s?\n",
+            TUNER_FILE_LOCAL.c_str());
+    }
 }
 
 std::string Tuner::sgemm_tuners_from_line(std::string line,

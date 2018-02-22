@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 #    This file is part of Leela Zero.
-#    Copyright (C) 2017 Gian-Carlo Pascutto
+#    Copyright (C) 2017-2018 Gian-Carlo Pascutto
 #
 #    Leela Zero is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,10 +27,13 @@ import time
 import tensorflow as tf
 from tfprocess import TFProcess
 
-# 16 planes, 1 stm, 1 x 362 probs, 1 winner = 19 lines
+# 16 planes, 1 side to move, 1 x 362 probs, 1 winner = 19 lines
 DATA_ITEM_LINES = 16 + 1 + 1 + 1
 
-BATCH_SIZE = 256
+# Sane values are from 4096 to 64 or so. The maximum depends on the amount
+# of RAM in your GPU and the network size. You need to adjust the learning rate
+# if you change this.
+BATCH_SIZE = 512
 
 def remap_vertex(vertex, symmetry):
     """
@@ -49,7 +52,7 @@ def remap_vertex(vertex, symmetry):
     return y * 19 + x
 
 class ChunkParser:
-    def __init__(self, chunks):
+    def __init__(self, chunks, workers=None):
         # Build probility reflection tables. The last element is 'pass' and is identity mapped.
         self.prob_reflection_table = [[remap_vertex(vertex, sym) for vertex in range(361)]+[361] for sym in range(8)]
         # Build full 16-plane reflection tables.
@@ -62,8 +65,9 @@ class ChunkParser:
         # Build the all-zeros and all-ones flat planes, used for color-to-move.
         self.flat_planes = [ b'\0' * 361, b'\1' * 361 ]
 
-        # Start worker processes, leave 1 for TensorFlow
-        workers = max(1, mp.cpu_count() - 1)
+        # Start worker processes, leave 2 for TensorFlow
+        if workers is None:
+            workers = max(1, mp.cpu_count() - 2)
         print("Using {} worker processes.".format(workers))
         self.readers = []
         for _ in range(workers):
@@ -146,9 +150,12 @@ class ChunkParser:
             random.shuffle(chunks)
             for chunk in chunks:
                 with gzip.open(chunk, 'r') as chunk_file:
-                    file_content = chunk_file.readlines()
+                    file_content = chunk_file.read().splitlines()
                     item_count = len(file_content) // DATA_ITEM_LINES
-                    for item_idx in range(item_count):
+                    # Pick only 1 in every 16 positions
+                    picked_items = random.sample(range(item_count),
+                                                 (item_count + 15) // 16)
+                    for item_idx in picked_items:
                         pick_offset = item_idx * DATA_ITEM_LINES
                         item = file_content[pick_offset:pick_offset + DATA_ITEM_LINES]
                         str_items = [str(line, 'ascii') for line in item]
@@ -257,8 +264,11 @@ def benchmark(parser):
         end = time.time()
         print("{} pos/sec {} secs".format( 10000. / (end - start), (end - start)))
 
-def main(args):
+def split_chunks(chunks, test_ratio):
+    splitpoint = 1 + int(len(chunks) * (1.0 - test_ratio))
+    return (chunks[:splitpoint], chunks[splitpoint:])
 
+def main(args):
     train_data_prefix = args.pop(0)
 
     chunks = get_chunks(train_data_prefix)
@@ -267,21 +277,35 @@ def main(args):
     if not chunks:
         return
 
-    parser = ChunkParser(chunks)
+    # The following assumes positions from one game are not
+    # spread through chunks.
+    random.shuffle(chunks)
+    training, test = split_chunks(chunks, 0.1)
+    print("Training with {0} chunks, validating on {1} chunks".format(
+        len(training), len(test)))
 
-    run_test(parser)
+    #run_test(parser)
     #benchmark(parser)
 
+    train_parser = ChunkParser(training)
     dataset = tf.data.Dataset.from_generator(
-        parser.parse_chunk, output_types=(tf.string))
-    dataset = dataset.shuffle(65536)
+        train_parser.parse_chunk, output_types=(tf.string))
+    dataset = dataset.shuffle(1 << 18)
     dataset = dataset.map(_parse_function)
     dataset = dataset.batch(BATCH_SIZE)
-    dataset = dataset.prefetch(16)
-    iterator = dataset.make_one_shot_iterator()
-    next_batch = iterator.get_next()
+    dataset = dataset.prefetch(4)
+    train_iterator = dataset.make_one_shot_iterator()
 
-    tfprocess = TFProcess(next_batch)
+    test_parser = ChunkParser(test)
+    dataset = tf.data.Dataset.from_generator(
+        test_parser.parse_chunk, output_types=(tf.string))
+    dataset = dataset.map(_parse_function)
+    dataset = dataset.batch(BATCH_SIZE)
+    dataset = dataset.prefetch(4)
+    test_iterator = dataset.make_one_shot_iterator()
+
+    tfprocess = TFProcess()
+    tfprocess.init(dataset, train_iterator, test_iterator)
     if args:
         restore_file = args.pop(0)
         tfprocess.restore(restore_file)

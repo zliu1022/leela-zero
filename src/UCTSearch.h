@@ -54,6 +54,12 @@ private:
     float m_eval{0.0f};
 };
 
+namespace TimeManagement {
+    enum enabled_t {
+        AUTO = -1, OFF = 0, ON = 1
+    };
+};
+
 class UCTSearch {
 public:
     /*
@@ -74,14 +80,13 @@ public:
     static constexpr auto MAX_TREE_SIZE =
         (sizeof(void*) == 4 ? 25'000'000 : 100'000'000);
 
-    UCTSearch();
-    void set_gamestate(const GameState& g);
-    int think(int color, const GameState& g, passflag_t passflag = NORMAL);
+    UCTSearch(GameState& g);
+    int think(int color, passflag_t passflag = NORMAL);
     void set_playout_limit(int playouts);
     void set_visit_limit(int visits);
-    void ponder(const GameState& g);
+    void ponder();
     bool is_running() const;
-    bool playout_or_visit_limit_reached() const;
+    bool stop_thinking(int elapsed_centis = 0, int time_for_move = 0) const;
     void increment_playouts();
     SearchResult play_simulation(GameState& currstate, UCTNode* const node);
 
@@ -91,8 +96,11 @@ private:
     void dump_analysis(int playouts);
     bool should_resign(passflag_t passflag, float bestscore);
     int get_best_move(passflag_t passflag);
+    void update_root();
+    bool advance_to_new_rootstate();
 
-    GameState m_rootstate;
+    GameState & m_rootstate;
+    std::unique_ptr<GameState> m_last_rootstate;
     std::unique_ptr<UCTNode> m_root;
     std::atomic<int> m_nodes{0};
     std::atomic<int> m_playouts{0};

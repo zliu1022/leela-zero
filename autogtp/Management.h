@@ -23,12 +23,14 @@
 #include <QString>
 #include <QTextStream>
 #include <QThread>
+#include <QFileInfo>
+#include <QLockFile>
 #include <QVector>
 #include <chrono>
 #include <stdexcept>
 #include "Worker.h"
 
-constexpr int AUTOGTP_VERSION = 13;
+constexpr int AUTOGTP_VERSION = 14;
 class Management : public QObject {
     Q_OBJECT
 public:
@@ -36,14 +38,18 @@ public:
                const int games,
                const QStringList& gpuslist,
                const int ver,
+               const int maxGame,
                const QString& keep,
-               const QString& debug,
-               QMutex* mutex);
+               const QString& debug);
     ~Management() = default;
     void giveAssignments();
     void incMoves() { m_movesMade++; }
+    void wait();
+signals:
+    void sendQuit();
 public slots:
     void getResult(Order ord, Result res, int index, int duration);
+    void storeGames();
 
 private:
 
@@ -53,7 +59,6 @@ private:
             : std::runtime_error("NetworkException: " + message)
         {}
     };
-    QMutex* m_mainMutex;
     QMutex m_syncMutex;
     QVector<Worker*> m_gamesThreads;
     int m_games;
@@ -67,13 +72,22 @@ private:
     QString m_debugPath;
     int m_version;
     std::chrono::high_resolution_clock::time_point m_start;
+    int m_storeGames;
+    QList<QFileInfo> m_storedFiles;
     Order m_fallBack;
+    int m_gamesLeft;
+    int m_threadsLeft;
+    QLockFile *m_lockFile;
+
     Order getWorkInternal(bool tuning);
     Order getWork(bool tuning = false);
+    Order getWork(const QFileInfo &file);
     QString getOption(const QJsonObject &ob, const QString &key, const QString &opt, const QString &defValue);
     QString getBoolOption(const QJsonObject &ob, const QString &key, const QString &opt, bool defValue);
     QString getOptionsString(const QJsonObject &opt, const QString &rnd);
     void sendAllGames();
+    void checkStoredGames();
+    QFileInfo getNextStored();
     bool networkExists(const QString &name);
     void fetchNetwork(const QString &name);
     void printTimingInfo(float duration);

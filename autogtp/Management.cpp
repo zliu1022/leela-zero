@@ -19,11 +19,12 @@
 #include <cmath>
 #include <random>
 #include <QDir>
-#include <QFileInfo>
 #include <QThread>
+#include <QList>
 #include <QCryptographicHash>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QUuid>
 #include <QRegularExpression>
 #include "Management.h"
@@ -39,11 +40,11 @@ Management::Management(const int gpus,
                        const int games,
                        const QStringList& gpuslist,
                        const int ver,
+                       const int maxGames,
                        const QString& keep,
-                       const QString& debug,
-                       QMutex* mutex)
-    : m_mainMutex(mutex),
-    m_syncMutex(),
+                       const QString& debug)
+
+    : m_syncMutex(),
     m_gamesThreads(gpus * games),
     m_games(games),
     m_gpus(gpus),
@@ -54,7 +55,10 @@ Management::Management(const int gpus,
     m_keepPath(keep),
     m_debugPath(debug),
     m_version(ver),
-    m_fallBack(Order::Error) {
+    m_fallBack(Order::Error),
+    m_gamesLeft(maxGames),
+    m_threadsLeft(gpus * games),
+    m_lockFile(nullptr) {
 }
 
 void Management::runTuningProcess(const QString &tuneCmdLine) {
@@ -67,6 +71,17 @@ void Management::runTuningProcess(const QString &tuneCmdLine) {
         QTextStream(stdout) << tuneProcess.readAllStandardError();
     }
     tuneProcess.waitForFinished(-1);
+}
+
+Order Management::getWork(const QFileInfo &file) {
+    QTextStream(stdout) << "Got previously stored file" <<endl;
+    Order o;
+    o.load(file.fileName());
+    QFile::remove(file.fileName());
+    m_lockFile->unlock();
+    delete m_lockFile;
+    m_lockFile = nullptr;
+    return o;
 }
 
 void Management::giveAssignments() {
@@ -88,7 +103,6 @@ void Management::giveAssignments() {
     QTextStream(stdout) << "Tuning process finished" << endl;
 
     m_start = std::chrono::high_resolution_clock::now();
-    m_mainMutex->lock();
     QString myGpu;
     for (int gpu = 0; gpu < m_gpus; ++gpu) {
         for (int game = 0; game < m_games; ++game) {
@@ -106,9 +120,29 @@ void Management::giveAssignments() {
                     this,
                     &Management::getResult,
                     Qt::DirectConnection);
-            m_gamesThreads[thread_index]->order(getWork());
+            QFileInfo finfo = getNextStored();
+            if(!finfo.fileName().isEmpty()) {
+                m_gamesThreads[thread_index]->order(getWork(finfo));
+            } else {
+                m_gamesThreads[thread_index]->order(getWork());
+            }            
             m_gamesThreads[thread_index]->start();
         }
+    }
+}
+
+void Management::storeGames() {
+    for (int i = 0; i < m_gpus * m_games; ++i) {
+        m_gamesThreads[i]->doStore();
+    }
+    wait();
+}
+
+void Management::wait() {
+    QTextStream(stdout) << "Management: waiting for workers" << endl;
+    for (int i = 0; i < m_gpus * m_games; ++i) {
+        m_gamesThreads[i]->wait();
+        QTextStream(stdout) << "Management: Worker " << i+1 << " ended" << endl;
     }
 }
 
@@ -132,11 +166,40 @@ void Management::getResult(Order ord, Result res, int index, int duration) {
         break;
     }
     sendAllGames();
-    m_gamesThreads[index]->order(getWork());
+    if(m_gamesLeft == 0) {
+        m_gamesThreads[index]->doFinish();
+        if(m_threadsLeft > 1) {
+            --m_threadsLeft;
+        } else {
+            sendQuit();
+        }
+    } else {
+        if(m_gamesLeft > 0) --m_gamesLeft;
+        QFileInfo finfo = getNextStored();
+        if (!finfo.fileName().isEmpty()) {
+            m_gamesThreads[index]->order(getWork(finfo));
+        } else {
+            m_gamesThreads[index]->order(getWork());
+        }
+    }
     m_syncMutex.unlock();
-
 }
 
+QFileInfo Management::getNextStored() {
+    QFileInfo fi;
+    checkStoredGames();
+    while (!m_storedFiles.isEmpty()) {
+        fi = m_storedFiles.takeFirst();
+        m_lockFile = new QLockFile(fi.fileName()+".lock");
+        if(m_lockFile->tryLock(10) &&
+           fi.exists()) {
+                break;
+        }
+        delete m_lockFile;
+        m_lockFile = nullptr;
+    }
+    return fi;
+}
 
 void  Management::printTimingInfo(float duration) {
 
@@ -498,7 +561,10 @@ void Management::gzipFile(const QString &fileName) {
 }
 
 void Management::saveCurlCmdLine(const QStringList &prog_cmdline, const QString &name) {
-    QFile f("curl_save" + QUuid::createUuid().toRfc4122().toHex() + ".bin");
+    QString fileName = "curl_save" + QUuid::createUuid().toRfc4122().toHex() + ".bin";
+    QLockFile lf(fileName + ".lock");
+    lf.lock();
+    QFile f(fileName);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
         return;
     }
@@ -522,7 +588,11 @@ void Management::sendAllGames() {
     QFileInfoList list = dir.entryInfoList();
     for (int i = 0; i < list.size(); ++i) {
         QFileInfo fileInfo = list.at(i);
-        QFile file (fileInfo.fileName());
+        QLockFile lf(fileInfo.fileName()+".lock");
+        if (!lf.tryLock(10)) {
+            continue;
+        }        
+        QFile file (fileInfo.fileName());        
         if (!file.open(QFile::ReadOnly)) {
             continue;
         }
@@ -699,4 +769,13 @@ void Management::uploadData(const QMap<QString,QString> &r, const QMap<QString,Q
         return;
     }
     cleanupFiles(r["file"]);
+}
+
+void Management::checkStoredGames() {
+    QDir dir;
+    QStringList filters;
+    filters << "storefile*.bin";
+    dir.setNameFilters(filters);
+    dir.setFilter(QDir::Files | QDir::NoSymLinks);
+    m_storedFiles = dir.entryInfoList();
 }

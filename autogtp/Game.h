@@ -27,7 +27,8 @@ using VersionTuple = std::tuple<int, int, int>;
 class Game : QProcess {
 public:
     Game(const QString& weights,
-         const QString& opt);
+         const QString& opt,
+         const QString& binary = QString("./leelaz"));
     ~Game() = default;
     bool gameStart(const VersionTuple& min_version);
     void move();
@@ -35,9 +36,13 @@ public:
     bool readMove();
     bool nextMove();
     bool getScore();
+    bool loadSgf(const QString &fileName);
     bool writeSgf();
+    bool loadTraining(const QString &fileName);
+    bool saveTraining();
     bool fixSgf(QString& weightFile, bool resignation);
     bool dumpTraining();
+    QString getCmdLine() const { return m_cmdLine; }
     bool dumpDebug();
     void gameQuit();
     QString getMove() const { return m_moveDone; }
@@ -48,6 +53,7 @@ public:
     int getWinner();
     QString getWinnerName() const { return m_winner; }
     int getMovesCount() const { return m_moveNum; }
+    void setMovesCount(int moves);
     QString getResult() const { return m_result.trimmed(); }
     enum {
         BLACK = 0,
@@ -62,6 +68,7 @@ private:
         LAUNCH_FAILURE
     };
     QString m_cmdLine;
+    QString m_binary;
     QString m_timeSettings;
     QString m_winner;
     QString m_fileName;

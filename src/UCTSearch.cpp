@@ -34,36 +34,97 @@
 #include "TimeControl.h"
 #include "Timing.h"
 #include "Training.h"
-#include "TTable.h"
 #include "Utils.h"
 
 using namespace Utils;
 
-UCTSearch::UCTSearch() {
+UCTSearch::UCTSearch(GameState& g)
+    : m_rootstate(g) {
     set_playout_limit(cfg_max_playouts);
     set_visit_limit(cfg_max_visits);
     m_root = std::make_unique<UCTNode>(FastBoard::PASS, 0.0f, 0.5f);
 }
 
-void UCTSearch::set_gamestate(const GameState & g) {
-    // Definition of m_playouts is playouts from a certain GameState.
-    // So reset this count now.
-    m_playouts = 0;
-    if (m_rootstate.get_komi() != g.get_komi()
-        || m_rootstate.board.get_hash() != g.board.get_hash()) {
-        m_root = m_root->find_new_root(g, m_rootstate);
+bool UCTSearch::advance_to_new_rootstate() {
+    if (!m_root || !m_last_rootstate) {
+        // No current state
+        return false;
     }
-    m_nodes = m_root->count_nodes();
+
+    if (m_rootstate.get_komi() != m_last_rootstate->get_komi()) {
+        return false;
+    }
+
+    auto depth =
+        (int) (m_rootstate.get_movenum() - m_last_rootstate->get_movenum());
+
+    if (depth < 0) {
+        return false;
+    }
+
+    auto test = std::make_unique<GameState>(m_rootstate);
+    for (auto i = 0; i < depth; i++) {
+        test->undo_move();
+    }
+
+    if (m_last_rootstate->board.get_hash() != test->board.get_hash()) {
+        // m_rootstate and m_last_rootstate don't match
+        return false;
+    }
+
+    // Try to replay moves advancing m_root
+    for (auto i = 0; i < depth; i++) {
+        test->forward_move();
+        const auto move = test->get_last_move();
+        m_root = m_root->find_child(move);
+        if (!m_root) {
+            // Tree hasn't been expanded this far
+            return false;
+        }
+        m_last_rootstate->play_move(move);
+    }
+
+    assert(m_rootstate.get_movenum() == m_last_rootstate->get_movenum());
+
+    if (m_last_rootstate->board.get_hash() != test->board.get_hash()) {
+        // Can happen if user plays multiple moves in a row by same player
+        return false;
+    }
+
+    return true;
 }
 
-SearchResult UCTSearch::play_simulation(GameState & currstate, UCTNode* const node) {
-    const auto color = currstate.get_to_move();
-    const auto hash = currstate.board.get_hash();
-    const auto komi = currstate.get_komi();
+void UCTSearch::update_root() {
+    // Definition of m_playouts is playouts per search call.
+    // So reset this count now.
+    m_playouts = 0;
 
+#ifndef NDEBUG
+    auto start_nodes = m_root->count_nodes();
+#endif
+
+    if (!advance_to_new_rootstate() || !m_root) {
+        m_root = std::make_unique<UCTNode>(FastBoard::PASS, 0.0f, 0.5f);
+    }
+    // Clear last_rootstate to prevent accidental use.
+    m_last_rootstate.reset(nullptr);
+
+    // Check how big our search tree (reused or new) is.
+    m_nodes = m_root->count_nodes();
+
+#ifndef NDEBUG
+    if (m_nodes > 0) {
+        myprintf("update_root, %d -> %d nodes (%.1f%% reused)\n",
+            start_nodes, m_nodes.load(), 100.0 * m_nodes.load() / start_nodes);
+    }
+#endif
+}
+
+SearchResult UCTSearch::play_simulation(GameState & currstate,
+                                        UCTNode* const node) {
+    const auto color = currstate.get_to_move();
     auto result = SearchResult{};
 
-    TTable::get_TT().sync(hash, komi, node);
     node->virtual_loss();
 
     if (!node->has_children()) {
@@ -88,16 +149,10 @@ SearchResult UCTSearch::play_simulation(GameState & currstate, UCTNode* const no
         if (next != nullptr) {
             auto move = next->get_move();
 
-            if (move != FastBoard::PASS) {
-                currstate.play_move(move);
-
-                if (!currstate.superko()) {
-                    result = play_simulation(currstate, next);
-                } else {
-                    next->invalidate();
-                }
+            currstate.play_move(move);
+            if (move != FastBoard::PASS && currstate.superko()) {
+                next->invalidate();
             } else {
-                currstate.play_pass();
                 result = play_simulation(currstate, next);
             }
         }
@@ -107,7 +162,6 @@ SearchResult UCTSearch::play_simulation(GameState & currstate, UCTNode* const no
         node->update(result.eval());
     }
     node->virtual_loss_undo();
-    TTable::get_TT().update(hash, komi, node);
 
     return result;
 }
@@ -220,16 +274,11 @@ int UCTSearch::get_best_move(passflag_t passflag) {
         m_root->randomize_first_proportionally();
     }
 
-    int bestmove = m_root->get_first_child()->get_move();
+    auto first_child = m_root->get_first_child();
+    assert(first_child != nullptr);
 
-    // do we have statistics on the moves?
-    if (m_root->get_first_child() != nullptr) {
-        if (m_root->get_first_child()->first_visit()) {
-            return bestmove;
-        }
-    }
-
-    float bestscore = m_root->get_first_child()->get_eval(color);
+    auto bestmove = first_child->get_move();
+    auto bestscore = first_child->get_eval(color);
 
     // do we want to fiddle with the best move because of the rule set?
     if (passflag & UCTSearch::NOPASS) {
@@ -360,8 +409,48 @@ bool UCTSearch::is_running() const {
     return m_run;
 }
 
-bool UCTSearch::playout_or_visit_limit_reached() const {
-    return m_playouts >= m_maxplayouts || m_root->get_visits() >= m_maxvisits;
+bool UCTSearch::stop_thinking(int elapsed_centis, int time_for_move) const {
+    auto visits = m_root->get_visits();
+    auto playouts = static_cast<int>(m_playouts);
+    auto stop = playouts >= m_maxplayouts
+                || visits >= m_maxvisits
+                || elapsed_centis >= time_for_move;
+
+    if (stop || cfg_timemanage == TimeManagement::OFF) {
+        return stop;
+    }
+
+    auto Nfirst = 0;
+    auto Nsecond = 0;
+    for (const auto& node : m_root->get_children()) {
+        if (node->valid()) {
+             auto N = node->get_visits();
+             if (N > Nfirst) {
+                 Nsecond = Nfirst;
+                 Nfirst = N;
+             } else if (N > Nsecond) {
+                 Nsecond = N;
+             }
+        }
+    }
+    if ((m_maxplayouts - playouts < Nfirst - Nsecond)
+        || (m_maxvisits - visits < Nfirst - Nsecond)) {
+        stop = true;
+    } else if (elapsed_centis > 100 && playouts > 100) {
+        // Wait for at least 1 second and 100 playouts
+        // so we get a reliable playout_rate.
+        auto playout_rate = 1.0f * playouts / elapsed_centis;
+        auto time_left = time_for_move - elapsed_centis;
+        auto est_playouts_left = playout_rate * time_left;
+        if (est_playouts_left < Nfirst - Nsecond) {
+            stop = true;
+            myprintf("%.1fs left\n", time_left/100.0f);
+        }
+    }
+    if (stop) {
+        myprintf("Stopping early.\n");
+    }
+    return stop;
 }
 
 void UCTWorker::operator()() {
@@ -371,19 +460,18 @@ void UCTWorker::operator()() {
         if (result.valid()) {
             m_search->increment_playouts();
         }
-    } while(m_search->is_running() && !m_search->playout_or_visit_limit_reached());
+    } while(m_search->is_running());
 }
 
 void UCTSearch::increment_playouts() {
     m_playouts++;
 }
 
-int UCTSearch::think(int color, const GameState& g, passflag_t passflag) {
-    set_gamestate(g);
-
+int UCTSearch::think(int color, passflag_t passflag) {
     // Start counting time for us
     m_rootstate.start_clock(color);
 
+    update_root();
     // set side to move
     m_rootstate.board.set_to_move(color);
 
@@ -400,6 +488,7 @@ int UCTSearch::think(int color, const GameState& g, passflag_t passflag) {
     float root_eval;
     if (!m_root->has_children()) {
         m_root->create_children(m_nodes, m_rootstate, root_eval);
+        m_root->update(root_eval);
     } else {
         root_eval = m_root->get_eval(color);
     }
@@ -438,8 +527,7 @@ int UCTSearch::think(int color, const GameState& g, passflag_t passflag) {
             dump_analysis(static_cast<int>(m_playouts));
         }
         keeprunning  = is_running();
-        keeprunning &= (elapsed_centis < time_for_move);
-        keeprunning &= !playout_or_visit_limit_reached();
+        keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
     } while(keeprunning);
 
     // stop the search
@@ -466,13 +554,14 @@ int UCTSearch::think(int color, const GameState& g, passflag_t passflag) {
                  (m_playouts * 100) / (elapsed_centis+1));
     }
     int bestmove = get_best_move(passflag);
-    m_rootstate.play_move(bestmove);
-    m_root = m_root->find_new_root(bestmove);
+
+    // Copy the root state. Use to check for tree re-use in future calls.
+    m_last_rootstate = std::make_unique<GameState>(m_rootstate);
     return bestmove;
 }
 
-void UCTSearch::ponder(const GameState& g) {
-    set_gamestate(g);
+void UCTSearch::ponder() {
+    update_root();
 
     m_run = true;
     int cpus = cfg_num_threads;
@@ -495,7 +584,7 @@ void UCTSearch::ponder(const GameState& g) {
     myprintf("\n");
     dump_stats(m_rootstate, *m_root);
 
-    myprintf("\n%d visits, %d nodes\n\n", m_root->get_visits(), (int)m_nodes);
+    myprintf("\n%d visits, %d nodes\n\n", m_root->get_visits(), m_nodes.load());
 }
 
 void UCTSearch::set_playout_limit(int playouts) {
