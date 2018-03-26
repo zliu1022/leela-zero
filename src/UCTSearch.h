@@ -91,7 +91,7 @@ public:
     SearchResult play_simulation(GameState& currstate, UCTNode* const node);
 
 private:
-    void dump_stats(KoState& state, UCTNode& parent);
+    void dump_stats(KoState& state, UCTNode& parent, int n);
     std::string get_pv(KoState& state, UCTNode& parent);
     void dump_analysis(int playouts);
     bool should_resign(passflag_t passflag, float bestscore);

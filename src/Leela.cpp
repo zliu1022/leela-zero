@@ -82,6 +82,8 @@ static void parse_commandline(int argc, char *argv[]) {
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
         ("noponder", "Disable thinking on opponent's time.")
+		("interval,i", po::value<int>(),
+			"Interval centi-seconds to print diagnostic output.")
 #ifdef USE_OPENCL
         ("gpu",  po::value<std::vector<int> >(),
                 "ID of the OpenCL device(s) to use (disables autodetection).")
@@ -209,6 +211,10 @@ static void parse_commandline(int argc, char *argv[]) {
     if (vm.count("visits")) {
         cfg_max_visits = vm["visits"].as<int>();
     }
+
+	if (vm.count("interval")) {
+		cfg_interval = vm["interval"].as<int>();
+	}
 
     if (vm.count("resignpct")) {
         cfg_resignpct = vm["resignpct"].as<int>();

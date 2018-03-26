@@ -50,6 +50,7 @@ bool cfg_allow_pondering;
 int cfg_num_threads;
 int cfg_max_playouts;
 int cfg_max_visits;
+int cfg_interval;
 TimeManagement::enabled_t cfg_timemanage;
 int cfg_lagbuffer_cs;
 int cfg_resignpct;
@@ -77,6 +78,7 @@ void GTP::setup_default_parameters() {
     cfg_num_threads = std::max(1, std::min(SMP::get_num_cpus(), MAX_CPUS));
     cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
     cfg_max_visits = std::numeric_limits<decltype(cfg_max_visits)>::max();
+	cfg_interval = 1500;
     cfg_timemanage = TimeManagement::AUTO;
     cfg_lagbuffer_cs = 100;
 #ifdef USE_OPENCL
@@ -135,6 +137,7 @@ const std::string GTP::s_commands[] = {
     "kgs-time_settings",
     "kgs-game_over",
     "heatmap",
+	"print_interval",
     ""
 };
 
@@ -281,6 +284,28 @@ bool GTP::execute(GameState & game, std::string xinput) {
         }
 
         return true;
+	} else if (command.find("print_interval") == 0) {
+		std::istringstream cmdstream(command);
+		std::string stmp;
+		int tmp;
+
+		cmdstream >> stmp;  // eat boardsize
+		cmdstream >> tmp;
+
+		if (!cmdstream.fail()) {
+			if (tmp <= 100) {
+				gtp_fail_printf(id, "unacceptable interval");
+			}
+			else {
+				cfg_interval = tmp;
+				gtp_printf(id, "");
+			}
+		}
+		else {
+			gtp_fail_printf(id, "syntax not understood");
+		}
+
+		return true;
     } else if (command.find("clear_board") == 0) {
         Training::clear_training();
         game.reset_game();

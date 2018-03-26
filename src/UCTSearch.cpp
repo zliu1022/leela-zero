@@ -166,7 +166,7 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     return result;
 }
 
-void UCTSearch::dump_stats(KoState & state, UCTNode & parent) {
+void UCTSearch::dump_stats(KoState & state, UCTNode & parent, int n=10) {
     if (cfg_quiet || !parent.has_children()) {
         return;
     }
@@ -186,6 +186,9 @@ void UCTSearch::dump_stats(KoState & state, UCTNode & parent) {
         // Always display at least two moves. In the case there is
         // only one move searched the user could get an idea why.
         if (++movecount > 2 && !node->get_visits()) break;
+
+		//added by zliu
+		if (movecount > n) break;
 
         std::string tmp = state.move_to_text(node->get_move());
         std::string pvstring(tmp);
@@ -522,9 +525,14 @@ int UCTSearch::think(int color, passflag_t passflag) {
 
         // output some stats every few seconds
         // check if we should still search
-        if (elapsed_centis - last_update > 250) {
+        //if (elapsed_centis - last_update > 250) {
+
+		//added by zliu
+		if (elapsed_centis - last_update > cfg_interval) {
             last_update = elapsed_centis;
             dump_analysis(static_cast<int>(m_playouts));
+			dump_stats(m_rootstate, *m_root, 5);
+			myprintf("\n");
         }
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
@@ -547,11 +555,27 @@ int UCTSearch::think(int color, passflag_t passflag) {
     Time elapsed;
     int elapsed_centis = Time::timediff_centis(start, elapsed);
     if (elapsed_centis+1 > 0) {
-        myprintf("%d visits, %d nodes, %d playouts, %d n/s\n\n",
+		//added by zliu
+		/*
+		LeelaZero-0.12 No. 192 433s Q16 36785 33.45%  10.33%
+		*/
+		auto first_child = m_root->get_first_child();
+		int color = m_rootstate.board.get_to_move();
+		//node->get_score() * 100.0f;
+
+        myprintf("%d visits, %d nodes, %d playouts, %d n/s %s-%s %s No. %3d %3.1fs %3s %5d %3.2f%% %3.2f%%\n\n",
                  m_root->get_visits(),
                  static_cast<int>(m_nodes),
                  static_cast<int>(m_playouts),
-                 (m_playouts * 100) / (elapsed_centis+1));
+                 (m_playouts * 100) / (elapsed_centis+1),
+				"LeelaZero", PROGRAM_VERSION,
+				(color==0)?"B":"W",
+				int(m_rootstate.get_movenum())+1,
+				(elapsed_centis+1)/100.0f,
+				m_rootstate.move_to_text(first_child->get_move()),
+				first_child->get_visits(),
+				first_child->get_eval(color)*100.0f,
+				first_child->get_score()*100.0f);
     }
     int bestmove = get_best_move(passflag);
 
