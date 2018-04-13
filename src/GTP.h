@@ -31,6 +31,7 @@
 extern bool cfg_gtp_mode;
 extern bool cfg_allow_pondering;
 extern int cfg_num_threads;
+extern int cfg_max_threads;
 extern int cfg_max_playouts;
 extern int cfg_max_visits;
 extern int cfg_interval;
@@ -54,6 +55,7 @@ extern std::string cfg_weightsfile;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;
 extern std::string cfg_options_str;
+extern bool cfg_benchmark;
 
 /*
     A list of all valid GTP2 commands is defined here:

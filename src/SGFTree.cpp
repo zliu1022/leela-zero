@@ -136,7 +136,7 @@ void SGFTree::populate_states(void) {
         std::istringstream strm(size);
         int bsize;
         strm >> bsize;
-        if (bsize <= FastBoard::MAXBOARDSIZE) {
+        if (bsize == BOARD_SIZE) {
             // Assume 7.5 komi if not specified
             m_state.init_game(bsize, 7.5f);
             valid_size = true;
@@ -158,8 +158,12 @@ void SGFTree::populate_states(void) {
         if (valid_size) {
             bsize = m_state.board.get_boardsize();
         }
-        m_state.init_game(bsize, komi);
-        m_state.set_handicap(handicap);
+        if (bsize == BOARD_SIZE) {
+            m_state.init_game(bsize, komi);
+            m_state.set_handicap(handicap);
+        } else {
+            throw std::runtime_error("Board size not supported.");
+        }
     }
 
     // handicap
@@ -397,7 +401,13 @@ std::string SGFTree::state_to_string(GameState& pstate, int compcolor) {
     auto leela_name = std::string{PROGRAM_NAME};
     leela_name.append(" " + std::string(PROGRAM_VERSION));
     if (!cfg_weightsfile.empty()) {
-        leela_name.append(" " + cfg_weightsfile.substr(0, 8));
+        auto pos = cfg_weightsfile.find_last_of("\\/");
+        if (std::string::npos == pos) {
+            pos = 0;
+        } else {
+            ++pos;
+        }
+        leela_name.append(" " + cfg_weightsfile.substr(pos, 8));
     }
 
     if (compcolor == FastBoard::WHITE) {
