@@ -87,6 +87,7 @@ static std::array<float, 256> ip1_val_b;
 
 static std::array<float, 256> ip2_val_w;
 static std::array<float, 1> ip2_val_b;
+static bool value_head_not_stm;
 
 // Rotation helper
 static std::array<std::array<int, BOARD_SQUARES>, 8> rotate_nn_idx_table;
@@ -193,8 +194,12 @@ std::vector<float> Network::zeropad_U(const std::vector<float>& U,
 std::pair<int, int> Network::load_v1_network(std::ifstream& wtfile) {
     // Count size of the network
     myprintf("Detecting residual layers...");
-    // We are version 1
-    myprintf("v%d...", 1);
+	// We are version 1 or 2
+	if (value_head_not_stm) {
+		myprintf("v%d...", 2);
+	} else {
+		myprintf("v%d...", 1);
+	}
     // First line was the version number
     auto linecount = size_t{1};
     auto channels = 0;
@@ -307,11 +312,18 @@ std::pair<int, int> Network::load_network_file(const std::string& filename) {
         auto iss = std::stringstream{line};
         // First line is the file format version id
         iss >> format_version;
-        if (iss.fail() || format_version != FORMAT_VERSION) {
+		if (iss.fail() || (format_version != 1 && format_version != 2)) {
             myprintf("Weights file is the wrong version.\n");
             return {0, 0};
         } else {
-            assert(format_version == FORMAT_VERSION);
+			// Version 2 networks are identical to v1, except
+			// that they return the score for black instead of
+			// the player to move. This is used by ELF Open Go.
+			if (format_version == 2) {
+				value_head_not_stm = true;
+			} else {
+			    value_head_not_stm = false;
+			}
             return load_v1_network(wtfile);
         }
     }
@@ -866,6 +878,13 @@ Network::Netresult Network::get_scored_moves(
         const auto rand_rot = Random::get_Rng().randfix<8>();
         result = get_scored_moves_internal(state, planes, rand_rot);
     }
+
+	// v2 format (ELF Open Go) returns black value, not stm
+	if (value_head_not_stm) {
+		if (state->board.get_to_move() == FastBoard::WHITE) {
+			result.second = 1.0f - result.second;
+		}
+	}
 
     // Insert result into cache.
     NNCache::get_NNCache().insert(state->board.get_hash(), result);
