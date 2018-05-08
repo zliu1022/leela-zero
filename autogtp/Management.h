@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017 Marco Calignano
+    Copyright (C) 2017-2018 Marco Calignano
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <stdexcept>
 #include "Worker.h"
 
-constexpr int AUTOGTP_VERSION = 15;
+constexpr int AUTOGTP_VERSION = 16;
 
 class Management : public QObject {
     Q_OBJECT
