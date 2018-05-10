@@ -31,10 +31,11 @@
 #endif
 
 /*
- * BOARD_SIZE: Define size of the board to compile Leela with, must be an odd number due to winograd tiles
+ * BOARD_SIZE: Define size of the board to compile Leela with, must be an odd
+   number due to winograd tiles
  */
 #define BOARD_SIZE 19
-#define BOARD_SQUARES BOARD_SIZE*BOARD_SIZE
+#define BOARD_SQUARES (BOARD_SIZE*BOARD_SIZE)
 
 #if (BOARD_SIZE % 2 == 0)
 #error Code assumes odd board size, remove at your own risk!
@@ -77,10 +78,10 @@
  * USE_TUNER: Expose some extra command line parameters that allow tuning the
  * search algorithm.
  */
-//#define USE_TUNER
+#define USE_TUNER
 
 #define PROGRAM_NAME "Leela Zero"
-#define PROGRAM_VERSION "0.14"
+#define PROGRAM_VERSION "0.15"
 
 /*
  * OpenBLAS limitation: the default configuration on some Linuxes
