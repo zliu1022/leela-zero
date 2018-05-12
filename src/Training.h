@@ -21,7 +21,6 @@
 
 #include "config.h"
 
-#include <bitset>
 #include <cstddef>
 #include <string>
 #include <utility>
@@ -33,9 +32,7 @@
 
 class TimeStep {
 public:
-    using BoardPlane = std::bitset<BOARD_SQUARES>;
-    using NNPlanes = std::vector<BoardPlane>;
-    NNPlanes planes;
+    Network::NNPlanes planes;
     std::vector<float> probabilities;
     int to_move;
     float net_winrate;
@@ -79,7 +76,6 @@ public:
     static void load_training(const std::string& filename);
 
 private:
-    static TimeStep::NNPlanes get_planes(const GameState* const state);
     static void process_game(GameState& state, size_t& train_pos, int who_won,
                              const std::vector<int>& tree_moves,
                              OutputChunker& outchunker);

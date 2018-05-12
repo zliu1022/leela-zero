@@ -57,8 +57,6 @@ int cfg_lagbuffer_cs;
 int cfg_resignpct;
 int cfg_noise;
 int cfg_random_cnt;
-int cfg_random_min_visits;
-float cfg_random_temp;
 std::uint64_t cfg_rng_seed;
 bool cfg_dumbpass;
 #ifdef USE_OPENCL
@@ -103,8 +101,6 @@ void GTP::setup_default_parameters() {
     cfg_resignpct = -1;
     cfg_noise = false;
     cfg_random_cnt = 0;
-    cfg_random_min_visits = 1;
-    cfg_random_temp = 1.0f;
     cfg_dumbpass = false;
     cfg_logfile_handle = nullptr;
     cfg_quiet = false;
@@ -544,33 +540,18 @@ bool GTP::execute(GameState & game, std::string xinput) {
     } else if (command.find("heatmap") == 0) {
         std::istringstream cmdstream(command);
         std::string tmp;
-        std::string symmetry;
+        int symmetry;
 
         cmdstream >> tmp;   // eat heatmap
         cmdstream >> symmetry;
 
-        Network::Netresult vec;
         if (cmdstream.fail()) {
-            // Default = DIRECT with no rotation
-            vec = Network::get_scored_moves(
-                &game, Network::Ensemble::DIRECT, 0, true);
-        } else if (symmetry == "all") {
-            for (auto r = 0; r < 8; r++) {
-                vec = Network::get_scored_moves(
-                    &game, Network::Ensemble::DIRECT, r, true);
-                Network::show_heatmap(&game, vec, false);
-            }
-        } else if (symmetry == "average" || symmetry == "avg") {
-            vec = Network::get_scored_moves(
-                &game, Network::Ensemble::AVERAGE, 8, true);
-        } else {
-            vec = Network::get_scored_moves(
-                &game, Network::Ensemble::DIRECT, std::stoi(symmetry), true);
+            symmetry = 0;
         }
 
-        if (symmetry != "all") {
-            Network::show_heatmap(&game, vec, false);
-        }
+        auto vec = Network::get_scored_moves(
+            &game, Network::Ensemble::DIRECT, symmetry, true);
+        Network::show_heatmap(&game, vec, false);
 
         gtp_printf(id, "");
         return true;
