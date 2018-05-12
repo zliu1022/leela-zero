@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017-2018 Gian-Carlo Pascutto and contributors
+    Copyright (C) 2017 Gian-Carlo Pascutto
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,7 +46,8 @@ static void license_blurb() {
         "This program comes with ABSOLUTELY NO WARRANTY.\n"
         "This is free software, and you are welcome to redistribute it\n"
         "under certain conditions; see the COPYING file for details.\n\n",
-        PROGRAM_VERSION);
+        PROGRAM_VERSION
+    );
 }
 
 static void parse_commandline(int argc, char *argv[]) {
@@ -59,12 +60,12 @@ static void parse_commandline(int argc, char *argv[]) {
         ("threads,t", po::value<int>()->default_value(cfg_num_threads),
                       "Number of threads to use.")
         ("playouts,p", po::value<int>(),
-                       "Weaken engine by limiting the number of playouts. "
+                       "Weaken engine by limiting the number of playouts."
                        "Requires --noponder.")
         ("visits,v", po::value<int>(),
                      "Weaken engine by limiting the number of visits.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
-                       "[auto|on|off|fast] Enable time management features.\n"
+                       "[auto|on|off] Enable extra time management features.\n"
                        "auto = off when using -m, otherwise on")
         ("lagbuffer,b", po::value<int>()->default_value(cfg_lagbuffer_cs),
                         "Safety margin for time usage in centiseconds.")
@@ -211,20 +212,10 @@ static void parse_commandline(int argc, char *argv[]) {
                    "Add --noponder if you want a weakened engine.\n");
             exit(EXIT_FAILURE);
         }
-
-        // 0 may be specified to mean "no limit"
-        if (cfg_max_playouts == 0) {
-            cfg_max_playouts = UCTSearch::UNLIMITED_PLAYOUTS;
-        }
     }
 
     if (vm.count("visits")) {
         cfg_max_visits = vm["visits"].as<int>();
-
-        // 0 may be specified to mean "no limit"
-        if (cfg_max_visits == 0) {
-            cfg_max_visits = UCTSearch::UNLIMITED_PLAYOUTS;
-        }
     }
 
 	if (vm.count("interval")) {
@@ -247,8 +238,6 @@ static void parse_commandline(int argc, char *argv[]) {
             cfg_timemanage = TimeManagement::ON;
         } else if (tm == "off") {
             cfg_timemanage = TimeManagement::OFF;
-        } else if (tm == "fast") {
-            cfg_timemanage = TimeManagement::FAST;
         } else {
             printf("Invalid timemanage value.\n");
             exit(EXIT_FAILURE);
@@ -320,9 +309,7 @@ void init_global_objects() {
     // improves reproducibility across platforms.
     Random::get_Rng().seedrandom(cfg_rng_seed);
 
-    // When visits are limited ensure cache size is still limited.
-    auto playouts = std::min(cfg_max_playouts, cfg_max_visits);
-    NNCache::get_NNCache().set_size_from_playouts(playouts);
+    NNCache::get_NNCache().set_size_from_playouts(cfg_max_playouts);
 
     // Initialize network
     Network::initialize();
@@ -336,7 +323,7 @@ void benchmark(GameState& game) {
     search->think(FastBoard::WHITE);
 }
 
-int main(int argc, char *argv[]) {
+int main (int argc, char *argv[]) {
     auto input = std::string{};
 
     // Set up engine parameters
@@ -372,7 +359,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    for (;;) {
+    for(;;) {
         if (!cfg_gtp_mode) {
             maingame->display_state();
             std::cout << "Leela: ";

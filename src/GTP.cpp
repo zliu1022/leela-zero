@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017-2018 Gian-Carlo Pascutto and contributors
+    Copyright (C) 2017 Gian-Carlo Pascutto
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,8 +84,8 @@ void GTP::setup_default_parameters() {
 #else
     cfg_num_threads = cfg_max_threads;
 #endif
-    cfg_max_playouts = UCTSearch::UNLIMITED_PLAYOUTS;
-    cfg_max_visits = UCTSearch::UNLIMITED_PLAYOUTS;
+    cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
+    cfg_max_visits = std::numeric_limits<decltype(cfg_max_visits)>::max();
 	cfg_interval = 1500;
     cfg_timemanage = TimeManagement::AUTO;
     cfg_lagbuffer_cs = 100;
@@ -125,6 +125,7 @@ const std::string GTP::s_commands[] = {
     "quit",
     "known_command",
     "list_commands",
+    "quit",
     "boardsize",
     "clear_board",
     "komi",
@@ -453,7 +454,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
         float ftmp = game.final_score();
         /* white wins */
         if (ftmp < -0.1) {
-            gtp_printf(id, "W+%3.1f", float(fabs(ftmp)));
+            gtp_printf(id, "W+%3.1f", (float)fabs(ftmp));
         } else if (ftmp > 0.1) {
             gtp_printf(id, "B+%3.1f", ftmp);
         } else {
@@ -540,19 +541,20 @@ bool GTP::execute(GameState & game, std::string xinput) {
     } else if (command.find("heatmap") == 0) {
         std::istringstream cmdstream(command);
         std::string tmp;
-        int symmetry;
+        int rotation;
 
         cmdstream >> tmp;   // eat heatmap
-        cmdstream >> symmetry;
+        cmdstream >> rotation;
 
-        if (cmdstream.fail()) {
-            symmetry = 0;
+        if (!cmdstream.fail()) {
+            auto vec = Network::get_scored_moves(
+                &game, Network::Ensemble::DIRECT, rotation, true);
+            Network::show_heatmap(&game, vec, false);
+        } else {
+            auto vec = Network::get_scored_moves(
+                &game, Network::Ensemble::DIRECT, 0, true);
+            Network::show_heatmap(&game, vec, false);
         }
-
-        auto vec = Network::get_scored_moves(
-            &game, Network::Ensemble::DIRECT, symmetry, true);
-        Network::show_heatmap(&game, vec, false);
-
         gtp_printf(id, "");
         return true;
     } else if (command.find("fixed_handicap") == 0) {

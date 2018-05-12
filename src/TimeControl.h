@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017-2018 Gian-Carlo Pascutto and contributors
+    Copyright (C) 2017 Gian-Carlo Pascutto
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,23 +36,21 @@ public:
 
     void start(int color);
     void stop(int color);
-    int max_time_for_move(int color, int movenum);
+    int max_time_for_move(int color);
     void adjust_time(int color, int time, int stones);
     void set_boardsize(int boardsize);
     void display_times();
     void reset_clocks();
-    bool can_accumulate_time(int color);
     std::string to_text_sgf();
 
 private:
     void display_color_time(int color);
-    int get_moves_expected(int movenum);
 
     int m_maintime;
     int m_byotime;
     int m_byostones;
     int m_byoperiods;
-    int m_boardsize;
+    int m_moves_expected;
 
     std::array<int,  2> m_remaining_time;    /* main time per player */
     std::array<int,  2> m_stones_left;       /* stones to play in byo period */
