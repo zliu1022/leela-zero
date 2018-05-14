@@ -69,6 +69,7 @@
  * faster if you have a recent GPU. Don't use it on CPUs even if they have
  * OpenCL drivers - the BLAS version is much faster for those.
  */
+#define FEATURE_USE_CPU_ONLY
 #ifndef FEATURE_USE_CPU_ONLY
 #define USE_OPENCL
 #endif
@@ -76,7 +77,7 @@
  * USE_TUNER: Expose some extra command line parameters that allow tuning the
  * search algorithm.
  */
-//#define USE_TUNER
+#define USE_TUNER
 
 #define PROGRAM_NAME "Leela Zero"
 #define PROGRAM_VERSION "0.13"
