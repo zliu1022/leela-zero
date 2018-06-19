@@ -661,6 +661,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
 		auto first_child = m_root->get_first_child();
 		int color = m_rootstate.board.get_to_move();
 		//node->get_score() * 100.0f;
+		std::string move_vertex = m_rootstate.move_to_text(first_child->get_move());
 
         myprintf("%d visits, %d nodes, %d playouts, %.0f n/s %s-%s %s No. %3d %3.1fs %3s %5d %3.2f%% %3.2f%%\n\n",
                  m_root->get_visits(),
@@ -671,7 +672,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
 				(color==0)?"B":"W",
 				int(m_rootstate.get_movenum())+1,
 				(elapsed_centis+1)/100.0f,
-				m_rootstate.move_to_text(first_child->get_move()),
+				move_vertex.c_str(),
 				first_child->get_visits(),
 				first_child->get_eval(color)*100.0f,
 				first_child->get_score()*100.0f);
