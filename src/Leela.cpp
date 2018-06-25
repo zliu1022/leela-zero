@@ -84,6 +84,8 @@ static void parse_commandline(int argc, char *argv[]) {
         ("noponder", "Disable thinking on opponent's time.")
 		("interval,i", po::value<int>(),
 			"Interval centi-seconds to print diagnostic output.")
+        ("topvisits,a", po::value<int>(),
+            "Weaken engine by limiting the top1 move's visits.")
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
 #ifdef USE_OPENCL
@@ -220,6 +222,12 @@ static void parse_commandline(int argc, char *argv[]) {
 
 	if (vm.count("interval")) {
 		cfg_interval = vm["interval"].as<int>();
+	}
+
+	if (vm.count("topvisits")) {
+		cfg_topvisits = vm["topvisits"].as<int>();
+		cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
+		cfg_allow_pondering = false;
 	}
 
     if (vm.count("resignpct")) {

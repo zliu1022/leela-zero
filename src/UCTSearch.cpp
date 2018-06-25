@@ -677,6 +677,8 @@ int UCTSearch::think(int color, passflag_t passflag) {
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
         keeprunning &= have_alternate_moves(elapsed_centis, time_for_move);
+		int current_visits = m_root->get_first_child()->get_visits();
+		keeprunning &= (current_visits < cfg_topvisits);
     } while(keeprunning);
 
     // reactivate all pruned root children

@@ -35,6 +35,7 @@ extern int cfg_max_threads;
 extern int cfg_max_playouts;
 extern int cfg_max_visits;
 extern int cfg_interval;
+extern int cfg_topvisits;
 extern TimeManagement::enabled_t cfg_timemanage;
 extern int cfg_lagbuffer_cs;
 extern int cfg_resignpct;
