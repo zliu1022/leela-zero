@@ -90,6 +90,7 @@ public:
     SearchResult play_simulation(GameState& currstate, UCTNode* const node);
 
 private:
+    float get_min_psa_ratio() const;
     void dump_stats(FastState& state, UCTNode& parent, int n);
     void tree_stats(const UCTNode& node);
     std::string get_pv(FastState& state, UCTNode& parent);
@@ -102,6 +103,7 @@ private:
     int get_best_move(passflag_t passflag);
     void update_root();
     bool advance_to_new_rootstate();
+    void output_analysis(FastState & state, UCTNode & parent);
 
     GameState & m_rootstate;
     std::unique_ptr<GameState> m_last_rootstate;

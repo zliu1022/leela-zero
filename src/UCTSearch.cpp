@@ -38,6 +38,35 @@
 #include "Utils.h"
 
 using namespace Utils;
+class OutputAnalysisData {
+public:
+    OutputAnalysisData(const std::string& move, int visits, int winrate, std::string pv) :
+        m_move(move), m_visits(visits), m_winrate(winrate), m_pv(pv) {};
+
+    std::string get_info_string(int order) const {
+        auto tmp = "info move " + m_move + " visits " + std::to_string(m_visits) +
+                          " winrate " + std::to_string(m_winrate);
+        if (order >= 0) {
+            tmp += " order " + std::to_string(order);
+        }
+        tmp += " pv " + m_pv;
+        return tmp;
+    }
+
+    friend bool operator<(const OutputAnalysisData& a, const OutputAnalysisData& b) {
+        if (a.m_visits == b.m_visits) {
+            return a.m_winrate < b.m_winrate;
+        }
+        return a.m_visits < b.m_visits;
+    }
+
+private:
+    std::string m_move;
+    int m_visits;
+    int m_winrate;
+    std::string m_pv;
+};
+
 
 UCTSearch::UCTSearch(GameState& g)
     : m_rootstate(g) {
@@ -121,6 +150,20 @@ void UCTSearch::update_root() {
 #endif
 }
 
+float UCTSearch::get_min_psa_ratio() const {
+    const auto mem_full = m_nodes / static_cast<float>(MAX_TREE_SIZE);
+    // If we are halfway through our memory budget, start trimming
+    // moves with very low policy priors.
+    if (mem_full > 0.5f) {
+        // Memory is almost exhausted, trim more aggressively.
+        if (mem_full > 0.95f) {
+            return 0.01f;
+        }
+        return 0.001f;
+    }
+    return 0.0f;
+}
+
 SearchResult UCTSearch::play_simulation(GameState & currstate,
                                         UCTNode* const node) {
     const auto color = currstate.get_to_move();
@@ -202,6 +245,45 @@ void UCTSearch::dump_stats(FastState & state, UCTNode & parent, int n=10) {
             pv.c_str());
     }
     tree_stats(parent);
+}
+
+void UCTSearch::output_analysis(FastState & state, UCTNode & parent) {
+    // We need to make a copy of the data before sorting
+    auto sortable_data = std::vector<OutputAnalysisData>();
+
+    if (!parent.has_children()) {
+        return;
+    }
+
+    const int color = state.get_to_move();
+
+    for (const auto& node : parent.get_children()) {
+        // Only send variations with visits
+        if (!node->get_visits()) continue;
+
+        std::string move = state.move_to_text(node->get_move());
+        FastState tmpstate = state;
+        tmpstate.play_move(node->get_move());
+        std::string pv = move + " " + get_pv(tmpstate, *node);
+        auto move_eval = node->get_visits() ?
+                         static_cast<int>(node->get_pure_eval(color) * 10000) : 0;
+        // Store data in array
+        sortable_data.emplace_back(move, node->get_visits(), move_eval, pv);
+
+    }
+    // Sort array to decide order
+    std::stable_sort(rbegin(sortable_data), rend(sortable_data));
+
+    auto i = 0;
+    // Output analysis data in gtp stream
+    for (const auto& node : sortable_data) {
+        if (i > 0) {
+            gtp_printf_raw(" ");
+        }
+        gtp_printf_raw(node.get_info_string(i).c_str());
+        i++;
+    }
+    gtp_printf_raw("\n");
 }
 
 void tree_stats_helper(const UCTNode& node, size_t depth,
@@ -563,6 +645,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
 
     bool keeprunning = true;
     int last_update = 0;
+    auto last_output = 0;
     do {
         auto currstate = std::make_unique<GameState>(m_rootstate);
 
@@ -573,6 +656,12 @@ int UCTSearch::think(int color, passflag_t passflag) {
 
         Time elapsed;
         int elapsed_centis = Time::timediff_centis(start, elapsed);
+
+        if (cfg_analyze_interval_centis &&
+            elapsed_centis - last_output > cfg_analyze_interval_centis) {
+            last_output = elapsed_centis;
+            output_analysis(m_rootstate, *m_root);
+        }
 
         // output some stats every few seconds
         // check if we should still search
@@ -653,24 +742,35 @@ void UCTSearch::ponder() {
     auto keeprunning = true;
     Time start;                                                     // lizzie
     int last_update = 0;                                            // lizzie
-    do {
-        auto currstate = std::make_unique<GameState>(m_rootstate);
-        auto result = play_simulation(*currstate, m_root.get());
-        if (result.valid()) {
-            increment_playouts();
+    auto last_output = 0;
+	do {
+		auto currstate = std::make_unique<GameState>(m_rootstate);
+		auto result = play_simulation(*currstate, m_root.get());
+		if (result.valid()) {
+			increment_playouts();
+		}
+		keeprunning = is_running();
+		keeprunning &= !stop_thinking(0, 1);
+
+		Time elapsed;                                               // lizzie
+		int elapsed_centis = Time::timediff_centis(start, elapsed); // lizzie
+		if (!cfg_analyze_interval_centis) {
+		    if (elapsed_centis - last_update > 10) { // lizzie: output ponder data 10 times per second
+			    last_update = elapsed_centis;                           // lizzie
+
+			    myprintf("~begin\n");                                   // lizzie
+			    dump_stats(m_rootstate, *m_root);                       // lizzie
+			    myprintf("~end\n");                                     // lizzie
+			}                                                           // lizzie
+	    }
+        if (cfg_analyze_interval_centis) {
+            Time elapsed;
+            int elapsed_centis = Time::timediff_centis(start, elapsed);
+            if (elapsed_centis - last_output > cfg_analyze_interval_centis) {
+                last_output = elapsed_centis;
+                output_analysis(m_rootstate, *m_root);
+            }
         }
-        keeprunning  = is_running();
-        keeprunning &= !stop_thinking(0, 1);
-        
-        Time elapsed;                                               // lizzie
-        int elapsed_centis = Time::timediff_centis(start, elapsed); // lizzie
-        if (elapsed_centis - last_update > 10) { // lizzie: output ponder data 10 times per second
-            last_update = elapsed_centis;                           // lizzie
-           
-            myprintf("~begin\n");                                   // lizzie
-            dump_stats(m_rootstate, *m_root);                       // lizzie
-            myprintf("~end\n");                                     // lizzie
-        }                                                           // lizzie
     } while(!Utils::input_pending() && keeprunning);
 
     // stop the search

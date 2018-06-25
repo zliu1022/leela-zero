@@ -69,7 +69,7 @@
  * faster if you have a recent GPU. Don't use it on CPUs even if they have
  * OpenCL drivers - the BLAS version is much faster for those.
  */
-#define FEATURE_USE_CPU_ONLY
+//#define FEATURE_USE_CPU_ONLY
 #ifndef FEATURE_USE_CPU_ONLY
 #define USE_OPENCL
 #endif
@@ -80,7 +80,7 @@
 #define USE_TUNER
 
 #define PROGRAM_NAME "Leela Zero"
-#define PROGRAM_VERSION "0.13"
+#define PROGRAM_VERSION "0.15 0.13"
 
 /*
  * OpenBLAS limitation: the default configuration on some Linuxes

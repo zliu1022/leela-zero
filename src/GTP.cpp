@@ -73,6 +73,7 @@ FILE* cfg_logfile_handle;
 bool cfg_quiet;
 std::string cfg_options_str;
 bool cfg_benchmark;
+int cfg_analyze_interval_centis;
 
 void GTP::setup_default_parameters() {
     cfg_gtp_mode = false;
@@ -105,6 +106,7 @@ void GTP::setup_default_parameters() {
     cfg_logfile_handle = nullptr;
     cfg_quiet = false;
     cfg_benchmark = false;
+    cfg_analyze_interval_centis = 0;
 
     // C++11 doesn't guarantee *anything* about how random this is,
     // and in MinGW it isn't random at all. But we can mix it in, which
@@ -125,7 +127,6 @@ const std::string GTP::s_commands[] = {
     "quit",
     "known_command",
     "list_commands",
-    "quit",
     "boardsize",
     "clear_board",
     "komi",
@@ -146,6 +147,8 @@ const std::string GTP::s_commands[] = {
     "kgs-time_settings",
     "kgs-game_over",
     "heatmap",
+    "lz-analyze",
+    "lz-genmove_analyze",
 	"print_interval",
     ""
 };
@@ -402,6 +405,31 @@ bool GTP::execute(GameState & game, std::string xinput) {
         } else {
             gtp_fail_printf(id, "syntax not understood");
         }
+		return true;
+    } else if (command.find("lz-analyze") == 0) {
+        std::istringstream cmdstream(command);
+        std::string tmp;
+        int interval;
+
+        cmdstream >> tmp; // eat lz-analyze
+        cmdstream >> interval;
+        if (!cmdstream.fail()) {
+            cfg_analyze_interval_centis = interval;
+        } else {
+            gtp_fail_printf(id, "syntax not understood");
+            return true;
+        }
+        // Start multi-line response
+        if (id != -1) gtp_printf_raw("=%d\n", id);
+        else gtp_printf_raw("=\n");
+        // now start pondering
+        if (!game.has_resigned()) {
+            // Outputs winrate and pvs through gtp
+            search->ponder();
+        }
+        cfg_analyze_interval_centis = 0;
+        // Terminate multi-line response
+        gtp_printf_raw("\n");
         return true;
     } else if (command.find("kgs-genmove_cleanup") == 0) {
         std::istringstream cmdstream(command);
