@@ -720,7 +720,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
 				(color==0)?"B":"W",
 				int(m_rootstate.get_movenum())+1,
 				(elapsed_centis+1)/100.0f,
-				m_rootstate.move_to_text(first_child->get_move()),
+				m_rootstate.move_to_text(first_child->get_move()).c_str(),
 				first_child->get_visits(),
 				first_child->get_eval(color)*100.0f,
 				first_child->get_score()*100.0f);
