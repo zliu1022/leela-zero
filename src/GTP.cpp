@@ -88,8 +88,8 @@ void GTP::setup_default_parameters() {
 #endif
     cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
     cfg_max_visits = std::numeric_limits<decltype(cfg_max_visits)>::max();
-	cfg_topvisits = std::numeric_limits<decltype(cfg_max_visits)>::max();
-	cfg_interval = 1500;
+    cfg_topvisits = std::numeric_limits<decltype(cfg_max_visits)>::max();
+    cfg_interval = 1500;
     cfg_timemanage = TimeManagement::AUTO;
     cfg_lagbuffer_cs = 100;
 #ifdef USE_OPENCL
@@ -151,7 +151,7 @@ const std::string GTP::s_commands[] = {
     "heatmap",
     "lz-analyze",
     "lz-genmove_analyze",
-	"print_interval",
+    "print_interval",
     ""
 };
 
@@ -298,28 +298,27 @@ bool GTP::execute(GameState & game, std::string xinput) {
         }
 
         return true;
-	} else if (command.find("print_interval") == 0) {
-		std::istringstream cmdstream(command);
-		std::string stmp;
-		int tmp;
+    } else if (command.find("print_interval") == 0) {
+        std::istringstream cmdstream(command);
+        std::string stmp;
+        int tmp;
 
-		cmdstream >> stmp;  // eat boardsize
-		cmdstream >> tmp;
+        cmdstream >> stmp;  // eat boardsize
+        cmdstream >> tmp;
 
-		if (!cmdstream.fail()) {
-			if (tmp <= 100) {
-				gtp_fail_printf(id, "unacceptable interval");
-			}
-			else {
-				cfg_interval = tmp;
-				gtp_printf(id, "");
-			}
-		}
-		else {
-			gtp_fail_printf(id, "syntax not understood");
-		}
-
-		return true;
+        if (!cmdstream.fail()) {
+            if (tmp < 50) {
+                gtp_fail_printf(id, "unacceptable interval");
+            }
+            else {
+                cfg_interval = tmp;
+                gtp_printf(id, "");
+            }
+        }
+        else {
+            gtp_fail_printf(id, "syntax not understood");
+        }
+        return true;
     } else if (command.find("clear_board") == 0) {
         Training::clear_training();
         game.reset_game();
@@ -407,7 +406,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
         } else {
             gtp_fail_printf(id, "syntax not understood");
         }
-		return true;
+        return true;
     } else if (command.find("lz-analyze") == 0) {
         std::istringstream cmdstream(command);
         std::string tmp;
