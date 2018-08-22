@@ -80,7 +80,7 @@
 #define USE_TUNER
 
 #define PROGRAM_NAME "Leela Zero"
-#define PROGRAM_VERSION "0.15 0.13"
+#define PROGRAM_VERSION "0.15 0.13" // this is for lizzie 0.5 compatiable
 
 /*
  * OpenBLAS limitation: the default configuration on some Linuxes
