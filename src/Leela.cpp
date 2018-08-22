@@ -86,6 +86,7 @@ static void parse_commandline(int argc, char *argv[]) {
             "Interval centi-seconds to print diagnostic output.")
         ("topvisits,a", po::value<int>(),
             "Weaken engine by limiting the top1 move's visits.")
+        ("purevalue", "Use pure value network to play game.")
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
 #ifdef USE_OPENCL
@@ -228,6 +229,10 @@ static void parse_commandline(int argc, char *argv[]) {
         cfg_topvisits = vm["topvisits"].as<int>();
         cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
         cfg_allow_pondering = false;
+    }
+
+    if (vm.count("purevalue")) {
+        cfg_purevalue = true;
     }
 
     if (vm.count("resignpct")) {

@@ -53,6 +53,7 @@ int cfg_max_playouts;
 int cfg_max_visits;
 int cfg_interval;
 int cfg_topvisits;
+bool cfg_purevalue;
 TimeManagement::enabled_t cfg_timemanage;
 int cfg_lagbuffer_cs;
 int cfg_resignpct;
@@ -89,6 +90,7 @@ void GTP::setup_default_parameters() {
     cfg_max_playouts = std::numeric_limits<decltype(cfg_max_playouts)>::max();
     cfg_max_visits = std::numeric_limits<decltype(cfg_max_visits)>::max();
     cfg_topvisits = std::numeric_limits<decltype(cfg_max_visits)>::max();
+    cfg_purevalue = false;
     cfg_interval = 1500;
     cfg_timemanage = TimeManagement::AUTO;
     cfg_lagbuffer_cs = 100;
@@ -151,6 +153,7 @@ const std::string GTP::s_commands[] = {
     "heatmap",
     "lz-analyze",
     "lz-genmove_analyze",
+    "valuemap",
     "print_interval",
     ""
 };
@@ -388,6 +391,53 @@ bool GTP::execute(GameState & game, std::string xinput) {
                 gtp_fail_printf(id, "syntax error");
                 return 1;
             }
+            if (cfg_purevalue) {
+                myprintf("Thinking in pure value mode...\n");
+                // add random rotate and random top5 later
+                float minrate = 1.0;
+                std::string min_vertex = "";
+                std::string color = tmp;
+                std::string vertex = "";
+                for (unsigned int y = 0; y < BOARD_SIZE; y++) {
+                    for (unsigned int x = 0; x < BOARD_SIZE; x++) {
+                        vertex = (x < 8 ? 'a' + x : 'a' + x + 1) + '\0';
+                        vertex += std::to_string(BOARD_SIZE - y);
+                        if (!game.play_textmove(color, vertex)) {
+                            continue;
+                        }
+                        if (game.superko()) {
+                            if (!game.undo_move()) {
+                                myprintf("can't undo\n");
+                            }
+                            continue;
+                        }
+
+                        auto vec = Network::get_scored_moves(&game, Network::Ensemble::DIRECT, 0, true);
+                        if (vec.second < minrate) {
+                            minrate = vec.second;
+                            min_vertex = vertex;
+                        }
+                        if (!game.undo_move()) {
+                            myprintf("can't undo\n");
+                        }
+                    }
+                }
+
+                game.play_textmove(color, min_vertex);
+                if (min_vertex[0] >= 'a' && min_vertex[0] <= 't') {
+                    min_vertex[0] += 'A' - 'a';
+                }
+
+                myprintf("%s winrate: %5.2f%%\n", color, (1 - minrate) * 100);
+                myprintf("resign winrate: %5.2f%%\n", (float)cfg_resignpct);
+                if ((float)cfg_resignpct/100.0 > (1-minrate)) {
+                    gtp_printf(id, "resign");
+                }
+                else {
+                    gtp_printf(id, "%s", min_vertex.c_str());
+                }
+                return true;
+            }
             // start thinking
             {
                 game.set_to_move(who);
@@ -583,6 +633,73 @@ bool GTP::execute(GameState & game, std::string xinput) {
             auto vec = Network::get_scored_moves(
                 &game, Network::Ensemble::DIRECT, 0, true);
             Network::show_heatmap(&game, vec, false);
+        }
+        gtp_printf(id, "");
+        return true;
+    }    else if (command.find("valuemap") == 0) {
+        std::istringstream cmdstream(command);
+        std::string tmp;
+        int rotation;
+
+        cmdstream >> tmp;   // eat heatmap
+        cmdstream >> rotation;
+
+        if (!cmdstream.fail()) {
+            /*
+            auto vec = Network::get_scored_moves(
+                &game, Network::Ensemble::DIRECT, rotation, true);
+            Network::show_heatmap(&game, vec, false);
+            */
+        }
+        else {
+            float minrate = 1.0;
+            int min_x = 0, min_y = 0;
+            std::string min_vertex = "";
+            int c = game.get_to_move();
+            std::string color = "black";
+            std::string vertex = "";
+            if (c != 0) { color = "white"; }
+            myprintf("%s\n", color.c_str());
+            myprintf("     a    b    c    d    e    f    g    h    j    k    l    m    n    o    p    q    r    s    t\n");
+            for (unsigned int y = 0; y < BOARD_SIZE; y++) {
+                myprintf("%2d ", BOARD_SIZE - y);
+                for (unsigned int x = 0; x < BOARD_SIZE; x++) {
+                    vertex = (x < 8 ? 'a' + x : 'a' + x + 1) + '\0';
+                    vertex += std::to_string(BOARD_SIZE - y);
+                    if (!game.play_textmove(color, vertex)) {
+                        //myprintf("%d %d %s illegal move\n", x, y, vertex.c_str());
+                        myprintf("---- ");
+                        continue;
+                    }
+                    if (game.superko()) {
+                        //myprintf("%d %d %s super ko\n", x, y, vertex.c_str());
+                        myprintf("---- ");
+                        if (!game.undo_move()) {
+                            myprintf("can't undo\n");
+                        }
+                        continue;
+                    }
+
+                    auto vec = Network::get_scored_moves(&game, Network::Ensemble::DIRECT, 0, true);
+                    myprintf("%4.1f ", (1-vec.second) * 100);
+
+                    if (vec.second < minrate) {
+                        minrate = vec.second;
+                        min_x = x;
+                        min_y = y;
+                        min_vertex = vertex;
+                    }
+                    if (!game.undo_move()) {
+                        myprintf("can't undo\n");
+                    }
+                }
+                myprintf("\n");
+            //printf line string
+            }
+            myprintf("     a    b    c    d    e    f    g    h    j    k    l    m    n    o    p    q    r    s    t\n");
+            myprintf("%s winrate: %5.2f%%\n", min_vertex.c_str(), (1-minrate)*100);
+            //gtp_printf(id, "%s %f", min_vertex.c_str(), minrate);
+            //Network::show_heatmap(&game, vec, false);
         }
         gtp_printf(id, "");
         return true;
