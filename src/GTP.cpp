@@ -412,7 +412,8 @@ bool GTP::execute(GameState & game, std::string xinput) {
                             continue;
                         }
 
-                        auto vec = Network::get_scored_moves(&game, Network::Ensemble::DIRECT, 0, true);
+                        //auto vec = Network::get_scored_moves(&game, Network::Ensemble::DIRECT, 0, true);
+                        auto vec = Network::get_scored_moves(&game, Network::Ensemble::RANDOM_ROTATION);
                         if (vec.second < minrate) {
                             minrate = vec.second;
                             min_vertex = vertex;
