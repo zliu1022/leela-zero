@@ -195,12 +195,12 @@ std::vector<float> Network::zeropad_U(const std::vector<float>& U,
 std::pair<int, int> Network::load_v1_network(std::istream& wtfile) {
     // Count size of the network
     myprintf("Detecting residual layers...");
-	// We are version 1 or 2
-	if (value_head_not_stm) {
-		myprintf("v%d...", 2);
-	} else {
-		myprintf("v%d...", 1);
-	}
+    // We are version 1 or 2
+    if (value_head_not_stm) {
+        myprintf("v%d...", 2);
+    } else {
+        myprintf("v%d...", 1);
+    }
     // First line was the version number
     auto linecount = size_t{1};
     auto channels = 0;
@@ -896,12 +896,12 @@ Network::Netresult Network::get_scored_moves(
         result = get_scored_moves_internal(state, planes, rand_rot);
     }
 
-	// v2 format (ELF Open Go) returns black value, not stm
-	if (value_head_not_stm) {
-		if (state->board.get_to_move() == FastBoard::WHITE) {
-			result.second = 1.0f - result.second;
-		}
-	}
+    // v2 format (ELF Open Go) returns black value, not stm
+    if (value_head_not_stm) {
+        if (state->board.get_to_move() == FastBoard::WHITE) {
+            result.second = 1.0f - result.second;
+        }
+    }
 
     // Insert result into cache.
     NNCache::get_NNCache().insert(state->board.get_hash(), result);

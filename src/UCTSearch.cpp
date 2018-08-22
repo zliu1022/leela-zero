@@ -229,8 +229,8 @@ void UCTSearch::dump_stats(FastState & state, UCTNode & parent, int n=10) {
         // only one move searched the user could get an idea why.
         if (++movecount > 2 && !node->get_visits()) break;
 
-		//added by zliu
-		if (movecount > n) break;
+        //added by zliu
+        if (movecount > n) break;
 
         std::string move = state.move_to_text(node->get_move());
         FastState tmpstate = state;
@@ -667,18 +667,18 @@ int UCTSearch::think(int color, passflag_t passflag) {
         // check if we should still search
         //if (elapsed_centis - last_update > 250) {
 
-		//added by zliu
-		if (elapsed_centis - last_update > cfg_interval) {
+        //added by zliu
+        if (elapsed_centis - last_update > cfg_interval) {
             last_update = elapsed_centis;
             dump_analysis(static_cast<int>(m_playouts));
-			dump_stats(m_rootstate, *m_root, 5);
-			myprintf("\n");
+            dump_stats(m_rootstate, *m_root, 5);
+            myprintf("\n");
         }
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
         keeprunning &= have_alternate_moves(elapsed_centis, time_for_move);
-		int current_visits = m_root->get_first_child()->get_visits();
-		keeprunning &= (current_visits < cfg_topvisits);
+        int current_visits = m_root->get_first_child()->get_visits();
+        keeprunning &= (current_visits < cfg_topvisits);
     } while(keeprunning);
 
     // reactivate all pruned root children
@@ -703,27 +703,27 @@ int UCTSearch::think(int color, passflag_t passflag) {
     Time elapsed;
     int elapsed_centis = Time::timediff_centis(start, elapsed);
     if (elapsed_centis+1 > 0) {
-		//added by zliu
-		/*
-		LeelaZero-0.12 No. 192 433s Q16 36785 33.45%  10.33%
-		*/
-		auto first_child = m_root->get_first_child();
-		int color = m_rootstate.board.get_to_move();
-		//node->get_score() * 100.0f;
+        //added by zliu
+        /*
+        LeelaZero-0.12 No. 192 433s Q16 36785 33.45%  10.33%
+        */
+        auto first_child = m_root->get_first_child();
+        int color = m_rootstate.board.get_to_move();
+        //node->get_score() * 100.0f;
 
         myprintf("%d visits, %d nodes, %d playouts, %.0f n/s %s-%s %s No. %3d %3.1fs %3s %5d %3.2f%% %3.2f%%\n\n",
                  m_root->get_visits(),
                  static_cast<int>(m_nodes),
                  static_cast<int>(m_playouts),
                  (m_playouts * 100.0) / (elapsed_centis+1),
-				"LeelaZero", PROGRAM_VERSION,
-				(color==0)?"B":"W",
-				int(m_rootstate.get_movenum())+1,
-				(elapsed_centis+1)/100.0f,
-				m_rootstate.move_to_text(first_child->get_move()).c_str(),
-				first_child->get_visits(),
-				first_child->get_eval(color)*100.0f,
-				first_child->get_score()*100.0f);
+                "LeelaZero", PROGRAM_VERSION,
+                (color==0)?"B":"W",
+                int(m_rootstate.get_movenum())+1,
+                (elapsed_centis+1)/100.0f,
+                m_rootstate.move_to_text(first_child->get_move()).c_str(),
+                first_child->get_visits(),
+                first_child->get_eval(color)*100.0f,
+                first_child->get_score()*100.0f);
     }
     int bestmove = get_best_move(passflag);
 
@@ -745,26 +745,26 @@ void UCTSearch::ponder() {
     Time start;                                                     // lizzie
     int last_update = 0;                                            // lizzie
     auto last_output = 0;
-	do {
-		auto currstate = std::make_unique<GameState>(m_rootstate);
-		auto result = play_simulation(*currstate, m_root.get());
-		if (result.valid()) {
-			increment_playouts();
-		}
-		keeprunning = is_running();
-		keeprunning &= !stop_thinking(0, 1);
+    do {
+        auto currstate = std::make_unique<GameState>(m_rootstate);
+        auto result = play_simulation(*currstate, m_root.get());
+        if (result.valid()) {
+            increment_playouts();
+        }
+        keeprunning = is_running();
+        keeprunning &= !stop_thinking(0, 1);
 
-		Time elapsed;                                               // lizzie
-		int elapsed_centis = Time::timediff_centis(start, elapsed); // lizzie
-		if (!cfg_analyze_interval_centis) {
-		    if (elapsed_centis - last_update > 10) { // lizzie: output ponder data 10 times per second
-			    last_update = elapsed_centis;                           // lizzie
+        Time elapsed;                                               // lizzie
+        int elapsed_centis = Time::timediff_centis(start, elapsed); // lizzie
+        if (!cfg_analyze_interval_centis) {
+            if (elapsed_centis - last_update > 10) { // lizzie: output ponder data 10 times per second
+                last_update = elapsed_centis;                           // lizzie
 
-			    myprintf("~begin\n");                                   // lizzie
-			    dump_stats(m_rootstate, *m_root);                       // lizzie
-			    myprintf("~end\n");                                     // lizzie
-			}                                                           // lizzie
-	    }
+                myprintf("~begin\n");                                   // lizzie
+                dump_stats(m_rootstate, *m_root);                       // lizzie
+                myprintf("~end\n");                                     // lizzie
+            }                                                           // lizzie
+        }
         if (cfg_analyze_interval_centis) {
             Time elapsed;
             int elapsed_centis = Time::timediff_centis(start, elapsed);
