@@ -429,7 +429,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
                     min_vertex[0] += 'A' - 'a';
                 }
 
-                myprintf("%s winrate: %5.2f%%\n", color, (1 - minrate) * 100);
+                myprintf("%s winrate: %5.2f%%\n", color.c_str(), (1 - minrate) * 100);
                 myprintf("resign winrate: %5.2f%%\n", (float)cfg_resignpct);
                 if ((float)cfg_resignpct/100.0 > (1-minrate)) {
                     gtp_printf(id, "resign");
