@@ -78,6 +78,7 @@ public:
 
     UCTNode* get_first_child() const;
     UCTNode* get_nopass_child(FastState& state) const;
+    UCTNode* get_nopass_child_pacman(FastState& state) const;
     node_ptr_t find_child(const int move);
 
 private:

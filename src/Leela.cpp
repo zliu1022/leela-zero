@@ -87,6 +87,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("topvisits,a", po::value<int>(),
             "Weaken engine by limiting the top1 move's visits.")
         ("purevalue", "Use pure value network to play game.")
+        ("pacman",    "Pacman mode, who get prisoner first will win.")
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
 #ifdef USE_OPENCL
@@ -233,6 +234,10 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("purevalue")) {
         cfg_purevalue = true;
+    }
+
+    if (vm.count("pacman")) {
+        cfg_pacman = true;
     }
 
     if (vm.count("resignpct")) {

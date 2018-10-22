@@ -172,18 +172,78 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     node->virtual_loss();
 
     if (!node->has_children()) {
-        if (currstate.get_passes() >= 2) {
-            auto score = currstate.final_score();
-            result = SearchResult::from_score(score);
-        } else if (m_nodes < MAX_TREE_SIZE) {
-            auto mem_full_pct = m_nodes / static_cast<float>(MAX_TREE_SIZE);
-            float eval;
-            auto success =
-                node->create_children(m_nodes, currstate, eval, mem_full_pct);
-            if (success) {
-                result = SearchResult::from_eval(eval);
+        if (cfg_pacman) {
+            if ( currstate.get_passes() >= 1 || 
+                currstate.board.get_prisoners(FastBoard::BLACK) >=1 ||
+                currstate.board.get_prisoners(FastBoard::WHITE) >=1 ) {
+
+                int m = m_rootstate.board.get_to_move();
+                if (currstate.get_passes() == 1) {
+                    if (m == FastBoard::WHITE) {
+                        if (color == FastBoard::WHITE) {
+                            result = SearchResult::from_score(-1.0f);
+                        }
+                        else {
+                            result = SearchResult::from_score(1.0f);
+                        }
+                    }
+                    else {
+                        if (color == FastBoard::WHITE) {
+                            result = SearchResult::from_score(-1.0f);
+                        }
+                        else {
+                            result = SearchResult::from_score(1.0f);
+                        }
+                    }
+                } else if (currstate.get_passes() > 1) {
+                    if (color == FastBoard::WHITE) {
+                        result = SearchResult::from_score(0.0f);
+                    }
+                    else {
+                        result = SearchResult::from_score(1.0f);
+                    }
+                }else if (m == FastBoard::WHITE) {
+                    if (currstate.board.get_prisoners(FastBoard::BLACK) >= 1) {
+                        result = SearchResult::from_score(1.0f);
+                    }
+                    else if (currstate.board.get_prisoners(FastBoard::WHITE) >= 1) {
+                        result = SearchResult::from_score(-1.0f);
+                    }
+                } else {
+                    if (currstate.board.get_prisoners(FastBoard::BLACK) >= 1) {
+                        result = SearchResult::from_score(1.0f);
+                    }
+                    else if (currstate.board.get_prisoners(FastBoard::WHITE) >= 1) {
+                        result = SearchResult::from_score(-1.0f);
+                    }
+                }
+            } else if (m_nodes < MAX_TREE_SIZE) {
+                auto mem_full_pct = m_nodes / static_cast<float>(MAX_TREE_SIZE);
+                float eval;
+                auto success =
+                    node->create_children(m_nodes, currstate, eval, mem_full_pct);
+                if (success) {
+                    result = SearchResult::from_eval(eval);
+                }
             }
         }
+        else
+        {
+            if (currstate.get_passes() >= 2) {
+                auto score = currstate.final_score();
+                result = SearchResult::from_score(score);
+            } else if (m_nodes < MAX_TREE_SIZE) {
+                auto mem_full_pct = m_nodes / static_cast<float>(MAX_TREE_SIZE);
+                float eval;
+                auto success =
+                    node->create_children(m_nodes, currstate, eval, mem_full_pct);
+                if (success) {
+                    result = SearchResult::from_eval(eval);
+                }
+            }
+        }
+
+        
     }
 
     if (node->has_children() && !result.valid()) {
@@ -395,8 +455,14 @@ int UCTSearch::get_best_move(passflag_t passflag) {
     if (passflag & UCTSearch::NOPASS) {
         // were we going to pass?
         if (bestmove == FastBoard::PASS) {
-            UCTNode * nopass = m_root->get_nopass_child(m_rootstate);
-
+            UCTNode * nopass=nullptr;
+            if (cfg_pacman) {
+                nopass = m_root->get_nopass_child_pacman(m_rootstate);
+            }
+            else {
+                nopass = m_root->get_nopass_child(m_rootstate);
+            }
+            
             if (nopass != nullptr) {
                 myprintf("Preferring not to pass.\n");
                 bestmove = nopass->get_move();

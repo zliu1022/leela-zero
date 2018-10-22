@@ -54,6 +54,7 @@ int cfg_max_visits;
 int cfg_interval;
 int cfg_topvisits;
 bool cfg_purevalue;
+bool cfg_pacman;
 TimeManagement::enabled_t cfg_timemanage;
 int cfg_lagbuffer_cs;
 int cfg_resignpct;
@@ -91,6 +92,7 @@ void GTP::setup_default_parameters() {
     cfg_max_visits = std::numeric_limits<decltype(cfg_max_visits)>::max();
     cfg_topvisits = std::numeric_limits<decltype(cfg_max_visits)>::max();
     cfg_purevalue = false;
+    cfg_pacman = false;
     cfg_interval = 1500;
     cfg_timemanage = TimeManagement::AUTO;
     cfg_lagbuffer_cs = 100;
@@ -441,12 +443,34 @@ bool GTP::execute(GameState & game, std::string xinput) {
             }
             // start thinking
             {
-                game.set_to_move(who);
-                int move = search->think(who);
-                game.play_move(move);
+                if (cfg_pacman) {
+                    int opp = FastBoard::BLACK;
+                    if (who == FastBoard::BLACK) {
+                        opp = FastBoard::WHITE;
+                    }
+                    myprintf("prisoner: %d\n", game.board.get_prisoners(opp));
+                    if (game.board.get_prisoners(opp) >= 1) {
+                        std::string vertex = "resign";
+                        gtp_printf(id, "%s", vertex.c_str());
+                    }
+                    else {
+                        game.set_to_move(who);
+                        int move = search->think(who, UCTSearch::NOPASS);
+                        game.play_move(move);
 
-                std::string vertex = game.move_to_text(move);
-                gtp_printf(id, "%s", vertex.c_str());
+                        std::string vertex = game.move_to_text(move);
+                        gtp_printf(id, "%s", vertex.c_str());
+                    }
+                }
+                else
+                {
+                    game.set_to_move(who);
+                    int move = search->think(who);
+                    game.play_move(move);
+
+                    std::string vertex = game.move_to_text(move);
+                    gtp_printf(id, "%s", vertex.c_str());
+                }
             }
             if (cfg_allow_pondering) {
                 // now start pondering
@@ -603,21 +627,60 @@ bool GTP::execute(GameState & game, std::string xinput) {
         }
         return true;
     } else if (command.find("auto") == 0) {
-        do {
-            int move = search->think(game.get_to_move(), UCTSearch::NORMAL);
-            game.play_move(move);
-            game.display_state();
+        if (cfg_pacman) {
+            do {
+                int move = search->think(game.get_to_move(), UCTSearch::NOPASS);
+                game.play_move(move);
+                game.display_state();
 
-        } while (game.get_passes() < 2 && !game.has_resigned());
+            } while (game.get_passes() < 1 &&
+                !game.has_resigned() &&
+                game.board.get_prisoners(FastBoard::BLACK) == 0 &&
+                game.board.get_prisoners(FastBoard::WHITE) == 0);
 
-        return true;
+            return true;
+        }
+        else {
+            do {
+                int move = search->think(game.get_to_move(), UCTSearch::NORMAL);
+                game.play_move(move);
+                game.display_state();
+
+            } while (game.get_passes() < 2 && !game.has_resigned() );
+
+            return true;
+        }
     } else if (command.find("go") == 0) {
-        int move = search->think(game.get_to_move());
-        game.play_move(move);
+        if (cfg_pacman) {
+            int who = game.get_to_move();
+            int opp = FastBoard::BLACK;
+            if (who == FastBoard::BLACK) {
+                opp = FastBoard::WHITE;
+            }
+            myprintf("prisoner: %d\n", game.board.get_prisoners(opp));
+            if (game.board.get_prisoners(opp) >= 1) {
+                std::string vertex = "resign";
+                gtp_printf(id, "%s", vertex.c_str());
+                return true;
+            }
+            else {
+                int move = search->think(game.get_to_move(), UCTSearch::NOPASS);
+                game.play_move(move);
 
-        std::string vertex = game.move_to_text(move);
-        myprintf("%s\n", vertex.c_str());
-        return true;
+                std::string vertex = game.move_to_text(move);
+                myprintf("%s\n", vertex.c_str());
+                return true;
+            }
+        }
+        else {
+            int move = search->think(game.get_to_move());
+            game.play_move(move);
+
+            std::string vertex = game.move_to_text(move);
+            myprintf("%s\n", vertex.c_str());
+            return true;
+        }
+        
     } else if (command.find("heatmap") == 0) {
         std::istringstream cmdstream(command);
         std::string tmp;
