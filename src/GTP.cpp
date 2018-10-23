@@ -449,18 +449,17 @@ bool GTP::execute(GameState & game, std::string xinput) {
                         opp = FastBoard::WHITE;
                     }
                     myprintf("prisoner: %d\n", game.board.get_prisoners(opp));
+                    game.set_to_move(who);
+                    int move;
                     if (game.board.get_prisoners(opp) >= 1) {
-                        std::string vertex = "resign";
-                        gtp_printf(id, "%s", vertex.c_str());
+                        move = FastBoard::RESIGN;
                     }
                     else {
-                        game.set_to_move(who);
-                        int move = search->think(who, UCTSearch::NOPASS);
-                        game.play_move(move);
-
-                        std::string vertex = game.move_to_text(move);
-                        gtp_printf(id, "%s", vertex.c_str());
+                        move = search->think(who, UCTSearch::NOPASS);
                     }
+                    game.play_move(move);
+                    std::string vertex = game.move_to_text(move);
+                    gtp_printf(id, "%s", vertex.c_str());
                 }
                 else
                 {
@@ -638,6 +637,20 @@ bool GTP::execute(GameState & game, std::string xinput) {
                 game.board.get_prisoners(FastBoard::BLACK) == 0 &&
                 game.board.get_prisoners(FastBoard::WHITE) == 0);
 
+            int move = FastBoard::RESIGN;
+            if (game.board.get_prisoners(FastBoard::BLACK) > 0) {
+                //myprintf("%d (0:b,1:w) b_prisoner: %d\n", game.get_to_move(), game.board.get_prisoners(FastBoard::BLACK));
+                game.play_move(move);
+            }
+            else if (game.board.get_prisoners(FastBoard::WHITE) > 0) {
+                //myprintf("%d (0:b,1:w) w_prisoner: %d\n", game.get_to_move(), game.board.get_prisoners(FastBoard::WHITE));
+                game.play_move(move);
+            }
+            else {
+                myprintf("strange reason: pass or already resigned\n");
+                game.play_move(move);
+            }
+         
             return true;
         }
         else {
@@ -658,19 +671,18 @@ bool GTP::execute(GameState & game, std::string xinput) {
                 opp = FastBoard::WHITE;
             }
             myprintf("prisoner: %d\n", game.board.get_prisoners(opp));
+
+            int move;
             if (game.board.get_prisoners(opp) >= 1) {
-                std::string vertex = "resign";
-                gtp_printf(id, "%s", vertex.c_str());
-                return true;
+                move = FastBoard::RESIGN;
             }
             else {
-                int move = search->think(game.get_to_move(), UCTSearch::NOPASS);
-                game.play_move(move);
-
-                std::string vertex = game.move_to_text(move);
-                myprintf("%s\n", vertex.c_str());
-                return true;
+                move = search->think(who, UCTSearch::NOPASS);
             }
+            game.play_move(move);
+            std::string vertex = game.move_to_text(move);
+            myprintf("%s", vertex.c_str());
+            return true;
         }
         else {
             int move = search->think(game.get_to_move());
