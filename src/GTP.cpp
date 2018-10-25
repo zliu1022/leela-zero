@@ -681,7 +681,7 @@ bool GTP::execute(GameState & game, std::string xinput) {
             }
             game.play_move(move);
             std::string vertex = game.move_to_text(move);
-            myprintf("%s", vertex.c_str());
+            myprintf("%s\n", vertex.c_str());
             return true;
         }
         else {
