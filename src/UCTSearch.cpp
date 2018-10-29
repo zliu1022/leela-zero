@@ -763,7 +763,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
     // display search info
     myprintf("\n");
 
-    dump_stats(m_rootstate, *m_root);
+    dump_stats(m_rootstate, *m_root, 50);
     Training::record(m_rootstate, *m_root);
 
     Time elapsed;

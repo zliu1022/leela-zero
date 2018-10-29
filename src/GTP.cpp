@@ -708,6 +708,9 @@ bool GTP::execute(GameState & game, std::string xinput) {
         } else {
             auto vec = Network::get_scored_moves(
                 &game, Network::Ensemble::DIRECT, 0, true);
+            printf("vec.second: %f\n", vec.second);
+            printf("vec.first.at(0): %f %d\n", vec.first.at(0).first, vec.first.at(0).second);
+            printf("vec.first.at(1): %f %d\n", vec.first.at(1).first, vec.first.at(1).second);
             Network::show_heatmap(&game, vec, false);
         }
         gtp_printf(id, "");
