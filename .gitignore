@@ -11,4 +11,3 @@ leelaz_opencl_tuning
 /build-autogtp-*
 /build-validation-*
 .vs/
-gtest
