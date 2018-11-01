@@ -28,24 +28,10 @@
 #include "OpenCL.h"
 #include "ThreadPool.h"
 
-<<<<<<< HEAD
-class OpenCLScheduler {
-public:
-    void initialize(const int channels);
-    std::vector<std::unique_ptr<OpenCL_Network>> & get_networks() {
-        return m_networks;
-    }
-    void forward(const std::vector<net_t>& input,
-                 std::vector<net_t>& output_pol,
-                 std::vector<net_t>& output_val);
-private:
-    class ForwardTask {
-=======
 
 template <typename net_t>
 class OpenCLScheduler : public ForwardPipe {
     class ContextPoolEntry {
->>>>>>> upstream/master
     public:
         size_t net_index;
         OpenCLContext context;

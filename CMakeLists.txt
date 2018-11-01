@@ -23,11 +23,7 @@ add_subdirectory(gtest EXCLUDE_FROM_ALL) # We don't want to install gtest, exclu
 # Required Packages
 set(Boost_MIN_VERSION "1.58.0")
 set(Boost_USE_MULTITHREADED ON)
-<<<<<<< HEAD
-find_package(Boost 1.58.0 REQUIRED program_options)
-=======
 find_package(Boost 1.58.0 REQUIRED program_options filesystem)
->>>>>>> upstream/master
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenCL REQUIRED)
@@ -37,16 +33,6 @@ find_package(OpenCL REQUIRED)
 if(NOT APPLE)
   set(BLA_VENDOR OpenBLAS)
 endif()
-<<<<<<< HEAD
-find_package(BLAS REQUIRED)
-find_path(BLAS_INCLUDE_DIRS openblas_config.h
-  /usr/include
-  /usr/local/include
-  /usr/include/openblas
-  /opt/OpenBLAS/include
-  /usr/include/x86_64-linux-gnu
-  $ENV{BLAS_HOME}/include)
-=======
 if(USE_BLAS)
   message(STATUS "Looking for system BLAS/OpenBLAS library.")
   find_package(BLAS REQUIRED)
@@ -61,7 +47,6 @@ if(USE_BLAS)
 else()
 message(STATUS "Using built-in matrix library.")
 endif()
->>>>>>> upstream/master
 find_package(Qt5Core)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -101,11 +86,7 @@ if(USE_HALF)
   add_definitions(-DUSE_HALF)
 endif()
 
-<<<<<<< HEAD
-set(IncludePath "${CMAKE_CURRENT_SOURCE_DIR}/src")
-=======
 set(IncludePath "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/src/Eigen")
->>>>>>> upstream/master
 set(SrcPath "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 include_directories(${IncludePath})
@@ -134,11 +115,7 @@ target_link_libraries(leelaz ${BLAS_LIBRARIES})
 target_link_libraries(leelaz ${OpenCL_LIBRARIES})
 target_link_libraries(leelaz ${ZLIB_LIBRARIES})
 target_link_libraries(leelaz ${CMAKE_THREAD_LIBS_INIT})
-<<<<<<< HEAD
-install(TARGETS leelaz DESTINATION bin)
-=======
 install(TARGETS leelaz DESTINATION ${CMAKE_INSTALL_BINDIR})
->>>>>>> upstream/master
 
 if(Qt5Core_FOUND)
     if(NOT Qt5Core_VERSION VERSION_LESS "5.3.0")
@@ -165,8 +142,6 @@ target_link_libraries(tests ${BLAS_LIBRARIES})
 target_link_libraries(tests ${OpenCL_LIBRARIES})
 target_link_libraries(tests ${ZLIB_LIBRARIES})
 target_link_libraries(tests gtest_main ${CMAKE_THREAD_LIBS_INIT})
-<<<<<<< HEAD
-=======
 
 include(GetGitRevisionDescription)
 git_describe(VERSION --tags)
@@ -185,4 +160,3 @@ SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 SET(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${MAJOR_VERSION}.${MINOR_VERSION}")
 
 INCLUDE(CPack)
->>>>>>> upstream/master

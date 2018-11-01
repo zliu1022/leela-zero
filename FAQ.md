@@ -19,30 +19,6 @@ We use SPRT to decide if a newly trained network is better. A better network is 
 ## Why the game generated during self-play contains quite a few bad moves ##
 
 生成自对弈棋谱时，使用的MCTS模拟次数只有3200，还加入了噪声，这是为了增加随机性，之后的训练才有进步的空间。如果用图形界面（如sabiki）加载Leela Zero，并设置好参数与之对弈，你会发现它其实表现得并不赖。
-<<<<<<< HEAD
-
-The MCTS playouts of self-play games is only 3200, and with noise added (For randomness of each move thus training has something to learn from). If you load Leela Zero with Sabaki, you'll probably find it is actually not that weak.
-
-## 自对弈为什么使用1000的模拟次数，而不是AZ的1600 ##
-## For self-play, why use 3200 visits instead of 1600 playouts as AZ ##
-
-没人知道AZ的1600是怎么得到的。这里的3200是基于下面几点估计得到的：
-
-1. 对于某一个选点，MCTS需要模拟几次才能得出概率结果。在开始阶段，每个选点的概率不会差太多，所以开始的360次模拟大概会覆盖整个棋盘。所以如果要让某些选点可以做几次模拟的话，大概需要2到3 x 360次的模拟。
-
-2. 在computer-go上有人跑过7x7的实验，看到模拟次数从1000到2000的时候性能有提高。所以如果我们观察到瓶颈的时候，可能是可以考虑增加模拟次数。
-
-3. 模拟次数太多会影响得到数据的速度。
-
-Nobody knows. The Zero paper doesn't mention how they arrive at this number, and I know of no sound background to estimate the optimal. I chose it based on some observations:
-
-a) For the MCTS to feed back search probabilities to the learning, it must be able to achieve a reasonable amount of look-ahead on at least a few variations. In the beginning, when the network is untrained, the move probabilities are not very extreme, and this means that the first 360~ simulations will be spent expanding every answer at the root. So if we want to expand at least a few moves, we probably need 2 to 3 x 360 playouts.
-
-b) One person on computer-go, who ran a similar experiment on 7x7, reported that near the end of the learning, he observed increased performance from increasing the number from 1000 to 2000. So maybe this is worthwhile to try when the learning speed starts to decrease or flatten out. But it almost certainly isn't needed early on.
-
-c) Obviously, the speed of acquiring data is linearly related to this setting.
-=======
->>>>>>> upstream/master
 
 The MCTS playouts of self-play games is only 3200, and with noise added (For randomness of each move thus training has something to learn from). If you load Leela Zero with Sabaki, you'll probably find it is actually not that weak.
 

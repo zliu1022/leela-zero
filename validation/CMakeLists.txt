@@ -7,8 +7,4 @@ add_executable(validation
 set_target_properties(validation PROPERTIES AUTOMOC 1)
 target_link_libraries(validation Qt5::Core)
 
-<<<<<<< HEAD
-install(TARGETS validation DESTINATION bin)
-=======
 install(TARGETS validation DESTINATION ${CMAKE_INSTALL_BINDIR})
->>>>>>> upstream/master

@@ -69,19 +69,12 @@ public:
         // improves reproducibility across platforms.
         Random::get_Rng().seedrandom(cfg_rng_seed);
 
-<<<<<<< HEAD
-        NNCache::get_NNCache().set_size_from_playouts(cfg_max_playouts);
-
-        cfg_weightsfile = "../src/tests/0k.txt";
-        Network::initialize();
-=======
         cfg_weightsfile = "../src/tests/0k.txt";
 
         auto playouts = std::min(cfg_max_playouts, cfg_max_visits);
         auto network = std::make_unique<Network>();
         network->initialize(playouts, cfg_weightsfile);
         GTP::initialize(std::move(network));
->>>>>>> upstream/master
     }
     void TearDown() {}
 };
@@ -190,11 +183,7 @@ TEST_F(LeelaTest, KoPntNotSame) {
     EXPECT_NE(hash, maingame.board.get_hash());
 }
 
-<<<<<<< HEAD
-TEST_F(LeelaTest, MoveOnOccupiedSq) {
-=======
 TEST_F(LeelaTest, MoveOnOccupiedPnt) {
->>>>>>> upstream/master
     auto maingame = get_gamestate();
     std::string output;
 

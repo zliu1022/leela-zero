@@ -38,17 +38,6 @@ public:
     static constexpr int NBR_MASK = (1 << NBR_SHIFT) - 1;
 
     /*
-<<<<<<< HEAD
-        highest existing square
-    */
-    static constexpr int MAXSQ = ((BOARD_SIZE + 2) * (BOARD_SIZE + 2));
-
-    /*
-        infinite score
-    */
-    static constexpr int BIG = 10000000;
-
-=======
         number of vertices in a "letterboxed" board representation
     */
     static constexpr int NUM_VERTICES = ((BOARD_SIZE + 2) * (BOARD_SIZE + 2));
@@ -57,7 +46,6 @@ public:
         no applicable vertex
     */
     static constexpr int NO_VERTEX = 0;
->>>>>>> upstream/master
     /*
         vertex of a pass
     */

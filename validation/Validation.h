@@ -55,16 +55,7 @@ public:
     ValidationWorker(const ValidationWorker& w) : QThread(w.parent()) {}
     ~ValidationWorker() = default;
     void init(const QString& gpuIndex,
-<<<<<<< HEAD
-              const QString& firstNet,
-              const QString& secondNet,
-              const QString& firstBin,
-              const QString& secondBin,
-              const QString& firstOpts,
-              const QString& secondOpts,
-=======
               const QVector<Engine>& engines,
->>>>>>> upstream/master
               const QString& keep,
               int expected);
     void run() override;
@@ -76,13 +67,6 @@ private:
     QVector<Engine> m_engines;
     int m_expected;
     QString m_keepPath;
-<<<<<<< HEAD
-    QString m_firstBin;
-    QString m_secondBin;
-    QString m_firstOpts;
-    QString m_secondOpts;
-=======
->>>>>>> upstream/master
     QAtomicInt m_state;
 };
 
@@ -95,13 +79,6 @@ public:
                QVector<Engine>& engines,
                const QString& keep,
                QMutex* mutex,
-<<<<<<< HEAD
-               const QString& firstBin,
-               const QString& secondBin,
-               const QString& firstOpts,
-               const QString& secondOpts,
-=======
->>>>>>> upstream/master
                const float& h0,
                const float& h1);
     ~Validation() = default;
@@ -122,16 +99,7 @@ private:
     int m_games;
     int m_gpus;
     QStringList m_gpusList;
-<<<<<<< HEAD
-    QString m_firstNet;
-    QString m_secondNet;
-    QString m_firstBin;
-    QString m_secondBin;
-    QString m_firstOpts;
-    QString m_secondOpts;
-=======
     QVector<Engine>& m_engines;
->>>>>>> upstream/master
     QString m_keepPath;
     void quitThreads();
     void saveSprt();

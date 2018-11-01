@@ -103,11 +103,7 @@ void Management::giveAssignments() {
 
     Order tuneOrder = getWork(true);
     QString tuneCmdLine("./leelaz --tune-only -w networks/");
-<<<<<<< HEAD
-    tuneCmdLine.append(tuneOrder.parameters()["network"]);
-=======
     tuneCmdLine.append(tuneOrder.parameters()["network"] + ".gz");
->>>>>>> upstream/master
     if (m_gpusList.isEmpty()) {
         runTuningProcess(tuneCmdLine);
     } else {
@@ -413,13 +409,8 @@ Order Management::getWorkInternal(bool tuning) {
         o.parameters(parameters);
         if (m_delNetworks &&
             m_fallBack.parameters()["network"] != net) {
-<<<<<<< HEAD
-            QTextStream(stdout) << "Deleting network " << "networks/" + m_fallBack.parameters()["network"] << endl;
-            QFile::remove("networks/" + m_fallBack.parameters()["network"]);
-=======
             QTextStream(stdout) << "Deleting network " << "networks/" + m_fallBack.parameters()["network"] + ".gz" << endl;
             QFile::remove("networks/" + m_fallBack.parameters()["network"] + ".gz");
->>>>>>> upstream/master
         }
         m_fallBack = o;
         QTextStream(stdout) << "net: " << net << "." << endl;
@@ -438,15 +429,6 @@ Order Management::getWorkInternal(bool tuning) {
         if (m_delNetworks) {
             if (m_lastMatch.parameters()["firstNet"] != net1 &&
                 m_lastMatch.parameters()["firstNet"] != net2) {
-<<<<<<< HEAD
-                QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["firstNet"] << endl;
-                QFile::remove("networks/" + m_lastMatch.parameters()["firstNet"]);
-            }
-            if (m_lastMatch.parameters()["secondNet"] != net1 &&
-                m_lastMatch.parameters()["secondNet"] != net2) {
-                QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["secondNet"] << endl;
-                QFile::remove("networks/" + m_lastMatch.parameters()["secondNet"]);
-=======
                 QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["firstNet"] + ".gz" << endl;
                 QFile::remove("networks/" + m_lastMatch.parameters()["firstNet"] + ".gz");
             }
@@ -454,7 +436,6 @@ Order Management::getWorkInternal(bool tuning) {
                 m_lastMatch.parameters()["secondNet"] != net2) {
                 QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["secondNet"] + ".gz" << endl;
                 QFile::remove("networks/" + m_lastMatch.parameters()["secondNet"] + ".gz");
->>>>>>> upstream/master
             }
         }
         m_lastMatch = o;
@@ -506,13 +487,7 @@ Order Management::getWork(bool tuning) {
 }
 
 
-<<<<<<< HEAD
-bool Management::networkExists(const QString &name) {
-    QString realHash = name;
-    realHash.remove(0,9);
-=======
 bool Management::networkExists(const QString &name, const QString &gzipHash) {
->>>>>>> upstream/master
     if (QFileInfo::exists(name)) {
         QFile f(name);
         if (f.open(QFile::ReadOnly)) {
@@ -521,11 +496,7 @@ bool Management::networkExists(const QString &name, const QString &gzipHash) {
                 throw NetworkException("Reading network file failed.");
             }
             QString result = hash.result().toHex();
-<<<<<<< HEAD
-            if (result == realHash) {
-=======
             if (result == gzipHash) {
->>>>>>> upstream/master
                 return true;
             }
             QTextStream(stdout) << "Downloaded network hash doesn't match, calculated: " << result << " it should be: " << gzipHash << endl;
@@ -542,15 +513,9 @@ bool Management::networkExists(const QString &name, const QString &gzipHash) {
     return false;
 }
 
-<<<<<<< HEAD
-void Management::fetchNetwork(const QString &net) {
-    QString name = "networks/" + net;
-    if (networkExists(name)) {
-=======
 void Management::fetchNetwork(const QString &net, const QString &hash) {
     QString name = "networks/" + net + ".gz";
     if (networkExists(name, hash)) {
->>>>>>> upstream/master
         return;
     }
     if (QFileInfo::exists(name)) {
@@ -566,15 +531,9 @@ void Management::fetchNetwork(const QString &net, const QString &hash) {
 #endif
     // Be quiet, but output the real file name we saved.
     // Use the filename from the server.
-<<<<<<< HEAD
-    prog_cmdline.append(" -s -J -o " + name + ".gz ");
-    prog_cmdline.append(" -w %{filename_effective}");
-    prog_cmdline.append(" http://zero.sjeng.org/" + name + ".gz");
-=======
     prog_cmdline.append(" -s -J -o " + name + " ");
     prog_cmdline.append(" -w %{filename_effective}");
     prog_cmdline.append(" https://zero.sjeng.org/" + name);
->>>>>>> upstream/master
 
     QProcess curl;
     curl.start(prog_cmdline);

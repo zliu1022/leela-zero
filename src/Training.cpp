@@ -84,11 +84,7 @@ std::istream& operator>> (std::istream& stream, TimeStep& timestep) {
     return stream;
 }
 
-<<<<<<< HEAD
-std::string OutputChunker::gen_chunk_name(void) const {
-=======
 std::string OutputChunker::gen_chunk_name() const {
->>>>>>> upstream/master
     auto base = std::string{m_basename};
     base.append("." + std::to_string(m_chunk_count) + ".gz");
     return base;
@@ -150,33 +146,20 @@ TimeStep::NNPlanes Training::get_planes(const GameState* const state) {
     planes.resize(Network::INPUT_CHANNELS);
 
     for (auto c = size_t{0}; c < Network::INPUT_CHANNELS; c++) {
-<<<<<<< HEAD
-        for (auto idx = 0; idx < BOARD_SQUARES; idx++) {
-            planes[c][idx] = bool(input_data[c * BOARD_SQUARES + idx]);
-=======
         for (auto idx = 0; idx < NUM_INTERSECTIONS; idx++) {
             planes[c][idx] = bool(input_data[c * NUM_INTERSECTIONS + idx]);
->>>>>>> upstream/master
         }
     }
     return planes;
 }
 
-<<<<<<< HEAD
-void Training::record(GameState& state, UCTNode& root) {
-=======
 void Training::record(Network & network, GameState& state, UCTNode& root) {
->>>>>>> upstream/master
     auto step = TimeStep{};
     step.to_move = state.board.get_to_move();
     step.planes = get_planes(&state);
 
     auto result =
-<<<<<<< HEAD
-        Network::get_scored_moves(&state, Network::Ensemble::DIRECT, 0);
-=======
         network.get_output(&state, Network::Ensemble::DIRECT, 0);
->>>>>>> upstream/master
     step.net_winrate = result.winrate;
 
     const auto& best_node = root.get_best_root_child(step.to_move);
@@ -184,11 +167,7 @@ void Training::record(Network & network, GameState& state, UCTNode& root) {
     step.child_uct_winrate = best_node.get_eval(step.to_move);
     step.bestmove_visits = best_node.get_visits();
 
-<<<<<<< HEAD
-    step.probabilities.resize((BOARD_SQUARES) + 1);
-=======
     step.probabilities.resize(POTENTIAL_MOVES);
->>>>>>> upstream/master
 
     // Get total visit amount. We count rather
     // than trust the root to avoid ttable issues.
@@ -212,11 +191,7 @@ void Training::record(Network & network, GameState& state, UCTNode& root) {
             auto xy = state.board.get_xy(move);
             step.probabilities[xy.second * BOARD_SIZE + xy.first] = prob;
         } else {
-<<<<<<< HEAD
-            step.probabilities[BOARD_SQUARES] = prob;
-=======
             step.probabilities[NUM_INTERSECTIONS] = prob;
->>>>>>> upstream/master
         }
     }
 
@@ -271,11 +246,7 @@ void Training::dump_training(int winner_color, OutputChunker& outchunk) {
                               | plane[bit + 3] << 0;
                 out << std::hex << hexbyte;
             }
-<<<<<<< HEAD
-            // BOARD_SQUARES % 4 = 1 so the last bit goes by itself
-=======
             // NUM_INTERSECTIONS % 4 = 1 so the last bit goes by itself
->>>>>>> upstream/master
             // for odd sizes
             assert(plane.size() % 4 == 1);
             out << plane[plane.size() - 1];
@@ -284,11 +255,7 @@ void Training::dump_training(int winner_color, OutputChunker& outchunk) {
         // The side to move planes can be compactly encoded into a single
         // bit, 0 = black to move.
         out << (step.to_move == FastBoard::BLACK ? "0" : "1") << std::endl;
-<<<<<<< HEAD
-        // Then a BOARD_SQUARES + 1 long array of float probabilities
-=======
         // Then a POTENTIAL_MOVES long array of float probabilities
->>>>>>> upstream/master
         for (auto it = begin(step.probabilities);
             it != end(step.probabilities); ++it) {
             out << *it;
@@ -357,22 +324,14 @@ void Training::process_game(GameState& state, size_t& train_pos, int who_won,
             auto xy = state.board.get_xy(move_vertex);
             move_idx = (xy.second * BOARD_SIZE) + xy.first;
         } else {
-<<<<<<< HEAD
-            move_idx = BOARD_SQUARES; // PASS
-=======
             move_idx = NUM_INTERSECTIONS; // PASS
->>>>>>> upstream/master
         }
 
         auto step = TimeStep{};
         step.to_move = to_move;
         step.planes = get_planes(&state);
 
-<<<<<<< HEAD
-        step.probabilities.resize(BOARD_SQUARES + 1);
-=======
         step.probabilities.resize(POTENTIAL_MOVES);
->>>>>>> upstream/master
         step.probabilities[move_idx] = 1.0f;
 
         train_pos++;

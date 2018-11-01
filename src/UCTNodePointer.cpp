@@ -25,49 +25,6 @@
 
 #include "UCTNode.h"
 
-<<<<<<< HEAD
-UCTNodePointer::~UCTNodePointer() {
-    if (is_inflated()) {
-        delete read_ptr();
-    }
-}
-
-UCTNodePointer::UCTNodePointer(UCTNodePointer&& n) {
-    if (is_inflated()) {
-        delete read_ptr();
-    }
-    m_data = n.m_data;
-    n.m_data = 1; // non-inflated garbage
-}
-
-UCTNodePointer::UCTNodePointer(std::int16_t vertex, float score) {
-    std::uint32_t i_score;
-    auto i_vertex = static_cast<std::uint16_t>(vertex);
-    std::memcpy(&i_score, &score, sizeof(i_score));
-
-    m_data =  (static_cast<std::uint64_t>(i_score)  << 32)
-            | (static_cast<std::uint64_t>(i_vertex) << 16) | 1ULL;
-}
-
-UCTNodePointer& UCTNodePointer::operator=(UCTNodePointer&& n) {
-    if (is_inflated()) {
-        delete read_ptr();
-    }
-    m_data = n.m_data;
-    n.m_data = 1;
-
-    return *this;
-}
-
-void UCTNodePointer::inflate() const {
-    if (is_inflated()) return;
-    m_data = reinterpret_cast<std::uint64_t>(
-        new UCTNode(read_vertex(), read_score()));
-}
-
-bool UCTNodePointer::valid() const {
-    if (is_inflated()) return read_ptr()->valid();
-=======
 std::atomic<size_t> UCTNodePointer::m_tree_size = {0};
 
 size_t UCTNodePointer::get_tree_size() {
@@ -154,24 +111,10 @@ void UCTNodePointer::inflate() const {
 bool UCTNodePointer::valid() const {
     auto v = m_data.load();
     if (is_inflated(v)) return read_ptr(v)->valid();
->>>>>>> upstream/master
     return true;
 }
 
 int UCTNodePointer::get_visits() const {
-<<<<<<< HEAD
-    if (is_inflated()) return read_ptr()->get_visits();
-    return 0;
-}
-
-float UCTNodePointer::get_score() const {
-    if (is_inflated()) return read_ptr()->get_score();
-    return read_score();
-}
-
-bool UCTNodePointer::active() const {
-    if (is_inflated()) return read_ptr()->active();
-=======
     auto v = m_data.load();
     if (is_inflated(v)) return read_ptr(v)->get_visits();
     return 0;
@@ -186,21 +129,11 @@ float UCTNodePointer::get_policy() const {
 bool UCTNodePointer::active() const {
     auto v = m_data.load();
     if (is_inflated(v)) return read_ptr(v)->active();
->>>>>>> upstream/master
     return true;
 }
 
 float UCTNodePointer::get_eval(int tomove) const {
     // this can only be called if it is an inflated pointer
-<<<<<<< HEAD
-    assert(is_inflated());
-    return read_ptr()->get_eval(tomove);
-}
-
-int UCTNodePointer::get_move() const {
-    if (is_inflated()) return read_ptr()->get_move();
-    return read_vertex();
-=======
     auto v = m_data.load();
     assert(is_inflated(v));
     return read_ptr(v)->get_eval(tomove);
@@ -210,5 +143,4 @@ int UCTNodePointer::get_move() const {
     auto v = m_data.load();
     if (is_inflated(v)) return read_ptr(v)->get_move();
     return read_vertex(v);
->>>>>>> upstream/master
 }

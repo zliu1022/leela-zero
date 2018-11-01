@@ -56,11 +56,7 @@ int FullBoard::remove_string(int i) {
     return removed;
 }
 
-<<<<<<< HEAD
-std::uint64_t FullBoard::calc_ko_hash(void) {
-=======
 std::uint64_t FullBoard::calc_ko_hash() const {
->>>>>>> upstream/master
     auto res = Zobrist::zobrist_empty;
 
     for (auto i = 0; i < m_numvertices; i++) {
@@ -70,16 +66,11 @@ std::uint64_t FullBoard::calc_ko_hash() const {
     }
 
     /* Tromp-Taylor has positional superko */
-    m_ko_hash = res;
     return res;
 }
 
-<<<<<<< HEAD
-std::uint64_t FullBoard::calc_hash(int komove) {
-=======
 template<class Function>
 std::uint64_t FullBoard::calc_hash(int komove, Function transform) const {
->>>>>>> upstream/master
     auto res = Zobrist::zobrist_empty;
 
     for (auto i = 0; i < m_numvertices; i++) {
@@ -133,20 +124,12 @@ void FullBoard::set_to_move(int tomove) {
 
 int FullBoard::update_board(const int color, const int i) {
     assert(i != FastBoard::PASS);
-<<<<<<< HEAD
-    assert(m_square[i] == EMPTY);
-=======
     assert(m_state[i] == EMPTY);
->>>>>>> upstream/master
 
     m_hash ^= Zobrist::zobrist[m_state[i]][i];
     m_ko_hash ^= Zobrist::zobrist[m_state[i]][i];
 
-<<<<<<< HEAD
-    m_square[i] = square_t(color);
-=======
     m_state[i] = vertex_t(color);
->>>>>>> upstream/master
     m_next[i] = i;
     m_parent[i] = i;
     m_libs[i] = count_pliberties(i);
@@ -204,15 +187,9 @@ int FullBoard::update_board(const int color, const int i) {
 
     /* check for possible simple ko */
     if (captured_stones == 1 && eyeplay) {
-<<<<<<< HEAD
-        assert(get_square(captured_sq) == FastBoard::EMPTY
-                && !is_suicide(captured_sq, !color));
-        return captured_sq;
-=======
         assert(get_state(captured_vtx) == FastBoard::EMPTY
                 && !is_suicide(captured_vtx, !color));
         return captured_vtx;
->>>>>>> upstream/master
     }
 
     // No ko

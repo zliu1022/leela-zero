@@ -35,13 +35,9 @@ extern int cfg_num_threads;
 extern int cfg_max_threads;
 extern int cfg_max_playouts;
 extern int cfg_max_visits;
-<<<<<<< HEAD
-extern int cfg_interval;
-=======
 extern size_t cfg_max_memory;
 extern size_t cfg_max_tree_size;
 extern int cfg_max_cache_ratio_percent;
->>>>>>> upstream/master
 extern TimeManagement::enabled_t cfg_timemanage;
 extern int cfg_lagbuffer_cs;
 extern int cfg_resignpct;
@@ -65,23 +61,17 @@ extern precision_t cfg_precision;
 extern float cfg_puct;
 extern float cfg_softmax_temp;
 extern float cfg_fpu_reduction;
-<<<<<<< HEAD
-=======
 extern float cfg_fpu_root_reduction;
->>>>>>> upstream/master
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;
 extern std::string cfg_options_str;
 extern bool cfg_benchmark;
-<<<<<<< HEAD
-=======
 extern bool cfg_cpu_only;
 extern int cfg_analyze_interval_centis;
 
 static constexpr size_t MiB = 1024LL * 1024LL;
->>>>>>> upstream/master
 
 /*
     A list of all valid GTP2 commands is defined here:

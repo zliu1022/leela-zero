@@ -65,19 +65,11 @@ public:
     void resize(int size);
 
     // Try and find an existing entry.
-<<<<<<< HEAD
-    bool lookup(std::uint64_t hash, Network::Netresult & result);
-
-    // Insert a new entry.
-    void insert(std::uint64_t hash,
-                const Network::Netresult& result);
-=======
     bool lookup(std::uint64_t hash, Netresult & result);
 
     // Insert a new entry.
     void insert(std::uint64_t hash,
                 const Netresult& result);
->>>>>>> upstream/master
 
     // Return the hit rate ratio.
     std::pair<int, int> hit_rate() const {
@@ -89,10 +81,6 @@ public:
     // Return the estimated memory consumption of the cache.
     size_t get_estimated_size();
 private:
-<<<<<<< HEAD
-    NNCache(int size = 150000);  // ~ 225MB
-=======
->>>>>>> upstream/master
 
     std::mutex m_mutex;
 
@@ -104,15 +92,9 @@ private:
     int m_inserts{0};
 
     struct Entry {
-<<<<<<< HEAD
-        Entry(const Network::Netresult& r)
-            : result(r) {}
-        Network::Netresult result;  // ~ 1.5KB
-=======
         Entry(const Netresult& r)
             : result(r) {}
         Netresult result;  // ~ 1.4KiB
->>>>>>> upstream/master
     };
 
     // Map from hash to {features, result}

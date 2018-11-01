@@ -34,21 +34,12 @@
  * BOARD_SIZE: Define size of the board to compile Leela with, must be an odd
    number due to winograd tiles
  */
-<<<<<<< HEAD
-#define BOARD_SIZE 19
-#define BOARD_SQUARES (BOARD_SIZE*BOARD_SIZE)
-
-#if (BOARD_SIZE % 2 == 0)
-#error Code assumes odd board size, remove at your own risk!
-#endif
-=======
 static constexpr auto BOARD_SIZE = 19;
 static_assert(BOARD_SIZE % 2 == 1,
               "Code assumes odd board size, remove at your own risk!");
 
 static constexpr auto NUM_INTERSECTIONS = BOARD_SIZE * BOARD_SIZE;
 static constexpr auto POTENTIAL_MOVES = NUM_INTERSECTIONS + 1; // including pass
->>>>>>> upstream/master
 
 /*
  * Features
@@ -60,11 +51,7 @@ static constexpr auto POTENTIAL_MOVES = NUM_INTERSECTIONS + 1; // including pass
  * some operations won't get any speedup from it.
  * Also used for OpenCL self-checks.
  */
-<<<<<<< HEAD
-#define USE_BLAS
-=======
 //#define USE_BLAS
->>>>>>> upstream/master
 
 /*
  * We use OpenBLAS by default, except on macOS, which has a fast BLAS
@@ -74,10 +61,7 @@ static constexpr auto POTENTIAL_MOVES = NUM_INTERSECTIONS + 1; // including pass
 #if defined(USE_BLAS)
 #define USE_OPENBLAS
 #endif
-<<<<<<< HEAD
-=======
 #endif
->>>>>>> upstream/master
 
 /*
  * USE_MKL: Optionally allows using Intel Math Kernel library as
@@ -91,11 +75,9 @@ static constexpr auto POTENTIAL_MOVES = NUM_INTERSECTIONS + 1; // including pass
  * faster if you have a recent GPU. Don't use it on CPUs even if they have
  * OpenCL drivers - the BLAS version is much faster for those.
  */
+#define USE_CPU_ONLY
 #ifndef USE_CPU_ONLY
 #define USE_OPENCL
-<<<<<<< HEAD
-#endif
-=======
 
 /*
  * USE_HALF: Include the half-precision OpenCL implementation when building.
@@ -114,22 +96,14 @@ static constexpr auto POTENTIAL_MOVES = NUM_INTERSECTIONS + 1; // including pass
 static constexpr auto MAX_BATCH = 1;
 static_assert(MAX_BATCH == 1, "MAX_BATCH != 1 not implemented");
 
->>>>>>> upstream/master
 /*
  * USE_TUNER: Expose some extra command line parameters that allow tuning the
  * search algorithm.
  */
-<<<<<<< HEAD
-#define USE_TUNER
-
-#define PROGRAM_NAME "Leela Zero"
-#define PROGRAM_VERSION "0.15"
-=======
 //#define USE_TUNER
 
 static constexpr auto PROGRAM_NAME = "Leela Zero";
 static constexpr auto PROGRAM_VERSION = "0.16";
->>>>>>> upstream/master
 
 /*
  * OpenBLAS limitation: the default configuration on some Linuxes
@@ -143,12 +117,6 @@ static constexpr auto MAX_CPUS = 256;
 
 #ifdef USE_HALF
 #include "half/half.hpp"
-<<<<<<< HEAD
-using net_t = half_float::half;
-#else
-using net_t = float;
-=======
->>>>>>> upstream/master
 #endif
 
 #ifdef USE_OPENCL

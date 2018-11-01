@@ -54,11 +54,8 @@ namespace Utils {
     }
 
     size_t ceilMultiple(size_t a, size_t b);
-<<<<<<< HEAD
-=======
 
     const std::string leelaz_file(std::string file);
->>>>>>> upstream/master
 }
 
 #endif

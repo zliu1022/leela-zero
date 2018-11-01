@@ -50,15 +50,6 @@ using ConstEigenMatrixMap =
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>;
 #endif
 
-<<<<<<< HEAD
-const auto TUNER_FILE_LOCAL = std::string("leelaz_opencl_tuning");
-#ifdef USE_HALF
-const auto TUNER_KERNEL = std::string("XgemmBatchedHalf");
-constexpr auto MAX_ERROR = 1e-2f;
-#else
-const auto TUNER_KERNEL = std::string("XgemmBatched");
-constexpr auto MAX_ERROR = 1e-4f;
-=======
 template <typename net_t> static std::string getTunerKernel();
 template <typename net_t> static float getTunerMaxError();
 
@@ -78,15 +69,11 @@ template <> std::string getTunerKernel<half_float::half>() {
 template <> float getTunerMaxError<half_float::half>() {
     return 1e-1f;
 }
->>>>>>> upstream/master
 #endif
 
 using namespace Utils;
 
-<<<<<<< HEAD
-=======
 template <typename net_t>
->>>>>>> upstream/master
 static void sgemmBatched_ref(const std::vector<net_t>& a,
                              const std::vector<net_t>& b,
                              std::vector<net_t>& c,
@@ -103,16 +90,6 @@ static void sgemmBatched_ref(const std::vector<net_t>& a,
         auto offset_u = batch * m * k;
         auto offset_v = batch * n * k;
         auto offset_m = batch * m * n;
-<<<<<<< HEAD
-
-        cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
-                    m, n, k,
-                    1.0f,
-                    &ar[offset_u], m,
-                    &br[offset_v], n,
-                    0.0f,
-                    &cr[offset_m], n);
-=======
 #ifdef USE_BLAS
         // Calculates C = transpose(tranpose(A) * B) in row major, or
         // C = A * transpose(B) in column major.
@@ -131,7 +108,6 @@ static void sgemmBatched_ref(const std::vector<net_t>& a,
         auto B = ConstEigenMatrixMap<float>(br.data() + offset_v, n, k);
         C.noalias() = (A * B.transpose());
 #endif
->>>>>>> upstream/master
     }
 
     std::copy(begin(cr), end(cr), begin(c));
@@ -227,10 +203,7 @@ static size_t next_power_of_two(const size_t x) {
     return 2 << size_t(std::ceil(std::log2(x)) - 1);
 }
 
-<<<<<<< HEAD
-=======
 template <typename net_t>
->>>>>>> upstream/master
 static void sgemm_generate_data(std::vector<net_t> &x,
                                 const int m, const int n,
                                 const int batch_size,
@@ -254,10 +227,7 @@ static void sgemm_generate_data(std::vector<net_t> &x,
     }
 }
 
-<<<<<<< HEAD
-=======
 template <typename net_t>
->>>>>>> upstream/master
 static float compare_ref(std::vector<net_t> &x, std::vector<net_t> &ref,
                          const int m, const int n, const int batch_size,
                          const int m_ceil, const int n_ceil) {
@@ -406,7 +376,6 @@ std::string Tuner<net_t>::tune_sgemm(const int m, const int n, const int k,
             continue;
         }
 
-        // The kernel is (for now) named the same even in USE_HALF
         auto sgemm_kernel = cl::Kernel(program, "XgemmBatched");
 
         auto m_ceil = int(ceilMultiple(ceilMultiple(m, p["MWG"]), p["VWM"]));
@@ -536,11 +505,7 @@ void Tuner<net_t>::store_sgemm_tuners(const int m, const int n, const int k,
     tuning_params << m << ";" << n << ";" << k << ";" << batch_size;
 
     auto tuning_line_prefix = std::to_string(TUNER_VERSION) + ";"
-<<<<<<< HEAD
-        + TUNER_KERNEL + ";" + tuning_params.str() + ";";
-=======
         + getTunerKernel<net_t>() + ";" + tuning_params.str() + ";";
->>>>>>> upstream/master
     auto tuning_line = tuning_line_prefix + tuners + ";" + device_name;
 
     // Write back previous data as long as it's not the device and
@@ -558,11 +523,7 @@ void Tuner<net_t>::store_sgemm_tuners(const int m, const int n, const int k,
     if (file.fail()) {
         myprintf("Could not save the tuning result.\n");
         myprintf("Do I have write permissions on %s?\n",
-<<<<<<< HEAD
-            TUNER_FILE_LOCAL.c_str());
-=======
             tuner_file.c_str());
->>>>>>> upstream/master
     }
 }
 
@@ -586,11 +547,7 @@ std::string Tuner<net_t>::sgemm_tuners_from_line(std::string line,
         return "";
     }
 
-<<<<<<< HEAD
-    if (s[1] != TUNER_KERNEL) {
-=======
     if (s[1] != getTunerKernel<net_t>()) {
->>>>>>> upstream/master
         return "";
     }
 

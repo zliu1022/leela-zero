@@ -34,15 +34,8 @@
 
 #include "Tuner.h"
 
-<<<<<<< HEAD
-static constexpr auto WINOGRAD_P = (BOARD_SIZE + 1) * (BOARD_SIZE + 1) / 4;
-static constexpr auto WINOGRAD_TILE = 4 * 4;
-
-class OpenCL;
-=======
 template <typename net_t> class OpenCL;
 template <typename net_t> class OpenCL_Network;
->>>>>>> upstream/master
 
 class Layer {
     template <typename> friend class OpenCL_Network;
@@ -88,15 +81,9 @@ public:
     void push_input_convolution(unsigned int filter_size,
                        unsigned int channels,
                        unsigned int outputs,
-<<<<<<< HEAD
-                       const std::vector<float>& weights,
-                       const std::vector<float>& means,
-                       const std::vector<float>& variances) {
-=======
                        const std::vector<net_t>& weights,
                        const std::vector<net_t>& means,
                        const std::vector<net_t>& variances) {
->>>>>>> upstream/master
         size_t layer = get_layer_count();
         push_weights(layer, weights);
         push_weights(layer, means);
@@ -129,11 +116,6 @@ public:
         m_layers[layer].channels = channels;
     }
 
-<<<<<<< HEAD
-    void push_convolve1(unsigned int channels,
-                       unsigned int outputs,
-                       const std::vector<float>& weights) {
-=======
     void push_convolve(unsigned int filter_size,
                        unsigned int channels,
                        unsigned int outputs,
@@ -141,7 +123,6 @@ public:
         (void)filter_size;
         assert(filter_size == 1);
 
->>>>>>> upstream/master
         size_t layer = get_layer_count();
         push_weights(layer, weights);
         m_layers[layer].is_convolve1 = true;
@@ -153,17 +134,11 @@ public:
         return m_layers.size();
     }
 
-<<<<<<< HEAD
-    void forward(const std::vector<net_t>& input,
-            std::vector<net_t>& output_pol,
-            std::vector<net_t>& output_val);
-=======
     void forward(const std::vector<float>& input,
             std::vector<float>& output_pol,
             std::vector<float>& output_val,
             OpenCLContext & opencl_context,
             const int batch_size = 1);
->>>>>>> upstream/master
 
 private:
     using weight_slice_t = std::vector<cl::Buffer>::const_iterator;
@@ -173,12 +148,8 @@ private:
     }
     void add_weights(size_t layer, size_t size, const net_t* weights);
 
-<<<<<<< HEAD
-    void convolve3(int channels, int outputs,
-=======
     void convolve3(OpenCLContext & opencl_context,
                     int channels, int outputs,
->>>>>>> upstream/master
                     cl::Buffer& bufferIn,
                     cl::Buffer& bufferOut,
                     cl::Buffer& bufferV,
@@ -186,15 +157,6 @@ private:
                     cl::Buffer* bufferResidual,
                     weight_slice_t bn_weights,
                     bool skip_in_transform,
-<<<<<<< HEAD
-                    bool fuse_in_transform, bool store_inout);
-
-    void convolve1(int channels, int outputs,
-                  cl::Buffer& bufferInput,
-                  cl::Buffer& bufferOutput,
-                  cl::Buffer& bufferMerge,
-                  weight_slice_t weights);
-=======
                     bool fuse_in_transform, bool store_inout,
                     int batch_size);
 
@@ -205,7 +167,6 @@ private:
                   cl::Buffer& bufferMerge,
                   weight_slice_t weights,
                   int batch_size);
->>>>>>> upstream/master
 
     OpenCL<net_t> & m_opencl;
 
@@ -222,15 +183,9 @@ class OpenCL {
     friend class OpenCL_Network<net_t>;
     friend class Tuner<net_t>;
 public:
-<<<<<<< HEAD
-    void initialize(const int channels, const std::vector<int> & gpus,
-                    bool silent = false);
-    void ensure_thread_initialized(void);
-=======
     OpenCL(int gpu, bool silent = false);
     void initialize(const int channels);
     void ensure_context_initialized(OpenCLContext & opencl_context);
->>>>>>> upstream/master
     std::string get_device_name();
     bool has_fp16_compute();
 

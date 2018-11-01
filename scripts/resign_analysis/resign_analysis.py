@@ -17,10 +17,7 @@
 #    along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-<<<<<<< HEAD
-=======
 import math
->>>>>>> upstream/master
 import os
 import sys
 
@@ -79,19 +76,11 @@ def parseGameBody(filename, fh, tfh, verbose, resignthr):
             if verbose >= 3:
                 print("+", to_move, movenum, netwinrate, child_uctwinrate,
                       bestmovevisits)
-<<<<<<< HEAD
-            if not gs.resign_type and child_uctwinrate < resignrate:
-                if verbose >= 1:
-                    print(("Wrong resign -- %s rr=%0.3f wr=%0.3f "
-                           "winner=%s movenum=%d") %
-                          (filename, resignrate, child_uctwinrate,
-=======
             if not gs.resign_type and child_uctwinrate < resignthr:
                 if verbose >= 1:
                     print(("Wrong resign -- %s rt=%0.3f wr=%0.3f "
                            "winner=%s movenum=%d") %
                           (filename, resignthr, child_uctwinrate,
->>>>>>> upstream/master
                            to_move_str(to_move), movenum))
                     if verbose >= 3:
                         print("policy_weights", policy_weights)
@@ -101,11 +90,7 @@ def parseGameBody(filename, fh, tfh, verbose, resignthr):
             if verbose >= 2:
                 print("-", to_move, movenum, netwinrate, child_uctwinrate,
                       bestmovevisits)
-<<<<<<< HEAD
-            if not gs.resign_type and child_uctwinrate < resignrate:
-=======
             if not gs.resign_type and child_uctwinrate < resignthr:
->>>>>>> upstream/master
                 if verbose >= 2:
                     print("Correct resign -- %s" % (filename))
                 gs.resign_type = "Correct"
@@ -113,11 +98,7 @@ def parseGameBody(filename, fh, tfh, verbose, resignthr):
     gs.total_moves = movenum
     return gs
 
-<<<<<<< HEAD
-def parseGames(filenames, resignrate, verbose, prefixes):
-=======
 def parseGames(filenames, resignthr, verbose, prefixes):
->>>>>>> upstream/master
     gsd = {}
     for filename in filenames:
         training_filename = filename.replace(".debug", "")
@@ -139,11 +120,7 @@ def parseGames(filenames, resignthr, verbose, prefixes):
                         filename, cfg_resignpct))
     return gsd
 
-<<<<<<< HEAD
-def resignStats(gsd, resignrate):
-=======
 def resignStats(gsd, resignthr):
->>>>>>> upstream/master
     # [ B wins, W wins, Overall ]
     stats = [ TotalStats(), TotalStats(), TotalStats() ]
     for gs in gsd.values():
@@ -160,13 +137,8 @@ def resignStats(gsd, resignthr):
             stats[gs.winner].resigned_game_len_sum += gs.resign_movenum
         stats[gs.winner].game_len_sum += gs.total_moves
     stats[2].calcOverall(stats[0], stats[1])
-<<<<<<< HEAD
-    print("Resign rate: %0.2f - Black won %d/%d (%0.2f%%)" % (
-        resignrate,
-=======
     print("Resign thr: %0.2f - Black won %d/%d (%0.2f%%)" % (
         resignthr,
->>>>>>> upstream/master
         stats[0].num_games,
         stats[0].num_games+stats[1].num_games,
         100 * stats[0].num_games / (stats[0].num_games+stats[1].num_games)))
@@ -221,14 +193,6 @@ files hash.txt.0 to be in the same directory."""
     parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=usage_str)
-<<<<<<< HEAD
-    default_resignrates="0.5,0.2,0.15,0.1,0.05,0.02,0.01"
-    parser.add_argument(
-            "-r", metavar="Resign_rates", dest="resignrates", type=str,
-            default=default_resignrates,
-            help="comma separated resign thresholds (default {})".format(
-                    default_resignrates))
-=======
     default_resignthrs="0.5,0.2,0.15,0.1,0.05,0.02,0.01"
     parser.add_argument(
             "-r", metavar="Resign_thresholds", dest="resignthrs", type=str,
@@ -240,7 +204,6 @@ files hash.txt.0 to be in the same directory."""
             help="If specified, a search is performed that finds the maximum \
             resign threshold that can be set without exceeding the given \
             resign rate")
->>>>>>> upstream/master
     parser.add_argument(
             "-v", metavar="Verbose", dest="verbose", type=int, default=0,
             help="Verbosity level (default 0)")
@@ -251,14 +214,6 @@ files hash.txt.0 to be in the same directory."""
             "-n", metavar="Prefix", dest="networks", nargs="+",
             help="Prefixes of specific networks to analyze")
     args = parser.parse_args()
-<<<<<<< HEAD
-    resignrates = [float(i) for i in args.resignrates.split(",")]
-    if args.networks:
-        print("Analyzing networks starting with: {}".format(
-                ",".join(args.networks)))
-    for resignrate in (resignrates):
-        gsd = parseGames(args.data, resignrate, args.verbose, args.networks)
-=======
     resignthrs = [float(i) for i in args.resignthrs.split(",")]
     if args.networks:
         print("Analyzing networks starting with: {}".format(
@@ -266,13 +221,10 @@ files hash.txt.0 to be in the same directory."""
 
     for resignthr in (resignthrs):
         gsd = parseGames(args.data, resignthr, args.verbose, args.networks)
->>>>>>> upstream/master
         if gsd:
             resignStats(gsd, resignthr)
         else:
             print("No games to analyze (for more info try running with -v 2)")
-<<<<<<< HEAD
-=======
 
     if args.resignrate:
         L = 0.0
@@ -295,4 +247,3 @@ files hash.txt.0 to be in the same directory."""
         if (L == R):      
             print(("The highest the resign threshold should be set to: %0.2f")
                   % (R - 0.01))
->>>>>>> upstream/master

@@ -149,15 +149,6 @@ int main(int argc, char *argv[]) {
     if (parser.isSet(timeoutOption)) {
         QObject::connect(timer, &QTimer::timeout, &app, &QCoreApplication::quit);
         timer->start(parser.value(timeoutOption).toInt() * 60000);
-<<<<<<< HEAD
-    } else {
-        if (parser.isSet(singleOption) || parser.isSet(maxOption)) {
-            QObject::connect(boss, &Management::sendQuit, &app, &QCoreApplication::quit);
-        } else {
-            cons = new Console();
-            QObject::connect(cons, &Console::sendQuit, &app, &QCoreApplication::quit);
-        }
-=======
     }
     if (parser.isSet(singleOption) || parser.isSet(maxOption)) {
         QObject::connect(boss, &Management::sendQuit, &app, &QCoreApplication::quit);
@@ -165,7 +156,6 @@ int main(int argc, char *argv[]) {
     if (true) {
         cons = new Console();
         QObject::connect(cons, &Console::sendQuit, &app, &QCoreApplication::quit);
->>>>>>> upstream/master
     }
     return app.exec();
 }

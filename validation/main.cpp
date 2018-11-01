@@ -46,16 +46,6 @@ int main(int argc, char *argv[]) {
         {"n", "network"},
             "Networks to use as players in competition mode (two are needed).",
             "filename");
-<<<<<<< HEAD
-    QCommandLineOption binaryOption(
-        {"b", "binary"},
-            "Binary to execute for the game (default ./leelaz).",
-            "filename");
-    QCommandLineOption optionsOption(
-        {"o", "options"},
-            "Options for the binary given by -b (default '-g -p 1600 --noponder -t 1 -q -d -r 0 -w').",
-            "opt_string");
-=======
     QCommandLineOption optionsOption(
         {"o", "options"},
             "Options for the binary given by -b (default \"-g -v 3200 --noponder -t 1 -q -d -r 0 -w\").",
@@ -66,7 +56,6 @@ int main(int argc, char *argv[]) {
             "Multiple commands are sent in the order they are specified.\n"
             "Commands apply to the preceeding binary or both if specified before all binaries.",
             "command");
->>>>>>> upstream/master
     QCommandLineOption sprtOption(
         {"s", "sprt"},
             "Set the SPRT hypothesis (default '0.0:35.0').",
@@ -86,12 +75,6 @@ int main(int argc, char *argv[]) {
 
     parser.addOption(gamesNumOption);
     parser.addOption(gpusOption);
-<<<<<<< HEAD
-    parser.addOption(networkOption);
-    parser.addOption(binaryOption);
-    parser.addOption(optionsOption);
-=======
->>>>>>> upstream/master
     parser.addOption(sprtOption);
     parser.addOption(keepSgfOption);
     parser.addOption(networkOption);
@@ -109,20 +92,9 @@ int main(int argc, char *argv[]) {
         parser.showHelp();
     }
 
-<<<<<<< HEAD
-    QStringList binList = parser.values(binaryOption);
-    while (binList.count() != 2) {
-        binList << "./leelaz";
-    }
-
-    QStringList optsList = parser.values(optionsOption);
-    while (optsList.count() != 2) {
-        optsList << " -g  -p 1600 --noponder -t 1 -q -d -r 0 -w ";
-=======
     QStringList optsList = parser.values(optionsOption);
     while (optsList.count() < 2) {
         optsList << " -g -v 3200 --noponder -t 1 -q -d -r 0 -w ";
->>>>>>> upstream/master
     }
 
     QString sprtOpt = parser.value(sprtOption);
@@ -171,17 +143,9 @@ int main(int argc, char *argv[]) {
 
     Console *cons = nullptr;
     Validation *validate = new Validation(gpusNum, gamesNum, gpusList,
-<<<<<<< HEAD
-                        netList.at(0), netList.at(1),
-                        parser.value(keepSgfOption), &mutex,
-                        binList.at(0), binList.at(1),
-                        optsList.at(0), optsList.at(1),
-                        h0, h1);
-=======
                                           engines,
                                           parser.value(keepSgfOption), &mutex,
                                           h0, h1);
->>>>>>> upstream/master
     QObject::connect(&app, &QCoreApplication::aboutToQuit, validate, &Validation::storeSprt);
     validate->loadSprt();
     validate->startGames();

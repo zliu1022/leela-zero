@@ -27,29 +27,17 @@ std::array<std::uint64_t, 5>                                          Zobrist::z
 
 void Zobrist::init_zobrist(Random& rng) {
     for (int i = 0; i < 4; i++) {
-<<<<<<< HEAD
-        for (int j = 0; j < FastBoard::MAXSQ; j++) {
-=======
         for (int j = 0; j < FastBoard::NUM_VERTICES; j++) {
->>>>>>> upstream/master
             Zobrist::zobrist[i][j] = rng.randuint64();
         }
     }
 
-<<<<<<< HEAD
-    for (int j = 0; j < FastBoard::MAXSQ; j++) {
-=======
     for (int j = 0; j < FastBoard::NUM_VERTICES; j++) {
->>>>>>> upstream/master
         Zobrist::zobrist_ko[j] = rng.randuint64();
     }
 
     for (int i = 0; i < 2; i++) {
-<<<<<<< HEAD
-        for (int j = 0; j < FastBoard::MAXSQ * 2; j++) {
-=======
         for (int j = 0; j < FastBoard::NUM_VERTICES * 2; j++) {
->>>>>>> upstream/master
             Zobrist::zobrist_pris[i][j] = rng.randuint64();
         }
     }

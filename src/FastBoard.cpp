@@ -33,13 +33,8 @@
 using namespace Utils;
 
 const int FastBoard::NBR_SHIFT;
-<<<<<<< HEAD
-const int FastBoard::MAXSQ;
-const int FastBoard::BIG;
-=======
 const int FastBoard::NUM_VERTICES;
 const int FastBoard::NO_VERTEX;
->>>>>>> upstream/master
 const int FastBoard::PASS;
 const int FastBoard::RESIGN;
 
@@ -96,13 +91,8 @@ void FastBoard::set_state(int vertex, FastBoard::vertex_t content) {
     m_state[vertex] = content;
 }
 
-<<<<<<< HEAD
-FastBoard::square_t FastBoard::get_square(int x, int y) const {
-    return get_square(get_vertex(x, y));
-=======
 FastBoard::vertex_t FastBoard::get_state(int x, int y) const {
     return get_state(get_vertex(x, y));
->>>>>>> upstream/master
 }
 
 void FastBoard::set_state(int x, int y, FastBoard::vertex_t content) {

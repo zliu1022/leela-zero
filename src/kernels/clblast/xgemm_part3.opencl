@@ -19,13 +19,8 @@ R"(
 
 // Main body of the matrix-multiplication algorithm. It calls various (inlined) functions.
 INLINE_FUNC void XgemmBody(const int kSizeM, const int kSizeN, const int kSizeK,
-<<<<<<< HEAD:src/clblast_level3/xgemm_part3.opencl
-                           const __global realM* restrict agm, const __global realN* restrict bgm,
-                           __global realM* cgm
-=======
                            const __global memM* restrict agm, const __global memN* restrict bgm,
                            __global memM* cgm
->>>>>>> upstream/master:src/kernels/clblast/xgemm_part3.opencl
                            #if SA == 1 && SB == 1
                              , LOCAL_PTR memM* alm, LOCAL_PTR memN* blm
                            #elif SA == 1

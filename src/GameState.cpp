@@ -99,62 +99,20 @@ void GameState::play_move(int color, int vertex) {
     game_history.emplace_back(std::make_shared<KoState>(*this));
 }
 
-<<<<<<< HEAD
-bool GameState::play_textmove(const std::string& color,
-                              const std::string& vertex) {
-    int who;
-=======
 bool GameState::play_textmove(std::string color, const std::string& vertex) {
     int who;
     transform(cbegin(color), cend(color), begin(color), tolower);
->>>>>>> upstream/master
     if (color == "w" || color == "white") {
         who = FullBoard::WHITE;
     } else if (color == "b" || color == "black") {
         who = FullBoard::BLACK;
-<<<<<<< HEAD
     } else {
         return false;
     }
 
-    if (vertex.size() < 2) return false;
-    if (!std::isalpha(vertex[0])) return false;
-    if (!std::isdigit(vertex[1])) return false;
-    if (vertex[0] == 'i') return false;
-
-    int column, row;
-    if (vertex[0] >= 'A' && vertex[0] <= 'Z') {
-        if (vertex[0] < 'I') {
-            column = 25 + vertex[0] - 'A';
-        } else {
-            column = 25 + (vertex[0] - 'A')-1;
-        }
-=======
->>>>>>> upstream/master
-    } else {
-        return false;
-    }
-
-<<<<<<< HEAD
-    std::string rowstring(vertex);
-    rowstring.erase(0, 1);
-    std::istringstream parsestream(rowstring);
-
-    parsestream >> row;
-    row--;
-
-    auto boardsize = board.get_boardsize();
-    if (row >= boardsize || column >= boardsize) {
-        return false;
-    }
-
-    auto move = board.get_vertex(column, row);
-    if (board.get_square(move) != FastBoard::EMPTY) {
-=======
     const auto move = board.text_to_move(vertex);
     if (move == FastBoard::NO_VERTEX ||
         (move != FastBoard::PASS && move != FastBoard::RESIGN && board.get_state(move) != FastBoard::EMPTY)) {
->>>>>>> upstream/master
         return false;
     }
 
@@ -322,11 +280,7 @@ void GameState::place_free_handicap(int stones, Network & network) {
     stones -= set_fixed_handicap_2(stones);
 
     for (int i = 0; i < stones; i++) {
-<<<<<<< HEAD
-        auto search = std::make_unique<UCTSearch>(*this);
-=======
         auto search = std::make_unique<UCTSearch>(*this, network);
->>>>>>> upstream/master
         auto move = search->think(FastBoard::BLACK, UCTSearch::NOPASS);
         play_move(FastBoard::BLACK, move);
     }

@@ -21,15 +21,9 @@ R"(
 // Main entry point of the kernel. This is the regular full version.
 __kernel __attribute__((reqd_work_group_size(MDIMC, NDIMC, 1)))
 void XgemmBatched(const int kSizeM, const int kSizeN, const int kSizeK,
-<<<<<<< HEAD:src/clblast_level3/xgemm_batched.opencl
-                  const __global realM* restrict agm,
-                  const __global realN* restrict bgm,
-                  __global realM* restrict cgm) {
-=======
                   const __global memM* restrict agm,
                   const __global memN* restrict bgm,
                   __global memM* restrict cgm) {
->>>>>>> upstream/master:src/kernels/clblast/xgemm_batched.opencl
   const int batch = get_group_id(2);
 
   // Sets the offsets

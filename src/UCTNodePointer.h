@@ -39,35 +39,6 @@ class UCTNode;
 //  - std::unique_ptr<UCTNode> pointer;
 //  - std::pair<float, std::int16_t> args;
 
-<<<<<<< HEAD
-// WARNING : inflate() is not thread-safe and hence has to be protected
-// by an external lock.
-
-class UCTNodePointer {
-private:
-    // the raw storage used here.
-    // if bit 0 is 0, m_data is the actual pointer.
-    // if bit 0 is 1, bit [31:16] is the vertex value, bit [63:32] is the score.
-    // (C-style bit fields and unions are not portable)
-    mutable uint64_t m_data = 1;
-
-    UCTNode * read_ptr() const {
-        assert(is_inflated());
-        return reinterpret_cast<UCTNode*>(m_data);
-    }
-
-    std::int16_t read_vertex() const {
-        assert(!is_inflated());
-        return static_cast<std::int16_t>(m_data >> 16);
-    }
-
-    float read_score() const {
-        static_assert(sizeof(float) == 4,
-            "This code assumes floats are 32-bit");
-        assert(!is_inflated());
-
-        auto x = static_cast<std::uint32_t>(m_data >> 32);
-=======
 // All methods should be thread-safe except destructor and when
 // the instanced is 'moved from'.
 
@@ -104,22 +75,11 @@ private:
         assert((v & 3ULL) == UNINFLATED);
 
         auto x = static_cast<std::uint32_t>(v >> 32);
->>>>>>> upstream/master
         float ret;
         std::memcpy(&ret, &x, sizeof(ret));
         return ret;
     }
 
-<<<<<<< HEAD
-public:
-    ~UCTNodePointer();
-    UCTNodePointer(UCTNodePointer&& n);
-    UCTNodePointer(std::int16_t vertex, float score);
-    UCTNodePointer(const UCTNodePointer&) = delete;
-
-    bool is_inflated() const {
-        return (m_data & 1ULL) == 0;
-=======
     bool is_inflated(uint64_t v) const {
         return (v & 3ULL) == POINTER;
     }
@@ -135,29 +95,10 @@ public:
 
     bool is_inflated() const {
         return is_inflated(m_data.load());
->>>>>>> upstream/master
     }
 
     // methods from std::unique_ptr<UCTNode>
     typename std::add_lvalue_reference<UCTNode>::type operator*() const{
-<<<<<<< HEAD
-        return *read_ptr();
-    }
-    UCTNode* operator->() const {
-        return read_ptr();
-    }
-    UCTNode* get() const {
-        return read_ptr();
-    }
-    UCTNodePointer& operator=(UCTNodePointer&& n);
-    UCTNode * release() {
-        auto ret = read_ptr();
-        m_data = 1;
-        return ret;
-    }
-
-    // construct UCTNode instance from the vertex/score pair
-=======
         return *read_ptr(m_data.load());
     }
     UCTNode* operator->() const {
@@ -170,18 +111,13 @@ public:
     UCTNode * release();
 
     // construct UCTNode instance from the vertex/policy pair
->>>>>>> upstream/master
     void inflate() const;
 
     // proxy of UCTNode methods which can be called without
     // constructing UCTNode
     bool valid() const;
     int get_visits() const;
-<<<<<<< HEAD
-    float get_score() const;
-=======
     float get_policy() const;
->>>>>>> upstream/master
     bool active() const;
     int get_move() const;
     // this can only be called if it is an inflated pointer

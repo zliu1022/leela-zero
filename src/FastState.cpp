@@ -77,11 +77,7 @@ void FastState::play_move(int color, int vertex) {
     board.m_hash ^= Zobrist::zobrist_ko[m_komove];
     if (vertex == FastBoard::PASS) {
         // No Ko move
-<<<<<<< HEAD
-        m_komove = 0;
-=======
         m_komove = FastBoard::NO_VERTEX;
->>>>>>> upstream/master
     } else {
         m_komove = board.update_board(color, vertex);
     }
