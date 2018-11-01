@@ -38,6 +38,7 @@ public:
     static constexpr int NBR_MASK = (1 << NBR_SHIFT) - 1;
 
     /*
+<<<<<<< HEAD
         highest existing square
     */
     static constexpr int MAXSQ = ((BOARD_SIZE + 2) * (BOARD_SIZE + 2));
@@ -47,6 +48,16 @@ public:
     */
     static constexpr int BIG = 10000000;
 
+=======
+        number of vertices in a "letterboxed" board representation
+    */
+    static constexpr int NUM_VERTICES = ((BOARD_SIZE + 2) * (BOARD_SIZE + 2));
+
+    /*
+        no applicable vertex
+    */
+    static constexpr int NO_VERTEX = 0;
+>>>>>>> upstream/master
     /*
         vertex of a pass
     */
@@ -57,24 +68,18 @@ public:
     static constexpr int RESIGN = -2;
 
     /*
-        possible contents of a square
+        possible contents of a vertex
     */
-    enum square_t : char {
+    enum vertex_t : char {
         BLACK = 0, WHITE = 1, EMPTY = 2, INVAL = 3
     };
 
-    /*
-        move generation types
-    */
-    using movescore_t = std::pair<int, float>;
-    using scoredmoves_t = std::vector<movescore_t>;
-
-    int get_boardsize(void) const;
-    square_t get_square(int x, int y) const;
-    square_t get_square(int vertex) const ;
-    int get_vertex(int i, int j) const;
-    void set_square(int x, int y, square_t content);
-    void set_square(int vertex, square_t content);
+    int get_boardsize() const;
+    vertex_t get_state(int x, int y) const;
+    vertex_t get_state(int vertex) const ;
+    int get_vertex(int x, int y) const;
+    void set_state(int x, int y, vertex_t content);
+    void set_state(int vertex, vertex_t content);
     std::pair<int, int> get_xy(int vertex) const;
 
     bool is_suicide(int i, int color) const;
@@ -90,6 +95,7 @@ public:
     void set_to_move(int color);
 
     std::string move_to_text(int move) const;
+    int text_to_move(std::string move) const;
     std::string move_to_text_sgf(int move) const;
     std::string get_stone_list() const;
     std::string get_string(int vertex) const;
@@ -105,25 +111,25 @@ protected:
         bit masks to detect eyes on neighbors
     */
     static const std::array<int,      2> s_eyemask;
-    static const std::array<square_t, 4> s_cinvert; /* color inversion */
+    static const std::array<vertex_t, 4> s_cinvert; /* color inversion */
 
-    std::array<square_t, MAXSQ>            m_square;      /* board contents */
-    std::array<unsigned short, MAXSQ+1>    m_next;        /* next stone in string */
-    std::array<unsigned short, MAXSQ+1>    m_parent;      /* parent node of string */
-    std::array<unsigned short, MAXSQ+1>    m_libs;        /* liberties per string parent */
-    std::array<unsigned short, MAXSQ+1>    m_stones;      /* stones per string parent */
-    std::array<unsigned short, MAXSQ>      m_neighbours;  /* counts of neighboring stones */
-    std::array<int, 4>                     m_dirs;        /* movement directions 4 way */
-    std::array<int, 2>                     m_prisoners;   /* prisoners per color */
-    std::array<unsigned short, MAXSQ>      m_empty;       /* empty squares */
-    std::array<unsigned short, MAXSQ>      m_empty_idx;   /* indexes of square */
-    int m_empty_cnt;                                      /* count of empties */
+    std::array<vertex_t, NUM_VERTICES>         m_state;      /* board contents */
+    std::array<unsigned short, NUM_VERTICES+1> m_next;       /* next stone in string */
+    std::array<unsigned short, NUM_VERTICES+1> m_parent;     /* parent node of string */
+    std::array<unsigned short, NUM_VERTICES+1> m_libs;       /* liberties per string parent */
+    std::array<unsigned short, NUM_VERTICES+1> m_stones;     /* stones per string parent */
+    std::array<unsigned short, NUM_VERTICES>   m_neighbours; /* counts of neighboring stones */
+    std::array<int, 4>                         m_dirs;       /* movement directions 4 way */
+    std::array<int, 2>                         m_prisoners;  /* prisoners per color */
+    std::array<unsigned short, NUM_VERTICES>   m_empty;      /* empty intersections */
+    std::array<unsigned short, NUM_VERTICES>   m_empty_idx;  /* intersection indices */
+    int m_empty_cnt;                                         /* count of empties */
 
     int m_tomove;
-    int m_maxsq;
+    int m_numvertices;
 
     int m_boardsize;
-    int m_squaresize;
+    int m_sidevertices;
 
     int calc_reach_color(int color) const;
 

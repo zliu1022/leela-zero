@@ -94,10 +94,17 @@ void UCTNode::dirichlet_noise(float epsilon, float alpha) {
 
     child_cnt = 0;
     for (auto& child : m_children) {
+<<<<<<< HEAD
         auto score = child->get_score();
         auto eta_a = dirichlet_vector[child_cnt++];
         score = score * (1 - epsilon) + epsilon * eta_a;
         child->set_score(score);
+=======
+        auto policy = child->get_policy();
+        auto eta_a = dirichlet_vector[child_cnt++];
+        policy = policy * (1 - epsilon) + epsilon * eta_a;
+        child->set_policy(policy);
+>>>>>>> upstream/master
     }
 }
 
@@ -177,16 +184,27 @@ void UCTNode::inflate_all_children() {
     }
 }
 
+<<<<<<< HEAD
 void UCTNode::prepare_root_node(int color,
+=======
+void UCTNode::prepare_root_node(Network & network, int color,
+>>>>>>> upstream/master
                                 std::atomic<int>& nodes,
                                 GameState& root_state) {
     float root_eval;
     const auto had_children = has_children();
     if (expandable()) {
+<<<<<<< HEAD
         create_children(nodes, root_state, root_eval);
     }
     if (had_children) {
         root_eval = get_eval(color);
+=======
+        create_children(network, nodes, root_state, root_eval);
+    }
+    if (had_children) {
+        root_eval = get_net_eval(color);
+>>>>>>> upstream/master
     } else {
         update(root_eval);
         root_eval = (color == FastBoard::BLACK ? root_eval : 1.0f - root_eval);
@@ -203,7 +221,11 @@ void UCTNode::prepare_root_node(int color,
 
     if (cfg_noise) {
         // Adjust the Dirichlet noise's alpha constant to the board size
+<<<<<<< HEAD
         auto alpha = 0.03f * 361.0f / BOARD_SQUARES;
+=======
+        auto alpha = 0.03f * 361.0f / NUM_INTERSECTIONS;
+>>>>>>> upstream/master
         dirichlet_noise(0.25f, alpha);
     }
 }

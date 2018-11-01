@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <algorithm>
+#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
 #include <cstdio>
@@ -68,6 +69,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("resignpct,r", po::value<int>()->default_value(cfg_resignpct),
                         "Resign when winrate is less than x%.\n"
                         "-1 uses 10% but scales for handicap.")
+<<<<<<< HEAD
         ("weights,w", po::value<std::string>(), "File with network weights.")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
@@ -79,6 +81,22 @@ static void parse_commandline(int argc, char *argv[]) {
 			"Interval centi-seconds to print diagnostic output.")
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
+=======
+        ("weights,w", po::value<std::string>()->default_value(cfg_weightsfile), "File with network weights.")
+        ("logfile,l", po::value<std::string>(), "File to log input/output to.")
+        ("quiet,q", "Disable all diagnostic output.")
+        ("timemanage", po::value<std::string>()->default_value("auto"),
+                       "[auto|on|off|fast|no_pruning] Enable time management features.\n"
+                       "auto = no_pruning when using -n, otherwise on.\n"
+                       "on = Cut off search when the best move can't change"
+                       ", but use full time if moving faster doesn't save time.\n"
+                       "fast = Same as on but always plays faster.\n"
+                       "no_pruning = For self play training use.\n")
+        ("noponder", "Disable thinking on opponent's time.")
+        ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
+                      "-m0 -t1 -s1.")
+        ("cpu-only", "Use CPU-only implementation and do not use GPU.")
+>>>>>>> upstream/master
         ;
 #ifdef USE_OPENCL
     po::options_description gpu_desc("GPU options");
@@ -87,6 +105,13 @@ static void parse_commandline(int argc, char *argv[]) {
                 "ID of the OpenCL device(s) to use (disables autodetection).")
         ("full-tuner", "Try harder to find an optimal OpenCL tuning.")
         ("tune-only", "Tune OpenCL only and then exit.")
+<<<<<<< HEAD
+=======
+#ifdef USE_HALF
+        ("precision", po::value<std::string>(), "Floating-point precision (single/half/auto).\n"
+                                                "Default is to auto which automatically determines which one to use.")
+#endif
+>>>>>>> upstream/master
         ;
 #endif
     po::options_description selfplay_desc("Self-play options");
@@ -187,10 +212,17 @@ static void parse_commandline(int argc, char *argv[]) {
         cfg_logfile_handle = fopen(cfg_logfile.c_str(), "a");
     }
 
+<<<<<<< HEAD
     if (vm.count("weights")) {
         cfg_weightsfile = vm["weights"].as<std::string>();
     } else {
         printf("A network weights file is required to use the program.\n");
+=======
+    cfg_weightsfile = vm["weights"].as<std::string>();
+    if (vm["weights"].defaulted() && !boost::filesystem::exists(cfg_weightsfile)) {
+        printf("A network weights file is required to use the program.\n");
+        printf("By default, Leela Zero looks for it in %s.\n", cfg_weightsfile.c_str());
+>>>>>>> upstream/master
         exit(EXIT_FAILURE);
     }
 
@@ -198,6 +230,7 @@ static void parse_commandline(int argc, char *argv[]) {
         cfg_gtp_mode = true;
     }
 
+<<<<<<< HEAD
     if (!vm["threads"].defaulted()) {
         auto num_threads = vm["threads"].as<int>();
         if (num_threads > cfg_max_threads) {
@@ -206,6 +239,51 @@ static void parse_commandline(int argc, char *argv[]) {
             cfg_num_threads = num_threads;
         }
     }
+=======
+#ifdef USE_OPENCL
+    if (vm.count("gpu")) {
+        cfg_gpus = vm["gpu"].as<std::vector<int> >();
+        // if we use OpenCL, we probably need more threads for the max
+        // so that we can saturate the GPU.
+        cfg_max_threads *= cfg_gpus.size();
+        // we can't exceed MAX_CPUS
+        cfg_max_threads = std::min(cfg_max_threads, MAX_CPUS);
+    }
+
+    if (vm.count("full-tuner")) {
+        cfg_sgemm_exhaustive = true;
+    }
+
+    if (vm.count("tune-only")) {
+        cfg_tune_only = true;
+    }
+
+#ifdef USE_HALF
+    if (vm.count("precision")) {
+        auto precision = vm["precision"].as<std::string>();
+        if ("single" == precision) {
+            cfg_precision = precision_t::SINGLE;
+        } else if ("half" == precision) {
+            cfg_precision = precision_t::HALF;
+        } else if ("auto" == precision) {
+            cfg_precision = precision_t::AUTO;
+        } else {
+            printf("Unexpected option for --precision, expecting single/half/auto\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+#endif
+#endif
+
+    if (!vm["threads"].defaulted()) {
+        auto num_threads = vm["threads"].as<int>();
+        if (num_threads > cfg_max_threads) {
+            myprintf("Clamping threads to maximum = %d\n", cfg_max_threads);
+            num_threads = cfg_max_threads;
+        }
+        cfg_num_threads = num_threads;
+    }
+>>>>>>> upstream/master
     myprintf("Using %d thread(s).\n", cfg_num_threads);
 
     if (vm.count("seed")) {
@@ -227,6 +305,10 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("dumbpass")) {
         cfg_dumbpass = true;
+    }
+
+    if (vm.count("cpu-only")) {
+        cfg_cpu_only = true;
     }
 
     if (vm.count("playouts")) {
@@ -283,6 +365,11 @@ static void parse_commandline(int argc, char *argv[]) {
             cfg_timemanage = TimeManagement::OFF;
         } else if (tm == "fast") {
             cfg_timemanage = TimeManagement::FAST;
+<<<<<<< HEAD
+=======
+        } else if (tm == "no_pruning") {
+            cfg_timemanage = TimeManagement::NO_PRUNING;
+>>>>>>> upstream/master
         } else {
             printf("Invalid timemanage value.\n");
             exit(EXIT_FAILURE);
@@ -290,30 +377,40 @@ static void parse_commandline(int argc, char *argv[]) {
     }
     if (cfg_timemanage == TimeManagement::AUTO) {
         cfg_timemanage =
+<<<<<<< HEAD
             cfg_random_cnt ? TimeManagement::OFF : TimeManagement::ON;
+=======
+            cfg_noise ? TimeManagement::NO_PRUNING : TimeManagement::ON;
+>>>>>>> upstream/master
     }
 
     if (vm.count("lagbuffer")) {
         int lagbuffer = vm["lagbuffer"].as<int>();
         if (lagbuffer != cfg_lagbuffer_cs) {
-            myprintf("Using per-move time margin of %.2fs.\n", lagbuffer/100.0f);
+            myprintf("Using per-move time margin of %.2fs.\n",
+                     lagbuffer/100.0f);
             cfg_lagbuffer_cs = lagbuffer;
         }
     }
-
-#ifdef USE_OPENCL
-    if (vm.count("gpu")) {
-        cfg_gpus = vm["gpu"].as<std::vector<int> >();
+    if (vm.count("benchmark")) {
+        // These must be set later to override default arguments.
+        cfg_allow_pondering = false;
+        cfg_benchmark = true;
+        cfg_noise = false;  // Not much of a benchmark if random was used.
+        cfg_random_cnt = 0;
+        cfg_rng_seed = 1;
+        cfg_timemanage = TimeManagement::OFF;  // Reliable number of playouts.
+        if (vm["threads"].defaulted()) {
+            cfg_num_threads = 1;
+        }
+        if (!vm.count("playouts") && !vm.count("visits")) {
+            cfg_max_visits = 3200; // Default to self-play and match values.
+        }
     }
 
-    if (vm.count("full-tuner")) {
-        cfg_sgemm_exhaustive = true;
-    }
-
-    if (vm.count("tune-only")) {
-        cfg_tune_only = true;
-    }
-#endif
+    // Do not lower the expected eval for root moves that are likely not
+    // the best if we have introduced noise there exactly to explore more.
+    cfg_fpu_root_reduction = cfg_noise ? 0.0f : cfg_fpu_reduction;
 
     if (vm.count("benchmark")) {
         // These must be set later to override default arguments.
@@ -341,6 +438,14 @@ static void parse_commandline(int argc, char *argv[]) {
     cfg_options_str = out.str();
 }
 
+static void initialize_network() {
+    auto network = std::make_unique<Network>();
+    auto playouts = std::min(cfg_max_playouts, cfg_max_visits);
+    network->initialize(playouts, cfg_weightsfile);
+
+    GTP::initialize(std::move(network));
+}
+
 // Setup global objects after command line has been parsed
 void init_global_objects() {
     thread_pool.initialize(cfg_num_threads);
@@ -354,16 +459,21 @@ void init_global_objects() {
     // improves reproducibility across platforms.
     Random::get_Rng().seedrandom(cfg_rng_seed);
 
+<<<<<<< HEAD
     // When visits are limited ensure cache size is still limited.
     auto playouts = std::min(cfg_max_playouts, cfg_max_visits);
     NNCache::get_NNCache().set_size_from_playouts(playouts);
 
     // Initialize network
     Network::initialize();
+=======
+    initialize_network();
+>>>>>>> upstream/master
 }
 
 void benchmark(GameState& game) {
     game.set_timecontrol(0, 1, 0, 0);  // Set infinite time.
+<<<<<<< HEAD
     game.play_textmove("b", "q16");
     auto search = std::make_unique<UCTSearch>(game);
     game.set_to_move(FastBoard::WHITE);
@@ -372,7 +482,18 @@ void benchmark(GameState& game) {
 
 int main(int argc, char *argv[]) {
     auto input = std::string{};
+=======
+    game.play_textmove("b", "r16");
+    game.play_textmove("w", "d4");
+    game.play_textmove("b", "c3");
 
+    auto search = std::make_unique<UCTSearch>(game, *GTP::s_network);
+    game.set_to_move(FastBoard::WHITE);
+    search->think(FastBoard::WHITE);
+}
+>>>>>>> upstream/master
+
+int main(int argc, char *argv[]) {
     // Set up engine parameters
     GTP::setup_default_parameters();
     parse_commandline(argc, argv);
@@ -384,7 +505,7 @@ int main(int argc, char *argv[]) {
 
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
-#ifndef WIN32
+#ifndef _WIN32
     setbuf(stdin, nullptr);
 #endif
 
@@ -412,6 +533,7 @@ int main(int argc, char *argv[]) {
             std::cout << "Leela: ";
         }
 
+        auto input = std::string{};
         if (std::getline(std::cin, input)) {
             Utils::log_input(input);
             GTP::execute(*maingame, input);

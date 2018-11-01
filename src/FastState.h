@@ -33,8 +33,7 @@ public:
     void reset_board();
 
     void play_move(int vertex);
-
-    bool is_move_legal(int color, int vertex);
+    bool is_move_legal(int color, int vertex) const;
 
     void set_komi(float komi);
     float get_komi() const;
@@ -47,6 +46,7 @@ public:
     void increment_passes();
 
     float final_score() const;
+    std::uint64_t get_symmetry_hash(int symmetry) const;
 
     size_t get_movenum() const;
     int get_last_move() const;

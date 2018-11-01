@@ -8,17 +8,6 @@
 
 AZ also had this behavior, besides we're testing our approach right now. Please be patient.
 
-## 为什么现在训练的是5/6 block网络，而AZ用的是20block ##
-## Why the network size is only 6 blocks comparing to 20 blocks of AZ ##
-
-在项目起步阶段，较小的网络可以在短时间内得到结果，也可以尽早发现/解决问题，
-
-目前的主要目的是为了测试系统的可行性，这对今后的完整重现十分重要（为将来的大网络打好基础）。
-
-This is effectively a testing run to see if the system works, and which things are important for doing a full run. I expected 10 to 100 people to run the client, not 600.
-
-Even so, the 20 block version is 13 times more computationally expensive, and expected to make SLOWER progress early on. I think it's unwise to do such a run unless it's proven that the setup works, because you are going to be in for a very long haul.
-
 ## 为什么比较两个网络强弱时经常下十几盘就不下了 ##
 ## Why only dozens of games are played when comparing two networks ##
 
@@ -30,6 +19,7 @@ We use SPRT to decide if a newly trained network is better. A better network is 
 ## Why the game generated during self-play contains quite a few bad moves ##
 
 生成自对弈棋谱时，使用的MCTS模拟次数只有3200，还加入了噪声，这是为了增加随机性，之后的训练才有进步的空间。如果用图形界面（如sabiki）加载Leela Zero，并设置好参数与之对弈，你会发现它其实表现得并不赖。
+<<<<<<< HEAD
 
 The MCTS playouts of self-play games is only 3200, and with noise added (For randomness of each move thus training has something to learn from). If you load Leela Zero with Sabaki, you'll probably find it is actually not that weak.
 
@@ -51,8 +41,10 @@ a) For the MCTS to feed back search probabilities to the learning, it must be ab
 b) One person on computer-go, who ran a similar experiment on 7x7, reported that near the end of the learning, he observed increased performance from increasing the number from 1000 to 2000. So maybe this is worthwhile to try when the learning speed starts to decrease or flatten out. But it almost certainly isn't needed early on.
 
 c) Obviously, the speed of acquiring data is linearly related to this setting.
+=======
+>>>>>>> upstream/master
 
-So, the current number is a best guess based on these observations. To be sure what the best value is, one would have to rerun this experiment several times.
+The MCTS playouts of self-play games is only 3200, and with noise added (For randomness of each move thus training has something to learn from). If you load Leela Zero with Sabaki, you'll probably find it is actually not that weak.
 
 ## 有些自对弈对局非常短 ##
 ## Very short self-play games ends with White win?! ##

@@ -7,4 +7,8 @@ add_executable(autogtp
 set_target_properties(autogtp PROPERTIES AUTOMOC 1)
 target_link_libraries(autogtp Qt5::Core)
 
+<<<<<<< HEAD
 install(TARGETS autogtp DESTINATION bin)
+=======
+install(TARGETS autogtp DESTINATION ${CMAKE_INSTALL_BINDIR})
+>>>>>>> upstream/master

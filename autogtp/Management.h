@@ -30,7 +30,11 @@
 #include <stdexcept>
 #include "Worker.h"
 
+<<<<<<< HEAD
 constexpr int AUTOGTP_VERSION = 16;
+=======
+constexpr int AUTOGTP_VERSION = 17;
+>>>>>>> upstream/master
 
 class Management : public QObject {
     Q_OBJECT
@@ -82,6 +86,10 @@ private:
     int m_threadsLeft;
     bool m_delNetworks;
     QLockFile *m_lockFile;
+<<<<<<< HEAD
+=======
+    QString m_leelaversion;
+>>>>>>> upstream/master
 
     Order getWorkInternal(bool tuning);
     Order getWork(bool tuning = false);
@@ -92,8 +100,13 @@ private:
     void sendAllGames();
     void checkStoredGames();
     QFileInfo getNextStored();
+<<<<<<< HEAD
     bool networkExists(const QString &name);
     void fetchNetwork(const QString &net);
+=======
+    bool networkExists(const QString &name, const QString &gzipHash);
+    void fetchNetwork(const QString &net, const QString &hash);
+>>>>>>> upstream/master
     void printTimingInfo(float duration);
     void runTuningProcess(const QString &tuneCmdLine);
     void gzipFile(const QString &fileName);

@@ -67,7 +67,11 @@ Job(gpu, parent)
 
 Result ProductionJob::execute(){
     Result res(Result::Error);
+<<<<<<< HEAD
     Game game("networks/" + m_network, m_option);
+=======
+    Game game("networks/" + m_network + ".gz", m_option);
+>>>>>>> upstream/master
     if (!game.gameStart(m_leelazMinVersion)) {
         return res;
     }
@@ -131,7 +135,11 @@ void ProductionJob::init(const Order &o) {
 
 Result ValidationJob::execute(){
     Result res(Result::Error);
+<<<<<<< HEAD
     Game first("networks/" + m_firstNet,  m_option);
+=======
+    Game first("networks/" + m_firstNet + ".gz",  m_option);
+>>>>>>> upstream/master
     if (!first.gameStart(m_leelazMinVersion)) {
         return res;
     }
@@ -140,7 +148,11 @@ Result ValidationJob::execute(){
         first.setMovesCount(m_moves);
         QFile::remove(m_sgfFirst + ".sgf");
     }
+<<<<<<< HEAD
     Game second("networks/" + m_secondNet, m_option);
+=======
+    Game second("networks/" + m_secondNet + ".gz", m_option);
+>>>>>>> upstream/master
     if (!second.gameStart(m_leelazMinVersion)) {
         return res;
     }

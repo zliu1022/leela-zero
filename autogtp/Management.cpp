@@ -71,8 +71,16 @@ void Management::runTuningProcess(const QString &tuneCmdLine) {
     tuneProcess.waitForStarted(-1);
     while (tuneProcess.state() == QProcess::Running) {
         tuneProcess.waitForReadyRead(1000);
+        QByteArray text = tuneProcess.readAllStandardOutput();
+        int version_start = text.indexOf("Leela Zero ") + 11;
+        if (version_start > 10) {
+            int version_end = text.indexOf(" ", version_start);
+            m_leelaversion = QString(text.mid(version_start, version_end - version_start));
+        }
+        QTextStream(stdout) << text;
         QTextStream(stdout) << tuneProcess.readAllStandardError();
     }
+    QTextStream(stdout) << "Found Leela Version : " << m_leelaversion << endl;
     tuneProcess.waitForFinished(-1);
 }
 
@@ -95,7 +103,11 @@ void Management::giveAssignments() {
 
     Order tuneOrder = getWork(true);
     QString tuneCmdLine("./leelaz --tune-only -w networks/");
+<<<<<<< HEAD
     tuneCmdLine.append(tuneOrder.parameters()["network"]);
+=======
+    tuneCmdLine.append(tuneOrder.parameters()["network"] + ".gz");
+>>>>>>> upstream/master
     if (m_gpusList.isEmpty()) {
         runTuningProcess(tuneCmdLine);
     } else {
@@ -270,34 +282,39 @@ Order Management::getWorkInternal(bool tuning) {
     /*
 
 {
-   "cmd" : "match",
-   "white_hash" : "223737476718d58a4a5b0f317a1eeeb4b38f0c06af5ab65cb9d76d68d9abadb6",
-   "black_hash" : "92c658d7325fe38f0c8adbbb1444ed17afd891b9f208003c272547a7bcb87909",
-   "options_hash" : "c2e3"
-   "required_client_version" : "5",
-   "leelaz_version" : "0.9",
-   "random_seed" : "1",
-   "options" : {
-       "playouts" : "1000",
-       "resignation_percent" : "3",
-       "noise" : "false",
-       "randomcnt" : "0"
+   cmd : "match",
+   white_hash : "223737476718d58a4a5b0f317a1eeeb4b38f0c06af5ab65cb9d76d68d9abadb6",
+   black_hash : "92c658d7325fe38f0c8adbbb1444ed17afd891b9f208003c272547a7bcb87909",
+   options_hash : "c2e3"
+   minimum_autogtp_version: "16",
+   random_seed: "2301343010299460478",
+   minimum_leelaz_version: "0.15",
+   options : {
+       playouts : "1000",
+       visits: "3201",
+       resignation_percent : "3",
+       noise : "true",
+       randomcnt : "30"
     }
+    white_hash_gzip_hash: "23c29bf777e446b5c3fb0e6e7fa4d53f15b99cc0c25798b70b57877b55bf1638"
+    black_hash_gzip_hash: "ccfe6023456aaaa423c29bf777e4aab481245289aaaabb70b7b5380992377aa8"
 }
 
 {
-   "cmd" : "selfplay",
-   "hash" : "223737476718d58a4a5b0f317a1eeeb4b38f0c06af5ab65cb9d76d68d9abadb6",
-   "options_hash" : "ee21",
-   "required_client_version" : "5",
-   "leelaz_version" : "0.9",
-   "random_seed" : "1",
-   "options" : {
-       "playouts" : 1000,
-       "resignation_percent" : "3",
-       "noise" : "true",
-       "randomcnt" : "30"
+   cmd : "selfplay",
+   hash : "223737476718d58a4a5b0f317a1eeeb4b38f0c06af5ab65cb9d76d68d9abadb6",
+   options_hash : "ee21",
+   minimum_autogtp_version: "16",
+   random_seed: "2301343010299460478",
+   minimum_leelaz_version: "0.15",
+   options : {
+       playouts : "1000",
+       visits: "3201",
+       resignation_percent : "3",
+       noise : "true",
+       randomcnt : "30"
     }
+    hash_gzip_hash: "23c29bf777e446b5c3fb0e6e7fa4d53f15b99cc0c25798b70b57877b55bf1638"
 }
 
 {
@@ -311,11 +328,13 @@ Order Management::getWorkInternal(bool tuning) {
     prog_cmdline.append(".exe");
 #endif
     prog_cmdline.append(" -s -J");
-    prog_cmdline.append(" http://zero.sjeng.org/get-task/");
+    prog_cmdline.append(" https://zero.sjeng.org/get-task/");
     if (tuning) {
         prog_cmdline.append("0");
     } else {
         prog_cmdline.append(QString::number(AUTOGTP_VERSION));
+        if (!m_leelaversion.isEmpty())
+            prog_cmdline.append("/"+m_leelaversion);
     }
     QProcess curl;
     curl.start(prog_cmdline);
@@ -387,14 +406,20 @@ Order Management::getWorkInternal(bool tuning) {
     }
     if (ob.value("cmd").toString() == "selfplay") {
         QString net = ob.value("hash").toString();
-        fetchNetwork(net);
+        QString gzipHash = ob.value("hash_gzip_hash").toString();
+        fetchNetwork(net, gzipHash);
         o.type(Order::Production);
         parameters["network"] = net;
         o.parameters(parameters);
         if (m_delNetworks &&
             m_fallBack.parameters()["network"] != net) {
+<<<<<<< HEAD
             QTextStream(stdout) << "Deleting network " << "networks/" + m_fallBack.parameters()["network"] << endl;
             QFile::remove("networks/" + m_fallBack.parameters()["network"]);
+=======
+            QTextStream(stdout) << "Deleting network " << "networks/" + m_fallBack.parameters()["network"] + ".gz" << endl;
+            QFile::remove("networks/" + m_fallBack.parameters()["network"] + ".gz");
+>>>>>>> upstream/master
         }
         m_fallBack = o;
         QTextStream(stdout) << "net: " << net << "." << endl;
@@ -402,15 +427,18 @@ Order Management::getWorkInternal(bool tuning) {
     if (ob.value("cmd").toString() == "match") {
         o.type(Order::Validation);
         QString net1 = ob.value("black_hash").toString();
+        QString gzipHash1 = ob.value("black_hash_gzip_hash").toString();
         QString net2 = ob.value("white_hash").toString();
-        fetchNetwork(net1);
-        fetchNetwork(net2);
+        QString gzipHash2 = ob.value("white_hash_gzip_hash").toString();
+        fetchNetwork(net1, gzipHash1);
+        fetchNetwork(net2, gzipHash2);
         parameters["firstNet"] = net1;
         parameters["secondNet"] = net2;
         o.parameters(parameters);
         if (m_delNetworks) {
             if (m_lastMatch.parameters()["firstNet"] != net1 &&
                 m_lastMatch.parameters()["firstNet"] != net2) {
+<<<<<<< HEAD
                 QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["firstNet"] << endl;
                 QFile::remove("networks/" + m_lastMatch.parameters()["firstNet"]);
             }
@@ -418,6 +446,15 @@ Order Management::getWorkInternal(bool tuning) {
                 m_lastMatch.parameters()["secondNet"] != net2) {
                 QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["secondNet"] << endl;
                 QFile::remove("networks/" + m_lastMatch.parameters()["secondNet"]);
+=======
+                QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["firstNet"] + ".gz" << endl;
+                QFile::remove("networks/" + m_lastMatch.parameters()["firstNet"] + ".gz");
+            }
+            if (m_lastMatch.parameters()["secondNet"] != net1 &&
+                m_lastMatch.parameters()["secondNet"] != net2) {
+                QTextStream(stdout) << "Deleting network " << "networks/" + m_lastMatch.parameters()["secondNet"] + ".gz" << endl;
+                QFile::remove("networks/" + m_lastMatch.parameters()["secondNet"] + ".gz");
+>>>>>>> upstream/master
             }
         }
         m_lastMatch = o;
@@ -469,9 +506,13 @@ Order Management::getWork(bool tuning) {
 }
 
 
+<<<<<<< HEAD
 bool Management::networkExists(const QString &name) {
     QString realHash = name;
     realHash.remove(0,9);
+=======
+bool Management::networkExists(const QString &name, const QString &gzipHash) {
+>>>>>>> upstream/master
     if (QFileInfo::exists(name)) {
         QFile f(name);
         if (f.open(QFile::ReadOnly)) {
@@ -480,9 +521,14 @@ bool Management::networkExists(const QString &name) {
                 throw NetworkException("Reading network file failed.");
             }
             QString result = hash.result().toHex();
+<<<<<<< HEAD
             if (result == realHash) {
+=======
+            if (result == gzipHash) {
+>>>>>>> upstream/master
                 return true;
             }
+            QTextStream(stdout) << "Downloaded network hash doesn't match, calculated: " << result << " it should be: " << gzipHash << endl;
         } else {
             QTextStream(stdout)
                 << "Unable to open network file for reading." << endl;
@@ -492,19 +538,23 @@ bool Management::networkExists(const QString &name) {
             throw NetworkException("Unable to delete the network file."
                                    " Check permissions.");
         }
-        QTextStream(stdout) << "Downloaded network hash doesn't match." << endl;
-        f.remove();
     }
     return false;
 }
 
+<<<<<<< HEAD
 void Management::fetchNetwork(const QString &net) {
     QString name = "networks/" + net;
     if (networkExists(name)) {
+=======
+void Management::fetchNetwork(const QString &net, const QString &hash) {
+    QString name = "networks/" + net + ".gz";
+    if (networkExists(name, hash)) {
+>>>>>>> upstream/master
         return;
     }
-    if (QFileInfo::exists(name + ".gz")) {
-        QFile f_gz(name + ".gz");
+    if (QFileInfo::exists(name)) {
+        QFile f_gz(name);
         // Curl refuses to overwrite, so make sure to delete the gzipped
         // network if it exists
         f_gz.remove();
@@ -516,9 +566,15 @@ void Management::fetchNetwork(const QString &net) {
 #endif
     // Be quiet, but output the real file name we saved.
     // Use the filename from the server.
+<<<<<<< HEAD
     prog_cmdline.append(" -s -J -o " + name + ".gz ");
     prog_cmdline.append(" -w %{filename_effective}");
     prog_cmdline.append(" http://zero.sjeng.org/" + name + ".gz");
+=======
+    prog_cmdline.append(" -s -J -o " + name + " ");
+    prog_cmdline.append(" -w %{filename_effective}");
+    prog_cmdline.append(" https://zero.sjeng.org/" + name);
+>>>>>>> upstream/master
 
     QProcess curl;
     curl.start(prog_cmdline);
@@ -533,22 +589,7 @@ void Management::fetchNetwork(const QString &net) {
     QString outstr(output);
     QStringList outlst = outstr.split("\n");
     QString outfile = outlst[0];
-#ifdef WIN32
-    QProcess::execute("gzip.exe -d -q " + outfile);
-#else
-    QProcess::execute("gunzip -q " + outfile);
-#endif
-    // Remove extension (.gz)
-    outfile.chop(3);
     QTextStream(stdout) << "Net filename: " << outfile << endl;
-
-    if (!networkExists(name)) {
-        //If gunzip failed remove the .gz file
-        QFile f_gz(name + ".gz");
-        f_gz.remove();
-        throw NetworkException("Failed to fetch the network");
-    }
-
     return;
 }
 
@@ -720,7 +761,7 @@ void Management::uploadResult(const QMap<QString,QString> &r, const QMap<QString
     prog_cmdline.append("-F options_hash="+ l["optHash"]);
     prog_cmdline.append("-F random_seed="+ l["rndSeed"]);
     prog_cmdline.append("-F sgf=@"+ r["file"] + ".sgf.gz");
-    prog_cmdline.append("http://zero.sjeng.org/submit-match");
+    prog_cmdline.append("https://zero.sjeng.org/submit-match");
 
     bool sent = false;
     for (auto retries = 0; retries < MAX_RETRIES; retries++) {
@@ -772,7 +813,7 @@ void Management::uploadData(const QMap<QString,QString> &r, const QMap<QString,Q
     prog_cmdline.append("-F random_seed="+ l["rndSeed"]);
     prog_cmdline.append("-F sgf=@" + r["file"] + ".sgf.gz");
     prog_cmdline.append("-F trainingdata=@" + r["file"] + ".txt.0.gz");
-    prog_cmdline.append("http://zero.sjeng.org/submit");
+    prog_cmdline.append("https://zero.sjeng.org/submit");
 
     bool sent = false;
     for (auto retries = 0; retries < MAX_RETRIES; retries++) {

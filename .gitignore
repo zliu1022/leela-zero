@@ -8,3 +8,9 @@ training/tf/venv
 leelaz-model*
 *.orig
 leelaz_opencl_tuning
+<<<<<<< HEAD
+=======
+/build-autogtp-*
+/build-validation-*
+.vs/
+>>>>>>> upstream/master

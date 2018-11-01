@@ -29,30 +29,50 @@ public:
     /*
         Initialize time control. Timing info is per GTP and in centiseconds
     */
+<<<<<<< HEAD
     TimeControl(int boardsize = BOARD_SIZE,
                 int maintime = 60 * 60 * 100,
+=======
+    TimeControl(int maintime = 60 * 60 * 100,
+>>>>>>> upstream/master
                 int byotime = 0, int byostones = 25,
                 int byoperiods = 0);
 
     void start(int color);
     void stop(int color);
+<<<<<<< HEAD
     int max_time_for_move(int color, int movenum);
+=======
+    int max_time_for_move(int boardsize, int color, size_t movenum) const;
+>>>>>>> upstream/master
     void adjust_time(int color, int time, int stones);
-    void set_boardsize(int boardsize);
     void display_times();
     void reset_clocks();
+<<<<<<< HEAD
     bool can_accumulate_time(int color);
     std::string to_text_sgf();
 
 private:
     void display_color_time(int color);
     int get_moves_expected(int movenum);
+=======
+    bool can_accumulate_time(int color) const;
+    size_t opening_moves(int boardsize) const;
+    std::string to_text_sgf() const;
+
+private:
+    void display_color_time(int color);
+    int get_moves_expected(int boardsize, size_t movenum) const;
+>>>>>>> upstream/master
 
     int m_maintime;
     int m_byotime;
     int m_byostones;
     int m_byoperiods;
+<<<<<<< HEAD
     int m_boardsize;
+=======
+>>>>>>> upstream/master
 
     std::array<int,  2> m_remaining_time;    /* main time per player */
     std::array<int,  2> m_stones_left;       /* stones to play in byo period */

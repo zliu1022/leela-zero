@@ -1,12 +1,28 @@
 version: '{build}'
+image:
+- Visual Studio 2015
+- Visual Studio 2017
 configuration: Release
 platform: x64
+matrix:
+  fast_finish: true
 environment:
   matrix:
+<<<<<<< HEAD
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     features: USE_CPU_ONLY
     run_tests: 1
+=======
+  - cmake_build: 1
+  - cmake_build: 1
+    features: USE_CPU_ONLY
+    run_tests: 1
+  - cmake_build: 1
+    features: USE_CPU_ONLY USE_BLAS
+    run_tests: 1
+  - msbuild: 1
+>>>>>>> upstream/master
 skip_commits:
   files:
     - '**/*.md'
@@ -15,13 +31,33 @@ skip_commits:
     - training/
     - AUTHORS
     - COPYING
+<<<<<<< HEAD
 install:
 - cmd: nuget restore msvc\VS2017 -PackagesDirectory pkgs
 cache: pkgs -> appveyor.yml
+=======
+for:
+- matrix:
+    only:
+    - image: Visual Studio 2015
+  install:
+  - cmd: set MSVCDIR=msvc\VS2015
+  - cmd: echo %MSVCDIR%
+  - cmd: nuget restore %MSVCDIR% -PackagesDirectory msvc\packages
+- matrix:
+    only:
+    - image: Visual Studio 2017
+  install:
+  - cmd: set MSVCDIR=msvc\VS2017
+  - cmd: echo %MSVCDIR%
+  - cmd: nuget restore %MSVCDIR% -PackagesDirectory msvc\packages
+>>>>>>> upstream/master
 build_script:
-- cmd: >-
-    set PKG_FOLDER="%cd%\pkgs"
+- cmd: if "%cmake_build%"=="1" %MSVCDIR%\cmake_build.bat
+- cmd: if "%msbuild%"=="1" git submodule update --init --recursive
+- cmd: if "%msbuild%"=="1" msbuild /t:build %MSVCDIR%\leela-zero.vcxproj
 
+<<<<<<< HEAD
     git submodule update --init --recursive
 
     mkdir build
@@ -42,3 +78,9 @@ test_script:
     set PATH=Release;%PATH
 
     if NOT "%run_tests%"=="" tests.exe
+=======
+test_script:
+- cmd: if "%run_tests%"=="1" cd build && Release\tests.exe
+
+cache: msvc\packages -> appveyor.yml
+>>>>>>> upstream/master

@@ -28,7 +28,12 @@ class Game : QProcess {
 public:
     Game(const QString& weights,
          const QString& opt,
+<<<<<<< HEAD
          const QString& binary = QString("./leelaz"));
+=======
+         const QString& binary = QString("./leelaz"),
+         const QStringList& commands = QStringList("time_settings 0 1 0"));
+>>>>>>> upstream/master
     ~Game() = default;
     bool gameStart(const VersionTuple& min_version);
     void move();
@@ -69,7 +74,11 @@ private:
     };
     QString m_cmdLine;
     QString m_binary;
+<<<<<<< HEAD
     QString m_timeSettings;
+=======
+    QStringList m_commands;
+>>>>>>> upstream/master
     QString m_winner;
     QString m_fileName;
     QString m_moveDone;
