@@ -45,7 +45,7 @@ public:
 
     std::string get_info_string(int order) const {
         auto tmp = "info move " + m_move + " visits " + std::to_string(m_visits) +
-                          " winrate " + std::to_string(static_cast<int>(m_winrate * 10000)) + 
+                          " winrate " + std::to_string(static_cast<int>(m_winrate * 10000.0f)) +
                           " prior " + std::to_string(static_cast<int>(m_policy_prior * 10000.0f));
         if (order >= 0) {
             tmp += " order " + std::to_string(order);
