@@ -64,7 +64,7 @@ public:
 private:
     std::string m_move;
     int m_visits;
-    int m_winrate;
+    float m_winrate;
     float m_policy_prior;
     std::string m_pv;
 };
