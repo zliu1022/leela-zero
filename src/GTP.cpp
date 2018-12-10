@@ -376,12 +376,19 @@ bool GTP::execute(GameState & game, std::string xinput) {
             }
         }
         return true;
-    } else if (command.find("genmove") == 0) {
+    } else if (command.find("genmove") == 0
+               || command.find("lz-genmove_analyze") == 0) {
+        auto analysis_output = command.find("lz-genmove_analyze") == 0;
+        auto interval = 0;
+
         std::istringstream cmdstream(command);
         std::string tmp;
 
         cmdstream >> tmp;  // eat genmove
         cmdstream >> tmp;
+        if (analysis_output) {
+            cmdstream >> interval;
+        }
 
         if (!cmdstream.fail()) {
             int who;
@@ -392,6 +399,12 @@ bool GTP::execute(GameState & game, std::string xinput) {
             } else {
                 gtp_fail_printf(id, "syntax error");
                 return 1;
+            }
+            if (analysis_output) {
+                // Start of multi-line response
+                cfg_analyze_interval_centis = interval;
+                if (id != -1) gtp_printf_raw("=%d\n", id);
+                else gtp_printf_raw("=\n");
             }
             if (cfg_purevalue) {
                 myprintf("Thinking in pure value mode...\n");
@@ -468,7 +481,11 @@ bool GTP::execute(GameState & game, std::string xinput) {
                     game.play_move(move);
 
                     std::string vertex = game.move_to_text(move);
-                    gtp_printf(id, "%s", vertex.c_str());
+                    if (!analysis_output) {
+                        gtp_printf(id, "%s", vertex.c_str());
+                    } else {
+                        gtp_printf_raw("play %s\n", vertex.c_str());
+                    }
                 }
             }
             if (cfg_allow_pondering) {
@@ -477,9 +494,15 @@ bool GTP::execute(GameState & game, std::string xinput) {
                     search->ponder();
                 }
             }
+            if (analysis_output) {
+                // Terminate multi-line response
+                gtp_printf_raw("\n");
+            }
         } else {
             gtp_fail_printf(id, "syntax not understood");
         }
+        cfg_analyze_interval_centis = 0;
+        analysis_output = false;
         return true;
     } else if (command.find("lz-analyze") == 0) {
         std::istringstream cmdstream(command);
