@@ -168,12 +168,18 @@ float UCTSearch::get_min_psa_ratio() const {
 
 SearchResult UCTSearch::play_simulation(GameState & currstate,
                                         UCTNode* const node) {
+#ifdef LEARN_ZLIU
+    printf("play_simulation begin\n");
+#endif
     const auto color = currstate.get_to_move();
     auto result = SearchResult{};
 
     node->virtual_loss();
 
     if (!node->has_children()) {
+#ifdef LEARN_ZLIU
+        printf("!node->has_children()\n");
+#endif
         if (cfg_pacman) {
             if ( currstate.get_passes() >= 1 || 
                 currstate.board.get_prisoners(FastBoard::BLACK) >=1 ||
@@ -234,6 +240,9 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
             if (currstate.get_passes() >= 2) {
                 auto score = currstate.final_score();
                 result = SearchResult::from_score(score);
+#ifdef LEARN_ZLIU
+                printf("score: %f result: %f\n", score, result.eval());
+#endif
             } else if (m_nodes < MAX_TREE_SIZE) {
                 auto mem_full_pct = m_nodes / static_cast<float>(MAX_TREE_SIZE);
                 float eval;
@@ -242,6 +251,9 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
                 if (success) {
                     result = SearchResult::from_eval(eval);
                 }
+#ifdef LEARN_ZLIU
+            printf("create_children %d result eval: %f(%f) valid: %d\n", success, result.eval(), 1-result.eval(), result.valid());
+#endif
             }
         }
 
@@ -249,7 +261,17 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     }
 
     if (node->has_children() && !result.valid()) {
+#ifdef LEARN_ZLIU
+        printf("node->has_children() result valid: %d\n", result.valid());
+#endif
         auto next = node->uct_select_child(color, node == m_root.get());
+#ifdef LEARN_ZLIU
+        std::string strmove = currstate.move_to_text(next->get_move());
+        printf("uct_select_child: %s\n", strmove.c_str());
+        printf("\ndump_stats\n");
+        dump_stats(m_rootstate, *m_root, 10);
+        printf("\n");
+#endif
 
         if (next != nullptr) {
             auto move = next->get_move();
@@ -257,6 +279,9 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
             currstate.play_move(move);
             if (move != FastBoard::PASS && currstate.superko()) {
                 next->invalidate();
+#ifdef LEARN_ZLIU
+                printf("invalidate\n");
+#endif
             } else {
                 result = play_simulation(currstate, next);
             }
@@ -267,6 +292,9 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
         node->update(result.eval());
     }
     node->virtual_loss_undo();
+#ifdef LEARN_ZLIU
+    printf("play_simulation end\n");
+#endif
 
     return result;
 }
@@ -656,6 +684,9 @@ bool UCTSearch::stop_thinking(int elapsed_centis, int time_for_move) const {
 }
 
 void UCTWorker::operator()() {
+#ifdef LEARN_ZLIU
+    printf("UCTWorker\n");
+#endif
     do {
         auto currstate = std::make_unique<GameState>(m_rootstate);
         auto result = m_search->play_simulation(*currstate, m_root);
@@ -690,10 +721,19 @@ int UCTSearch::think(int color, passflag_t passflag) {
     // play something legal and decent even in time trouble)
     float root_eval;
     if (!m_root->has_children()) {
+#ifdef LEARN_ZLIU
+        auto success = m_root->create_children(m_nodes, m_rootstate, root_eval);
+        auto result = SearchResult::from_eval(root_eval);
+        printf("create_children %d result eval: %f(%f) valid: %d\n", success, result.eval(), 1-result.eval(), result.valid());
+#else
         m_root->create_children(m_nodes, m_rootstate, root_eval);
+#endif
         m_root->update(root_eval);
     } else {
         root_eval = m_root->get_eval(color);
+#ifdef LEARN_ZLIU
+        printf("m_root->get_eval: %f\n", root_eval);
+#endif
     }
     m_root->kill_superkos(m_rootstate);
     if (cfg_noise) {
@@ -718,6 +758,9 @@ int UCTSearch::think(int color, passflag_t passflag) {
     do {
         auto currstate = std::make_unique<GameState>(m_rootstate);
 
+#ifdef LEARN_ZLIU
+        printf("\ncall play_simulation\n");
+#endif
         auto result = play_simulation(*currstate, m_root.get());
         if (result.valid()) {
             increment_playouts();
@@ -740,9 +783,18 @@ int UCTSearch::think(int color, passflag_t passflag) {
         if (elapsed_centis - last_update > cfg_interval) {
             last_update = elapsed_centis;
             dump_analysis(static_cast<int>(m_playouts));
+#ifdef LEARN_ZLIU
+            dump_stats(m_rootstate, *m_root, 16);
+#else
             dump_stats(m_rootstate, *m_root, 5);
+#endif
             myprintf("\n");
         }
+#ifdef LEARN_ZLIU
+        printf("call play_simulation %d po, %d visits\n\n", static_cast<int>(m_playouts), m_root->get_visits());
+        dump_stats(m_rootstate, *m_root, 16);
+        printf("\n");
+#endif
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
         keeprunning &= have_alternate_moves(elapsed_centis, time_for_move);
@@ -851,7 +903,11 @@ void UCTSearch::ponder() {
     tg.wait_all();
     // display search info
     myprintf("\n");
+#ifdef LEARN_ZLIU
+    dump_stats(m_rootstate, *m_root, 50);
+#else
     dump_stats(m_rootstate, *m_root);
+#endif
 
     myprintf("\n%d visits, %d nodes\n\n", m_root->get_visits(), m_nodes.load());
 }
