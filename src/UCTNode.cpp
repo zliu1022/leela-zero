@@ -225,6 +225,10 @@ float UCTNode::get_eval(int tomove) const {
     if (tomove == FastBoard::WHITE) {
         score = 1.0f - score;
     }
+#ifdef LEARN_ZLIU
+    printf("Q-get_eval=blackeval/visits: %f=%f/%d = (%f+%d)/(%d+%d)\n", score, blackeval, visits, \
+        blackeval-virtual_loss, virtual_loss, get_visits(), virtual_loss);
+#endif
     return score;
 }
 
@@ -240,10 +244,19 @@ double UCTNode::get_blackevals() const {
 }
 
 void UCTNode::accumulate_eval(float eval) {
+#ifdef LEARN_ZLIU
+    printf("update: %f + %f", get_blackevals(), eval);
     atomic_add(m_blackevals, (double)eval);
+    printf(" = %f\n", get_blackevals());
+#else
+    atomic_add(m_blackevals, (double)eval);
+#endif
 }
 
 UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
+#ifdef LEARN_ZLIU
+    printf("uct_select_child:\n");
+#endif
     UCTNode* best = nullptr;
     auto best_value = std::numeric_limits<double>::lowest();
 
@@ -262,6 +275,9 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
     }
 
     auto numerator = std::sqrt((double)parentvisits);
+#ifdef LEARN_ZLIU
+    printf("U-numerator=sqrt(parentvisits):                 %f (%ld)\n", numerator, parentvisits);
+#endif
     auto fpu_reduction = 0.0f;
     // Lower the expected eval for moves that are likely not the best.
     // Do not do this if we have introduced noise at this node exactly
@@ -271,6 +287,10 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
     }
     // Estimated eval for unknown nodes = original parent NN eval - reduction
     auto fpu_eval = get_net_eval(color) - fpu_reduction;
+#ifdef LEARN_ZLIU
+    printf("Q-fpu_reduction=cfg*sqrt(total_visited_policy): %f (%f)\n", fpu_reduction, total_visited_policy);
+    printf("Q-fpu_eval=get_net_eval-fpu_reduction:          %f <- initial Q when no visits = (%f-%f)\n", fpu_eval, get_net_eval(color), fpu_reduction);
+#endif
 
     for (const auto& child : m_children) {
         if (!child->active()) {
@@ -288,6 +308,9 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
         assert(value > std::numeric_limits<double>::lowest());
 
         if (value > best_value) {
+#ifdef LEARN_ZLIU
+            printf("value: %f Q: %f U: %f cfg*psa*(numerator/denom) %f %f %f\n", value, winrate, puct, psa, numerator, denom);
+#endif
             best_value = value;
             best = child.get();
         }
