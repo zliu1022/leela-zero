@@ -1,0 +1,1470 @@
+Using 1 thread(s).
+RNG seed: 9726828457969005122
+Detecting residual layers...v1...192 channels...15 blocks.
+= 
+
+= 
+
+= 
+
+= 
+
+= 
+
+Thinking at most 2678400.0 seconds...
+create_children eval: 0.945016(0.054984) (1 1)
+visits: 1 update: 0.000000 + 0.945016 = 0.945016  Q=0.945016(0.054984)
+NN eval=0.054984
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.054984 <- initial Q when no visits = (0.054984-0.000000)
+V(0.054984)=Q(0.054984)+U(0.000000) U=P*(n/den)=0.117124*(0.00/1.00)
+uct_select_child: C6
+
+dump_stats
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.954892(0.045108) (1 1)
+visits: 1 update: 0.000000 + 0.954892 = 0.954892  Q=0.954892(0.045108)
+visits: 2 update: 0.945016 + 0.954892 = 1.899908  Q=0.949954(0.050046)
+call play_simulation 1 po, 2 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.085559=cfg_fpu_reduction*sqrt(0.117124)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.030575 <- initial Q when no visits = (0.054984-0.085559)
+    Q-get_eval=blackeval/visits: 0.045108=0.954892/1 = (0.954892+0)/(1+0)
+V(0.091958)=Q(0.045108)+U(0.046850) U=P*(n/den)=0.117124*(1.00/2.00)
+uct_select_child: C6
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.045108=0.954892/1 = (0.954892+0)/(1+0)
+  C6 ->       1 (V:  4.51%) (N: 11.71%) PV: C6 
+ C14 ->       0 (V:  0.00%) (N:  8.04%) PV: C14 
+1.5 average depth, 2 max depth
+1 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.954892 <- initial Q when no visits = (0.954892-0.000000)
+V(0.954892)=Q(0.954892)+U(0.000000) U=P*(n/den)=0.060276*(0.00/1.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.011277=3.954892/4 = (0.954892+3)/(1+3)
+  C6 ->       1 (V:  1.13%) (N: 11.71%) PV: C6 
+ C14 ->       0 (V:  0.00%) (N:  8.04%) PV: C14 
+1.5 average depth, 2 max depth
+1 non leaf nodes, 1.00 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.970544(0.029456) (1 1)
+visits: 1 update: 0.000000 + 0.970544 = 0.970544  Q=0.970544(0.029456)
+visits: 2 update: 0.954892 + 0.970544 = 1.925435  Q=0.962718(0.037282)
+visits: 3 update: 1.899908 + 0.970544 = 2.870451  Q=0.956817(0.043183)
+call play_simulation 2 po, 3 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.414214 (2)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.085559=cfg_fpu_reduction*sqrt(0.117124)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.030575 <- initial Q when no visits = (0.054984-0.085559)
+    Q-get_eval=blackeval/visits: 0.037282=1.925435/2 = (1.925435+0)/(2+0)
+V(0.081453)=Q(0.037282)+U(0.044170) U=P*(n/den)=0.117124*(1.41/3.00)
+uct_select_child: C6
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.037282=1.925435/2 = (1.925435+0)/(2+0)
+  C6 ->       2 (V:  3.73%) (N: 11.71%) PV: C6 F3
+ C14 ->       0 (V:  0.00%) (N:  8.04%) PV: C14 
+2.0 average depth, 3 max depth
+2 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.970544=0.970544/1 = (0.970544+0)/(1+0)
+V(0.994654)=Q(0.970544)+U(0.024110) U=P*(n/den)=0.060276*(1.00/2.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.014913=4.925435/5 = (1.925435+3)/(2+3)
+  C6 ->       2 (V:  1.49%) (N: 11.71%) PV: C6 F3
+ C14 ->       0 (V:  0.00%) (N:  8.04%) PV: C14 
+2.0 average depth, 3 max depth
+2 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.029456 <- initial Q when no visits = (0.029456-0.000000)
+V(0.029456)=Q(0.029456)+U(0.000000) U=P*(n/den)=0.737207*(0.00/1.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.014913=4.925435/5 = (1.925435+3)/(2+3)
+  C6 ->       2 (V:  1.49%) (N: 11.71%) PV: C6 F3
+ C14 ->       0 (V:  0.00%) (N:  8.04%) PV: C14 
+2.0 average depth, 3 max depth
+2 non leaf nodes, 1.00 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.959203(0.040797) (1 1)
+visits: 1 update: 0.000000 + 0.959203 = 0.959203  Q=0.959203(0.040797)
+visits: 2 update: 0.970544 + 0.959203 = 1.929746  Q=0.964873(0.035127)
+visits: 3 update: 1.925435 + 0.959203 = 2.884638  Q=0.961546(0.038454)
+visits: 4 update: 2.870451 + 0.959203 = 3.829654  Q=0.957414(0.042586)
+call play_simulation 3 po, 4 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.732051 (3)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.085559=cfg_fpu_reduction*sqrt(0.117124)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.030575 <- initial Q when no visits = (0.054984-0.085559)
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+V(0.079027)=Q(0.038454)+U(0.040573) U=P*(n/den)=0.117124*(1.73/4.00)
+V(0.080853)=Q(-0.030575)+U(0.111428) U=P*(n/den)=0.080416*(1.73/1.00)
+uct_select_child: C14
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+  C6 ->       3 (V:  3.85%) (N: 11.71%) PV: C6 F3 B4
+ C14 ->       0 (V:  0.00%) (N:  8.04%) PV: C14 
+2.5 average depth, 4 max depth
+3 non leaf nodes, 1.00 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.952424(0.047576) (1 1)
+visits: 1 update: 0.000000 + 0.952424 = 0.952424  Q=0.952424(0.047576)
+visits: 5 update: 3.829654 + 0.952424 = 4.782078  Q=0.956416(0.043584)
+call play_simulation 4 po, 5 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.000000 (4)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.111114=cfg_fpu_reduction*sqrt(0.197541)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.056130 <- initial Q when no visits = (0.054984-0.111114)
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+V(0.085304)=Q(0.038454)+U(0.046850) U=P*(n/den)=0.117124*(2.00/4.00)
+    Q-get_eval=blackeval/visits: 0.047576=0.952424/1 = (0.952424+0)/(1+0)
+V(0.111909)=Q(0.047576)+U(0.064333) U=P*(n/den)=0.080416*(2.00/2.00)
+uct_select_child: C14
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+  C6 ->       3 (V:  3.85%) (N: 11.71%) PV: C6 F3 B4
+    Q-get_eval=blackeval/visits: 0.047576=0.952424/1 = (0.952424+0)/(1+0)
+ C14 ->       1 (V:  4.76%) (N:  8.04%) PV: C14 
+2.4 average depth, 4 max depth
+3 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.952424 <- initial Q when no visits = (0.952424-0.000000)
+V(0.952424)=Q(0.952424)+U(0.000000) U=P*(n/den)=0.174426*(0.00/1.00)
+uct_select_child: F17
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+  C6 ->       3 (V:  3.85%) (N: 11.71%) PV: C6 F3 B4
+    Q-get_eval=blackeval/visits: 0.011894=3.952424/4 = (0.952424+3)/(1+3)
+ C14 ->       1 (V:  1.19%) (N:  8.04%) PV: C14 
+2.4 average depth, 4 max depth
+3 non leaf nodes, 1.33 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.973769(0.026231) (1 1)
+visits: 1 update: 0.000000 + 0.973769 = 0.973769  Q=0.973769(0.026231)
+visits: 2 update: 0.952424 + 0.973769 = 1.926193  Q=0.963096(0.036904)
+visits: 6 update: 4.782078 + 0.973769 = 5.755847  Q=0.959308(0.040692)
+call play_simulation 5 po, 6 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.236068 (5)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.111114=cfg_fpu_reduction*sqrt(0.197541)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.056130 <- initial Q when no visits = (0.054984-0.111114)
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+V(0.090834)=Q(0.038454)+U(0.052380) U=P*(n/den)=0.117124*(2.24/4.00)
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+uct_select_child: C6
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.038454=2.884638/3 = (2.884638+0)/(3+0)
+  C6 ->       3 (V:  3.85%) (N: 11.71%) PV: C6 F3 B4
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.5 average depth, 4 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.414214 (2)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.964873=1.929746/2 = (1.929746+0)/(2+0)
+V(0.987605)=Q(0.964873)+U(0.022731) U=P*(n/den)=0.060276*(1.41/3.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.019227=5.884638/6 = (2.884638+3)/(3+3)
+  C6 ->       3 (V:  1.92%) (N: 11.71%) PV: C6 F3 B4
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.5 average depth, 4 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.040797=0.959203/1 = (0.959203+0)/(1+0)
+V(0.335680)=Q(0.040797)+U(0.294883) U=P*(n/den)=0.737207*(1.00/2.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.019227=5.884638/6 = (2.884638+3)/(3+3)
+  C6 ->       3 (V:  1.92%) (N: 11.71%) PV: C6 F3 B4
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.5 average depth, 4 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.959203 <- initial Q when no visits = (0.959203-0.000000)
+V(0.959203)=Q(0.959203)+U(0.000000) U=P*(n/den)=0.393718*(0.00/1.00)
+uct_select_child: C7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.019227=5.884638/6 = (2.884638+3)/(3+3)
+  C6 ->       3 (V:  1.92%) (N: 11.71%) PV: C6 F3 B4
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.5 average depth, 4 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.968771(0.031229) (1 1)
+visits: 1 update: 0.000000 + 0.968771 = 0.968771  Q=0.968771(0.031229)
+visits: 2 update: 0.959203 + 0.968771 = 1.927973  Q=0.963987(0.036013)
+visits: 3 update: 1.929746 + 0.968771 = 2.898517  Q=0.966172(0.033828)
+visits: 4 update: 2.884638 + 0.968771 = 3.853409  Q=0.963352(0.036648)
+visits: 7 update: 5.755847 + 0.968771 = 6.724617  Q=0.960660(0.039340)
+call play_simulation 6 po, 7 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.449490 (6)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.111114=cfg_fpu_reduction*sqrt(0.197541)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.056130 <- initial Q when no visits = (0.054984-0.111114)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+V(0.082551)=Q(0.036648)+U(0.045903) U=P*(n/den)=0.117124*(2.45/5.00)
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+V(0.089431)=Q(0.036904)+U(0.052528) U=P*(n/den)=0.080416*(2.45/3.00)
+V(0.097894)=Q(-0.056130)+U(0.154024) U=P*(n/den)=0.078600*(2.45/1.00)
+uct_select_child: O17
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.9 average depth, 5 max depth
+5 non leaf nodes, 1.20 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.918374(0.081626) (1 1)
+visits: 1 update: 0.000000 + 0.918374 = 0.918374  Q=0.918374(0.081626)
+visits: 8 update: 6.724617 + 0.918374 = 7.642991  Q=0.955374(0.044626)
+call play_simulation 7 po, 8 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.645751 (7)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.131373=cfg_fpu_reduction*sqrt(0.276140)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.076389 <- initial Q when no visits = (0.054984-0.131373)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+V(0.086229)=Q(0.036648)+U(0.049581) U=P*(n/den)=0.117124*(2.65/5.00)
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+V(0.093640)=Q(0.036904)+U(0.056736) U=P*(n/den)=0.080416*(2.65/3.00)
+    Q-get_eval=blackeval/visits: 0.081626=0.918374/1 = (0.918374+0)/(1+0)
+V(0.164808)=Q(0.081626)+U(0.083182) U=P*(n/den)=0.078600*(2.65/2.00)
+uct_select_child: O17
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+    Q-get_eval=blackeval/visits: 0.081626=0.918374/1 = (0.918374+0)/(1+0)
+ O17 ->       1 (V:  8.16%) (N:  7.86%) PV: O17 
+2.7 average depth, 5 max depth
+5 non leaf nodes, 1.40 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.918374 <- initial Q when no visits = (0.918374-0.000000)
+V(0.918374)=Q(0.918374)+U(0.000000) U=P*(n/den)=0.131657*(0.00/1.00)
+uct_select_child: R14
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+    Q-get_eval=blackeval/visits: 0.020407=3.918374/4 = (0.918374+3)/(1+3)
+ O17 ->       1 (V:  2.04%) (N:  7.86%) PV: O17 
+2.7 average depth, 5 max depth
+5 non leaf nodes, 1.40 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.982914(0.017086) (1 1)
+visits: 1 update: 0.000000 + 0.982914 = 0.982914  Q=0.982914(0.017086)
+visits: 2 update: 0.918374 + 0.982914 = 1.901288  Q=0.950644(0.049356)
+visits: 9 update: 7.642991 + 0.982914 = 8.625906  Q=0.958434(0.041566)
+call play_simulation 8 po, 9 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.828427 (8)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.131373=cfg_fpu_reduction*sqrt(0.276140)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.076389 <- initial Q when no visits = (0.054984-0.131373)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+V(0.089652)=Q(0.036648)+U(0.053004) U=P*(n/den)=0.117124*(2.83/5.00)
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+V(0.097557)=Q(0.036904)+U(0.060654) U=P*(n/den)=0.080416*(2.83/3.00)
+    Q-get_eval=blackeval/visits: 0.049356=1.901288/2 = (1.901288+0)/(2+0)
+V(0.108640)=Q(0.049356)+U(0.059284) U=P*(n/den)=0.078600*(2.83/3.00)
+uct_select_child: O17
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.049356=1.901288/2 = (1.901288+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.049356=1.901288/2 = (1.901288+0)/(2+0)
+ O17 ->       2 (V:  4.94%) (N:  7.86%) PV: O17 R14
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.8 average depth, 5 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.090712=cfg_fpu_reduction*sqrt(0.131657)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.827662 <- initial Q when no visits = (0.918374-0.090712)
+    Q-get_eval=blackeval/visits: 0.982914=0.982914/1 = (0.982914+0)/(1+0)
+V(1.035577)=Q(0.982914)+U(0.052663) U=P*(n/den)=0.131657*(1.00/2.00)
+uct_select_child: R14
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.019742=4.901288/5 = (1.901288+3)/(2+3)
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+    Q-get_eval=blackeval/visits: 0.019742=4.901288/5 = (1.901288+3)/(2+3)
+ O17 ->       2 (V:  1.97%) (N:  7.86%) PV: O17 R14
+2.8 average depth, 5 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.017086 <- initial Q when no visits = (0.017086-0.000000)
+V(0.017086)=Q(0.017086)+U(0.000000) U=P*(n/den)=0.537686*(0.00/1.00)
+uct_select_child: Q18
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.019742=4.901288/5 = (1.901288+3)/(2+3)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+    Q-get_eval=blackeval/visits: 0.019742=4.901288/5 = (1.901288+3)/(2+3)
+ O17 ->       2 (V:  1.97%) (N:  7.86%) PV: O17 R14
+2.8 average depth, 5 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.981718(0.018282) (1 1)
+visits: 1 update: 0.000000 + 0.981718 = 0.981718  Q=0.981718(0.018282)
+visits: 2 update: 0.982914 + 0.981718 = 1.964632  Q=0.982316(0.017684)
+visits: 3 update: 1.901288 + 0.981718 = 2.883006  Q=0.961002(0.038998)
+visits: 10 update: 8.625906 + 0.981718 = 9.607623  Q=0.960762(0.039238)
+call play_simulation 9 po, 10 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 3.000000 (9)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.131373=cfg_fpu_reduction*sqrt(0.276140)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.076389 <- initial Q when no visits = (0.054984-0.131373)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+V(0.092868)=Q(0.036648)+U(0.056220) U=P*(n/den)=0.117124*(3.00/5.00)
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+V(0.101237)=Q(0.036904)+U(0.064333) U=P*(n/den)=0.080416*(3.00/3.00)
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+uct_select_child: C14
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+ O17 ->       3 (V:  3.90%) (N:  7.86%) PV: O17 R14 Q18
+    Q-get_eval=blackeval/visits: 0.036904=1.926193/2 = (1.926193+0)/(2+0)
+ C14 ->       2 (V:  3.69%) (N:  8.04%) PV: C14 F17
+2.9 average depth, 5 max depth
+7 non leaf nodes, 1.29 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.104411=cfg_fpu_reduction*sqrt(0.174426)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.848013 <- initial Q when no visits = (0.952424-0.104411)
+    Q-get_eval=blackeval/visits: 0.973769=0.973769/1 = (0.973769+0)/(1+0)
+V(1.043539)=Q(0.973769)+U(0.069771) U=P*(n/den)=0.174426*(1.00/2.00)
+uct_select_child: F17
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+ O17 ->       3 (V:  3.90%) (N:  7.86%) PV: O17 R14 Q18
+    Q-get_eval=blackeval/visits: 0.014761=4.926193/5 = (1.926193+3)/(2+3)
+ C14 ->       2 (V:  1.48%) (N:  8.04%) PV: C14 F17
+2.9 average depth, 5 max depth
+7 non leaf nodes, 1.29 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.026231 <- initial Q when no visits = (0.026231-0.000000)
+V(0.026231)=Q(0.026231)+U(0.000000) U=P*(n/den)=0.725567*(0.00/1.00)
+uct_select_child: B16
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+ O17 ->       3 (V:  3.90%) (N:  7.86%) PV: O17 R14 Q18
+    Q-get_eval=blackeval/visits: 0.014761=4.926193/5 = (1.926193+3)/(2+3)
+ C14 ->       2 (V:  1.48%) (N:  8.04%) PV: C14 F17
+2.9 average depth, 5 max depth
+7 non leaf nodes, 1.29 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.953619(0.046381) (1 1)
+visits: 1 update: 0.000000 + 0.953619 = 0.953619  Q=0.953619(0.046381)
+visits: 2 update: 0.973769 + 0.953619 = 1.927388  Q=0.963694(0.036306)
+visits: 3 update: 1.926193 + 0.953619 = 2.879812  Q=0.959937(0.040063)
+visits: 11 update: 9.607623 + 0.953619 = 10.561242  Q=0.960113(0.039887)
+call play_simulation 10 po, 11 visits
+
+playout: 10 >= 10
+visit:   11 >= 2147483647
+
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.040063=2.879812/3 = (2.879812+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+  C6 ->       4 (V:  3.66%) (N: 11.71%) PV: C6 F3 B4 C7
+    Q-get_eval=blackeval/visits: 0.040063=2.879812/3 = (2.879812+0)/(3+0)
+ C14 ->       3 (V:  4.01%) (N:  8.04%) PV: C14 F17 B16
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+ O17 ->       3 (V:  3.90%) (N:  7.86%) PV: O17 R14 Q18
+3.0 average depth, 5 max depth
+8 non leaf nodes, 1.25 average children
+    Q-get_eval=blackeval/visits: 0.039887=10.561242/11 = (10.561242+0)/(11+0)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+11 visits, 3916 nodes, 10 playouts, 7 n/s
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+LeelaZero-0.16 W No.   5 1.5s  C6     4 3.66% 11.71%
+
+    Q-get_eval=blackeval/visits: 0.040063=2.879812/3 = (2.879812+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.038998=2.883006/3 = (2.883006+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.036648=3.853409/4 = (3.853409+0)/(4+0)
+= C6
+
+= 
+
+
+Passes: 0            Black (X) Prisoners: 0
+Black (X) to move    White (O) Prisoners: 0
+
+   a b c d e f g h j k l m n o p q r s t 
+19 . . . . . . . . . . . . . . . . . . . 19
+18 . . . . . . . . . . . . . . . . . . . 18
+17 . . . . . . . . . . . . . . . . . . . 17
+16 . . . X . . . . . + . . . . . X . . . 16
+15 . . . . . . . . . . . . . . . . . . . 15
+14 . . . . . . . . . . . . . . . . . . . 14
+13 . . . . . . . . . . . . . . . . . . . 13
+12 . . . . . . . . . . . . . . . . . . . 12
+11 . . . . . . . . . . . . . . . . . . . 11
+10 . . . + . . . . . + . . . . . + . . . 10
+ 9 . . . . . . . . . . . . . . . . . . .  9
+ 8 . . . . . . . . . . . . . . . . . . .  8
+ 7 . . . . . . . . . . . . . . . . . . .  7
+ 6 . .(O). . . . . . . . . . . . . . . .  6
+ 5 . . . . . . . . . . . . . . . . . . .  5
+ 4 . . . X . . . . . + . . . . . X . . .  4
+ 3 . . . . . . . . . . . . . . . . . . .  3
+ 2 . . . . . . . . . . . . . . . . . . .  2
+ 1 . . . . . . . . . . . . . . . . . . .  1
+   a b c d e f g h j k l m n o p q r s t 
+
+Hash: 63CB16E1CFF23A38 Ko-Hash: 58148E3ED8F7FDDB
+
+Black time: 00:00:01
+White time: 00:00:00
+
+Thinking at most 2678400.0 seconds...
+    Q-get_eval=blackeval/visits: 0.963352=3.853409/4 = (3.853409+0)/(4+0)
+m_root->get_eval: 0.963352
+NN eval=0.963352
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.732051 (3)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.966172=2.898517/3 = (2.898517+0)/(3+0)
+V(0.987052)=Q(0.966172)+U(0.020880) U=P*(n/den)=0.060276*(1.73/4.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.966172=2.898517/3 = (2.898517+0)/(3+0)
+  F3 ->       3 (V: 96.62%) (N:  6.03%) PV: F3 B4 C7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+2.5 average depth, 4 max depth
+3 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.414214 (2)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.036013=1.927973/2 = (1.927973+0)/(2+0)
+V(0.314031)=Q(0.036013)+U(0.278018) U=P*(n/den)=0.737207*(1.41/3.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.483086=2.898517/6 = (-0.101483+3)/(3+3)
+  F3 ->       3 (V: 48.31%) (N:  6.03%) PV: F3 B4 C7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+2.5 average depth, 4 max depth
+3 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.156867=cfg_fpu_reduction*sqrt(0.393718)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.802336 <- initial Q when no visits = (0.959203-0.156867)
+    Q-get_eval=blackeval/visits: 0.968771=0.968771/1 = (0.968771+0)/(1+0)
+V(1.126258)=Q(0.968771)+U(0.157487) U=P*(n/den)=0.393718*(1.00/2.00)
+uct_select_child: C7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.483086=2.898517/6 = (-0.101483+3)/(3+3)
+  F3 ->       3 (V: 48.31%) (N:  6.03%) PV: F3 B4 C7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+2.5 average depth, 4 max depth
+3 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.031229 <- initial Q when no visits = (0.031229-0.000000)
+V(0.031229)=Q(0.031229)+U(0.000000) U=P*(n/den)=0.719538*(0.00/1.00)
+uct_select_child: D7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.483086=2.898517/6 = (-0.101483+3)/(3+3)
+  F3 ->       3 (V: 48.31%) (N:  6.03%) PV: F3 B4 C7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+2.5 average depth, 4 max depth
+3 non leaf nodes, 1.00 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.931326(0.068674) (1 1)
+visits: 1 update: 0.000000 + 0.931326 = 0.931326  Q=0.931326(0.068674)
+visits: 2 update: 0.968771 + 0.931326 = 1.900097  Q=0.950048(0.049952)
+visits: 3 update: 1.927973 + 0.931326 = 2.859300  Q=0.953100(0.046900)
+visits: 4 update: 2.898517 + 0.931326 = 3.829843  Q=0.957461(0.042539)
+visits: 5 update: 3.853409 + 0.931326 = 4.784735  Q=0.956947(0.043053)
+call play_simulation 1 po, 5 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.000000 (4)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.957461=3.829843/4 = (3.829843+0)/(4+0)
+V(0.976749)=Q(0.957461)+U(0.019288) U=P*(n/den)=0.060276*(2.00/5.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.957461=3.829843/4 = (3.829843+0)/(4+0)
+  F3 ->       4 (V: 95.75%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.0 average depth, 5 max depth
+4 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.732051 (3)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.046900=2.859300/3 = (2.859300+0)/(3+0)
+V(0.302276)=Q(0.046900)+U(0.255376) U=P*(n/den)=0.737207*(1.73/4.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.547120=3.829843/7 = (0.829843+3)/(4+3)
+  F3 ->       4 (V: 54.71%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.0 average depth, 5 max depth
+4 non leaf nodes, 1.00 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.414214 (2)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.156867=cfg_fpu_reduction*sqrt(0.393718)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.802336 <- initial Q when no visits = (0.959203-0.156867)
+    Q-get_eval=blackeval/visits: 0.950048=1.900097/2 = (1.900097+0)/(2+0)
+V(1.098529)=Q(0.950048)+U(0.148480) U=P*(n/den)=0.393718*(1.41/3.00)
+V(1.132693)=Q(0.802336)+U(0.330358) U=P*(n/den)=0.291998*(1.41/1.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.547120=3.829843/7 = (0.829843+3)/(4+3)
+  F3 ->       4 (V: 54.71%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.0 average depth, 5 max depth
+4 non leaf nodes, 1.00 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.972349(0.027651) (1 1)
+visits: 1 update: 0.000000 + 0.972349 = 0.972349  Q=0.972349(0.027651)
+visits: 4 update: 2.859300 + 0.972349 = 3.831649  Q=0.957912(0.042088)
+visits: 5 update: 3.829843 + 0.972349 = 4.802193  Q=0.960439(0.039561)
+visits: 6 update: 4.784735 + 0.972349 = 5.757084  Q=0.959514(0.040486)
+call play_simulation 2 po, 6 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.236068 (5)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.960438=4.802193/5 = (4.802193+0)/(5+0)
+V(0.978409)=Q(0.960438)+U(0.017971) U=P*(n/den)=0.060276*(2.24/6.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.960438=4.802193/5 = (4.802193+0)/(5+0)
+  F3 ->       5 (V: 96.04%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.2 average depth, 5 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.000000 (4)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.042088=3.831649/4 = (3.831649+0)/(4+0)
+V(0.277994)=Q(0.042088)+U(0.235906) U=P*(n/den)=0.737207*(2.00/5.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.600274=4.802193/8 = (1.802193+3)/(5+3)
+  F3 ->       5 (V: 60.03%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.2 average depth, 5 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.732051 (3)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.207020=cfg_fpu_reduction*sqrt(0.685716)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.752183 <- initial Q when no visits = (0.959203-0.207020)
+    Q-get_eval=blackeval/visits: 0.950048=1.900097/2 = (1.900097+0)/(2+0)
+V(1.131899)=Q(0.950048)+U(0.181851) U=P*(n/den)=0.393718*(1.73/3.00)
+    Q-get_eval=blackeval/visits: 0.972349=0.972349/1 = (0.972349+0)/(1+0)
+V(1.174651)=Q(0.972349)+U(0.202302) U=P*(n/den)=0.291998*(1.73/2.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.600274=4.802193/8 = (1.802193+3)/(5+3)
+  F3 ->       5 (V: 60.03%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.2 average depth, 5 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.027651 <- initial Q when no visits = (0.027651-0.000000)
+V(0.027651)=Q(0.027651)+U(0.000000) U=P*(n/den)=0.727406*(0.00/1.00)
+uct_select_child: C3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.600274=4.802193/8 = (1.802193+3)/(5+3)
+  F3 ->       5 (V: 60.03%) (N:  6.03%) PV: F3 B4 C7 D7
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.2 average depth, 5 max depth
+4 non leaf nodes, 1.25 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.976747(0.023253) (1 1)
+visits: 1 update: 0.000000 + 0.976747 = 0.976747  Q=0.976747(0.023253)
+visits: 2 update: 0.972349 + 0.976747 = 1.949096  Q=0.974548(0.025452)
+visits: 5 update: 3.831649 + 0.976747 = 4.808396  Q=0.961679(0.038321)
+visits: 6 update: 4.802193 + 0.976747 = 5.778940  Q=0.963157(0.036843)
+visits: 7 update: 5.757084 + 0.976747 = 6.733831  Q=0.961976(0.038024)
+call play_simulation 3 po, 7 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.449490 (6)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.963157=5.778940/6 = (5.778940+0)/(6+0)
+V(0.980030)=Q(0.963157)+U(0.016874) U=P*(n/den)=0.060276*(2.45/7.00)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.950048=1.900097/2 = (1.900097+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.963157=5.778940/6 = (5.778940+0)/(6+0)
+  F3 ->       6 (V: 96.32%) (N:  6.03%) PV: F3 B4 C8 C3
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.4 average depth, 5 max depth
+5 non leaf nodes, 1.20 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.236068 (5)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.038321=4.808396/5 = (4.808396+0)/(5+0)
+V(0.258113)=Q(0.038321)+U(0.219793) U=P*(n/den)=0.737207*(2.24/6.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.950048=1.900097/2 = (1.900097+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.642104=5.778940/9 = (2.778940+3)/(6+3)
+  F3 ->       6 (V: 64.21%) (N:  6.03%) PV: F3 B4 C8 C3
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.4 average depth, 5 max depth
+5 non leaf nodes, 1.20 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.000000 (4)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.207020=cfg_fpu_reduction*sqrt(0.685716)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.752183 <- initial Q when no visits = (0.959203-0.207020)
+    Q-get_eval=blackeval/visits: 0.950048=1.900097/2 = (1.900097+0)/(2+0)
+V(1.160031)=Q(0.950048)+U(0.209983) U=P*(n/den)=0.393718*(2.00/3.00)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+uct_select_child: C7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.950048=1.900097/2 = (1.900097+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.642104=5.778940/9 = (2.778940+3)/(6+3)
+  F3 ->       6 (V: 64.21%) (N:  6.03%) PV: F3 B4 C8 C3
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.4 average depth, 5 max depth
+5 non leaf nodes, 1.20 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.212064=cfg_fpu_reduction*sqrt(0.719538)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.180834 <- initial Q when no visits = (0.031229-0.212064)
+    Q-get_eval=blackeval/visits: 0.068674=0.931326/1 = (0.931326+0)/(1+0)
+V(0.356489)=Q(0.068674)+U(0.287815) U=P*(n/den)=0.719538*(1.00/2.00)
+uct_select_child: D7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.380019=1.900097/5 = (-1.099903+3)/(2+3)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.642104=5.778940/9 = (2.778940+3)/(6+3)
+  F3 ->       6 (V: 64.21%) (N:  6.03%) PV: F3 B4 C8 C3
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.4 average depth, 5 max depth
+5 non leaf nodes, 1.20 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.931326 <- initial Q when no visits = (0.931326-0.000000)
+V(0.931326)=Q(0.931326)+U(0.000000) U=P*(n/den)=0.888886*(0.00/1.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.380019=1.900097/5 = (-1.099903+3)/(2+3)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+    Q-get_eval=blackeval/visits: 0.642104=5.778940/9 = (2.778940+3)/(6+3)
+  F3 ->       6 (V: 64.21%) (N:  6.03%) PV: F3 B4 C8 C3
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.4 average depth, 5 max depth
+5 non leaf nodes, 1.20 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.973188(0.026812) (1 1)
+visits: 1 update: 0.000000 + 0.973188 = 0.973188  Q=0.973188(0.026812)
+visits: 2 update: 0.931326 + 0.973188 = 1.904514  Q=0.952257(0.047743)
+visits: 3 update: 1.900097 + 0.973188 = 2.873285  Q=0.957762(0.042238)
+visits: 6 update: 4.808396 + 0.973188 = 5.781584  Q=0.963597(0.036403)
+visits: 7 update: 5.778940 + 0.973188 = 6.752127  Q=0.964590(0.035410)
+visits: 8 update: 6.733831 + 0.973188 = 7.707019  Q=0.963377(0.036623)
+call play_simulation 4 po, 8 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.645751 (7)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.061378=cfg_fpu_reduction*sqrt(0.060276)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.893514 <- initial Q when no visits = (0.954892-0.061378)
+    Q-get_eval=blackeval/visits: 0.964590=6.752127/7 = (6.752127+0)/(7+0)
+V(0.980537)=Q(0.964590)+U(0.015947) U=P*(n/den)=0.060276*(2.65/8.00)
+V(0.983219)=Q(0.893514)+U(0.089705) U=P*(n/den)=0.042382*(2.65/1.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.964590=6.752127/7 = (6.752127+0)/(7+0)
+  F3 ->       7 (V: 96.46%) (N:  6.03%) PV: F3 B4 C7 D7 C8
+  C8 ->       0 (V:  0.00%) (N:  4.24%) PV: C8 
+3.7 average depth, 6 max depth
+6 non leaf nodes, 1.17 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.932981(0.067019) (1 1)
+visits: 1 update: 0.000000 + 0.932981 = 0.932981  Q=0.932981(0.067019)
+visits: 9 update: 7.707019 + 0.932981 = 8.640001  Q=0.960000(0.040000)
+call play_simulation 5 po, 9 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.828427 (8)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.080100=cfg_fpu_reduction*sqrt(0.102657)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.874791 <- initial Q when no visits = (0.954892-0.080100)
+    Q-get_eval=blackeval/visits: 0.964590=6.752127/7 = (6.752127+0)/(7+0)
+V(0.981638)=Q(0.964590)+U(0.017048) U=P*(n/den)=0.060276*(2.83/8.00)
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.964590=6.752127/7 = (6.752127+0)/(7+0)
+  F3 ->       7 (V: 96.46%) (N:  6.03%) PV: F3 B4 C7 D7 C8
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+  C8 ->       1 (V: 93.30%) (N:  4.24%) PV: C8 
+3.5 average depth, 6 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.449490 (6)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.036403=5.781584/6 = (5.781584+0)/(6+0)
+V(0.242778)=Q(0.036403)+U(0.206375) U=P*(n/den)=0.737207*(2.45/7.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.675213=6.752127/10 = (3.752127+3)/(7+3)
+  F3 ->       7 (V: 67.52%) (N:  6.03%) PV: F3 B4 C7 D7 C8
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+  C8 ->       1 (V: 93.30%) (N:  4.24%) PV: C8 
+3.5 average depth, 6 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.236068 (5)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.207020=cfg_fpu_reduction*sqrt(0.685716)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.752183 <- initial Q when no visits = (0.959203-0.207020)
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+V(1.133838)=Q(0.957762)+U(0.176076) U=P*(n/den)=0.393718*(2.24/4.00)
+    Q-get_eval=blackeval/visits: 0.974548=1.949096/2 = (1.949096+0)/(2+0)
+V(1.148662)=Q(0.974548)+U(0.174114) U=P*(n/den)=0.291998*(2.24/3.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.675213=6.752127/10 = (3.752127+3)/(7+3)
+  F3 ->       7 (V: 67.52%) (N:  6.03%) PV: F3 B4 C7 D7 C8
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+  C8 ->       1 (V: 93.30%) (N:  4.24%) PV: C8 
+3.5 average depth, 6 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.213220=cfg_fpu_reduction*sqrt(0.727406)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185569 <- initial Q when no visits = (0.027651-0.213220)
+    Q-get_eval=blackeval/visits: 0.023253=0.976747/1 = (0.976747+0)/(1+0)
+V(0.314215)=Q(0.023253)+U(0.290962) U=P*(n/den)=0.727406*(1.00/2.00)
+uct_select_child: C3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.675213=6.752127/10 = (3.752127+3)/(7+3)
+  F3 ->       7 (V: 67.52%) (N:  6.03%) PV: F3 B4 C7 D7 C8
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+  C8 ->       1 (V: 93.30%) (N:  4.24%) PV: C8 
+3.5 average depth, 6 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.976747 <- initial Q when no visits = (0.976747-0.000000)
+V(0.976747)=Q(0.976747)+U(0.000000) U=P*(n/den)=0.855222*(0.00/1.00)
+uct_select_child: C5
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.675213=6.752127/10 = (3.752127+3)/(7+3)
+  F3 ->       7 (V: 67.52%) (N:  6.03%) PV: F3 B4 C7 D7 C8
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+  C8 ->       1 (V: 93.30%) (N:  4.24%) PV: C8 
+3.5 average depth, 6 max depth
+6 non leaf nodes, 1.33 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.948420(0.051580) (1 1)
+visits: 1 update: 0.000000 + 0.948420 = 0.948420  Q=0.948420(0.051580)
+visits: 2 update: 0.976747 + 0.948420 = 1.925168  Q=0.962584(0.037416)
+visits: 3 update: 1.949096 + 0.948420 = 2.897517  Q=0.965839(0.034161)
+visits: 7 update: 5.781584 + 0.948420 = 6.730004  Q=0.961429(0.038571)
+visits: 8 update: 6.752127 + 0.948420 = 7.700548  Q=0.962568(0.037432)
+visits: 10 update: 8.640001 + 0.948420 = 9.588421  Q=0.958842(0.041158)
+call play_simulation 6 po, 10 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 3.000000 (9)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.080100=cfg_fpu_reduction*sqrt(0.102657)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.874791 <- initial Q when no visits = (0.954892-0.080100)
+    Q-get_eval=blackeval/visits: 0.962568=7.700548/8 = (7.700548+0)/(8+0)
+V(0.978642)=Q(0.962568)+U(0.016073) U=P*(n/den)=0.060276*(3.00/9.00)
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+V(0.983839)=Q(0.932981)+U(0.050858) U=P*(n/den)=0.042382*(3.00/2.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.962568=7.700548/8 = (7.700548+0)/(8+0)
+  F3 ->       8 (V: 96.26%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.932981=0.932981/1 = (0.932981+0)/(1+0)
+  C8 ->       1 (V: 93.30%) (N:  4.24%) PV: C8 
+3.8 average depth, 6 max depth
+7 non leaf nodes, 1.29 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.067019 <- initial Q when no visits = (0.067019-0.000000)
+V(0.067019)=Q(0.067019)+U(0.000000) U=P*(n/den)=0.285904*(0.00/1.00)
+uct_select_child: C3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.962568=7.700548/8 = (7.700548+0)/(8+0)
+  F3 ->       8 (V: 96.26%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.233245=0.932981/4 = (-2.067019+3)/(1+3)
+  C8 ->       1 (V: 23.32%) (N:  4.24%) PV: C8 
+3.8 average depth, 6 max depth
+7 non leaf nodes, 1.29 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.903806(0.096194) (1 1)
+visits: 1 update: 0.000000 + 0.903806 = 0.903806  Q=0.903806(0.096194)
+visits: 2 update: 0.932981 + 0.903806 = 1.836787  Q=0.918394(0.081606)
+visits: 11 update: 9.588421 + 0.903806 = 10.492227  Q=0.953839(0.046161)
+call play_simulation 7 po, 11 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 3.162278 (10)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.080100=cfg_fpu_reduction*sqrt(0.102657)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.874791 <- initial Q when no visits = (0.954892-0.080100)
+    Q-get_eval=blackeval/visits: 0.962568=7.700548/8 = (7.700548+0)/(8+0)
+V(0.979511)=Q(0.962568)+U(0.016943) U=P*(n/den)=0.060276*(3.16/9.00)
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.962568=7.700548/8 = (7.700548+0)/(8+0)
+  F3 ->       8 (V: 96.26%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+3.7 average depth, 6 max depth
+8 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.645751 (7)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.038571=6.730004/7 = (6.730004+0)/(7+0)
+V(0.233617)=Q(0.038571)+U(0.195047) U=P*(n/den)=0.737207*(2.65/8.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.700050=7.700548/11 = (4.700548+3)/(8+3)
+  F3 ->       8 (V: 70.00%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+3.7 average depth, 6 max depth
+8 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.449490 (6)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.207020=cfg_fpu_reduction*sqrt(0.685716)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.752183 <- initial Q when no visits = (0.959203-0.207020)
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+V(1.150643)=Q(0.957762)+U(0.192882) U=P*(n/den)=0.393718*(2.45/4.00)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+uct_select_child: C7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.957762=2.873285/3 = (2.873285+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.700050=7.700548/11 = (4.700548+3)/(8+3)
+  F3 ->       8 (V: 70.00%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+3.7 average depth, 6 max depth
+8 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.414214 (2)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.212064=cfg_fpu_reduction*sqrt(0.719538)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.180834 <- initial Q when no visits = (0.031229-0.212064)
+    Q-get_eval=blackeval/visits: 0.047743=1.904514/2 = (1.904514+0)/(2+0)
+V(0.319098)=Q(0.047743)+U(0.271355) U=P*(n/den)=0.719538*(1.41/3.00)
+uct_select_child: D7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.478881=2.873285/6 = (-0.126715+3)/(3+3)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.700050=7.700548/11 = (4.700548+3)/(8+3)
+  F3 ->       8 (V: 70.00%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+3.7 average depth, 6 max depth
+8 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.235702=cfg_fpu_reduction*sqrt(0.888886)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.695624 <- initial Q when no visits = (0.931326-0.235702)
+    Q-get_eval=blackeval/visits: 0.973188=0.973188/1 = (0.973188+0)/(1+0)
+V(1.328742)=Q(0.973188)+U(0.355554) U=P*(n/den)=0.888886*(1.00/2.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.478881=2.873285/6 = (-0.126715+3)/(3+3)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.700050=7.700548/11 = (4.700548+3)/(8+3)
+  F3 ->       8 (V: 70.00%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+3.7 average depth, 6 max depth
+8 non leaf nodes, 1.25 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.026812 <- initial Q when no visits = (0.026812-0.000000)
+V(0.026812)=Q(0.026812)+U(0.000000) U=P*(n/den)=0.356240*(0.00/1.00)
+uct_select_child: D6
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.478881=2.873285/6 = (-0.126715+3)/(3+3)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+    Q-get_eval=blackeval/visits: 0.700050=7.700548/11 = (4.700548+3)/(8+3)
+  F3 ->       8 (V: 70.00%) (N:  6.03%) PV: F3 B4 C8 C3 C5
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+3.7 average depth, 6 max depth
+8 non leaf nodes, 1.25 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.946478(0.053522) (1 1)
+visits: 1 update: 0.000000 + 0.946478 = 0.946478  Q=0.946478(0.053522)
+visits: 2 update: 0.973188 + 0.946478 = 1.919666  Q=0.959833(0.040167)
+visits: 3 update: 1.904514 + 0.946478 = 2.850992  Q=0.950331(0.049669)
+visits: 4 update: 2.873285 + 0.946478 = 3.819763  Q=0.954941(0.045059)
+visits: 8 update: 6.730004 + 0.946478 = 7.676482  Q=0.959560(0.040440)
+visits: 9 update: 7.700548 + 0.946478 = 8.647026  Q=0.960781(0.039219)
+visits: 12 update: 10.492227 + 0.946478 = 11.438705  Q=0.953225(0.046775)
+call play_simulation 8 po, 12 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 3.316625 (11)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.080100=cfg_fpu_reduction*sqrt(0.102657)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.874791 <- initial Q when no visits = (0.954892-0.080100)
+    Q-get_eval=blackeval/visits: 0.960781=8.647026/9 = (8.647026+0)/(9+0)
+V(0.976774)=Q(0.960781)+U(0.015993) U=P*(n/den)=0.060276*(3.32/10.00)
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+uct_select_child: F3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.960781=8.647026/9 = (8.647026+0)/(9+0)
+  F3 ->       9 (V: 96.08%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.828427 (8)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.214652=cfg_fpu_reduction*sqrt(0.737207)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.185195 <- initial Q when no visits = (0.029456-0.214652)
+    Q-get_eval=blackeval/visits: 0.040440=7.676482/8 = (7.676482+0)/(8+0)
+V(0.225785)=Q(0.040440)+U(0.185345) U=P*(n/den)=0.737207*(2.83/9.00)
+uct_select_child: B4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.720586=8.647026/12 = (5.647026+3)/(9+3)
+  F3 ->       9 (V: 72.06%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 2.645751 (7)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.207020=cfg_fpu_reduction*sqrt(0.685716)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.752183 <- initial Q when no visits = (0.959203-0.207020)
+    Q-get_eval=blackeval/visits: 0.954941=3.819763/4 = (3.819763+0)/(4+0)
+V(1.121609)=Q(0.954941)+U(0.166669) U=P*(n/den)=0.393718*(2.65/5.00)
+    Q-get_eval=blackeval/visits: 0.965839=2.897517/3 = (2.897517+0)/(3+0)
+uct_select_child: C7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.720586=8.647026/12 = (5.647026+3)/(9+3)
+  F3 ->       9 (V: 72.06%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.732051 (3)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.212064=cfg_fpu_reduction*sqrt(0.719538)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.180834 <- initial Q when no visits = (0.031229-0.212064)
+    Q-get_eval=blackeval/visits: 0.049669=2.850992/3 = (2.850992+0)/(3+0)
+V(0.298925)=Q(0.049669)+U(0.249255) U=P*(n/den)=0.719538*(1.73/4.00)
+uct_select_child: D7
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.720586=8.647026/12 = (5.647026+3)/(9+3)
+  F3 ->       9 (V: 72.06%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.414214 (2)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.235702=cfg_fpu_reduction*sqrt(0.888886)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.695624 <- initial Q when no visits = (0.931326-0.235702)
+    Q-get_eval=blackeval/visits: 0.959833=1.919666/2 = (1.919666+0)/(2+0)
+V(1.295053)=Q(0.959833)+U(0.335220) U=P*(n/den)=0.888886*(1.41/3.00)
+uct_select_child: C8
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.720586=8.647026/12 = (5.647026+3)/(9+3)
+  F3 ->       9 (V: 72.06%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 1.000000 (1)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.149215=cfg_fpu_reduction*sqrt(0.356240)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          -0.122402 <- initial Q when no visits = (0.026812-0.149215)
+    Q-get_eval=blackeval/visits: 0.053522=0.946478/1 = (0.946478+0)/(1+0)
+V(0.196018)=Q(0.053522)+U(0.142496) U=P*(n/den)=0.356240*(1.00/2.00)
+uct_select_child: D6
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.720586=8.647026/12 = (5.647026+3)/(9+3)
+  F3 ->       9 (V: 72.06%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 0.000000 (0)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.000000=cfg_fpu_reduction*sqrt(0.000000)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.946478 <- initial Q when no visits = (0.946478-0.000000)
+V(0.946478)=Q(0.946478)+U(0.000000) U=P*(n/den)=0.701213*(0.00/1.00)
+uct_select_child: C3
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.720586=8.647026/12 = (5.647026+3)/(9+3)
+  F3 ->       9 (V: 72.06%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.0 average depth, 7 max depth
+9 non leaf nodes, 1.22 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.966594(0.033406) (1 1)
+visits: 1 update: 0.000000 + 0.966594 = 0.966594  Q=0.966594(0.033406)
+visits: 2 update: 0.946478 + 0.966594 = 1.913073  Q=0.956536(0.043464)
+visits: 3 update: 1.919666 + 0.966594 = 2.886260  Q=0.962087(0.037913)
+visits: 4 update: 2.850992 + 0.966594 = 3.817587  Q=0.954397(0.045603)
+visits: 5 update: 3.819763 + 0.966594 = 4.786357  Q=0.957271(0.042729)
+visits: 9 update: 7.676482 + 0.966594 = 8.643077  Q=0.960342(0.039658)
+visits: 10 update: 8.647026 + 0.966594 = 9.613620  Q=0.961362(0.038638)
+visits: 13 update: 11.438705 + 0.966594 = 12.405299  Q=0.954254(0.045746)
+call play_simulation 9 po, 13 visits
+
+
+call play_simulation
+play_simulation begin
+node->has_children() result valid: 0
+uct_select_child:
+    U-numerator=sqrt(parentvisits):                 3.464102 (12)
+    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): 0.080100=cfg_fpu_reduction*sqrt(0.102657)
+    Q-fpu_eval=get_net_eval-fpu_reduction:          0.874791 <- initial Q when no visits = (0.954892-0.080100)
+    Q-get_eval=blackeval/visits: 0.961362=9.613620/10 = (9.613620+0)/(10+0)
+V(0.976547)=Q(0.961362)+U(0.015185) U=P*(n/den)=0.060276*(3.46/11.00)
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+V(0.978393)=Q(0.874791)+U(0.103601) U=P*(n/den)=0.037384*(3.46/1.00)
+uct_select_child: F4
+
+dump_stats
+    Q-get_eval=blackeval/visits: 0.961362=9.613620/10 = (9.613620+0)/(10+0)
+  F3 ->      10 (V: 96.14%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6 C3
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+4.3 average depth, 8 max depth
+10 non leaf nodes, 1.20 average children
+
+play_simulation begin
+!node->has_children()
+create_children eval: 0.966281(0.033719) (1 1)
+visits: 1 update: 0.000000 + 0.966281 = 0.966281  Q=0.966281(0.033719)
+visits: 14 update: 12.405299 + 0.966281 = 13.371580  Q=0.955113(0.044887)
+call play_simulation 10 po, 14 visits
+
+playout: 10 >= 10
+visit:   14 >= 2147483647
+
+    Q-get_eval=blackeval/visits: 0.961362=9.613620/10 = (9.613620+0)/(10+0)
+  F3 ->      10 (V: 96.14%) (N:  6.03%) PV: F3 B4 C7 D7 C8 D6 C3
+    Q-get_eval=blackeval/visits: 0.918393=1.836787/2 = (1.836787+0)/(2+0)
+  C8 ->       2 (V: 91.84%) (N:  4.24%) PV: C8 C3
+    Q-get_eval=blackeval/visits: 0.966281=0.966281/1 = (0.966281+0)/(1+0)
+  F4 ->       1 (V: 96.63%) (N:  3.74%) PV: F4 
+4.1 average depth, 8 max depth
+10 non leaf nodes, 1.30 average children
+    Q-get_eval=blackeval/visits: 0.955113=13.371580/14 = (13.371580+0)/(14+0)
+    Q-get_eval=blackeval/visits: 0.961362=9.613620/10 = (9.613620+0)/(10+0)
+14 visits, 4954 nodes, 10 playouts, 7 n/s
+    Q-get_eval=blackeval/visits: 0.961362=9.613620/10 = (9.613620+0)/(10+0)
+LeelaZero-0.16 B No.   6 1.5s  F3    10 96.14% 6.03%
+
+    Q-get_eval=blackeval/visits: 0.961362=9.613620/10 = (9.613620+0)/(10+0)
+= F3
+
+= 
+
+
+Passes: 0            Black (X) Prisoners: 0
+White (O) to move    White (O) Prisoners: 0
+
+   a b c d e f g h j k l m n o p q r s t 
+19 . . . . . . . . . . . . . . . . . . . 19
+18 . . . . . . . . . . . . . . . . . . . 18
+17 . . . . . . . . . . . . . . . . . . . 17
+16 . . . X . . . . . + . . . . . X . . . 16
+15 . . . . . . . . . . . . . . . . . . . 15
+14 . . . . . . . . . . . . . . . . . . . 14
+13 . . . . . . . . . . . . . . . . . . . 13
+12 . . . . . . . . . . . . . . . . . . . 12
+11 . . . . . . . . . . . . . . . . . . . 11
+10 . . . + . . . . . + . . . . . + . . . 10
+ 9 . . . . . . . . . . . . . . . . . . .  9
+ 8 . . . . . . . . . . . . . . . . . . .  8
+ 7 . . . . . . . . . . . . . . . . . . .  7
+ 6 . . O . . . . . . . . . . . . . . . .  6
+ 5 . . . . . . . . . . . . . . . . . . .  5
+ 4 . . . X . . . . . + . . . . . X . . .  4
+ 3 . . . . .(X). . . . . . . . . . . . .  3
+ 2 . . . . . . . . . . . . . . . . . . .  2
+ 1 . . . . . . . . . . . . . . . . . . .  1
+   a b c d e f g h j k l m n o p q r s t 
+
+Hash: 47DE6DD6848B72DE Ko-Hash: D7CC5EC438431EF0
+
+Black time: 00:00:00
+White time: 00:00:00
+
+

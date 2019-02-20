@@ -252,7 +252,7 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
                     result = SearchResult::from_eval(eval);
                 }
 #ifdef LEARN_ZLIU
-            printf("create_children %d result eval: %f(%f) valid: %d\n", success, result.eval(), 1-result.eval(), result.valid());
+            printf("create_children eval: %f(%f) (%d %d)\n", result.eval(), 1-result.eval(), success, result.valid());
 #endif
             }
         }
@@ -293,7 +293,7 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     }
     node->virtual_loss_undo();
 #ifdef LEARN_ZLIU
-    printf("play_simulation end\n");
+    //printf("play_simulation end\n");
 #endif
 
     return result;
@@ -724,7 +724,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
 #ifdef LEARN_ZLIU
         auto success = m_root->create_children(m_nodes, m_rootstate, root_eval);
         auto result = SearchResult::from_eval(root_eval);
-        printf("create_children %d result eval: %f(%f) valid: %d\n", success, result.eval(), 1-result.eval(), result.valid());
+        printf("create_children eval: %f(%f) (%d %d)\n", result.eval(), 1-result.eval(), success, result.valid());
 #else
         m_root->create_children(m_nodes, m_rootstate, root_eval);
 #endif
@@ -792,8 +792,8 @@ int UCTSearch::think(int color, passflag_t passflag) {
         }
 #ifdef LEARN_ZLIU
         printf("call play_simulation %d po, %d visits\n\n", static_cast<int>(m_playouts), m_root->get_visits());
-        dump_stats(m_rootstate, *m_root, 16);
-        printf("\n");
+        //dump_stats(m_rootstate, *m_root, 16);
+        //printf("\n");
 #endif
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
@@ -802,6 +802,9 @@ int UCTSearch::think(int color, passflag_t passflag) {
         keeprunning &= (current_visits < cfg_topvisits);
     } while(keeprunning);
 
+    printf("playout: %d >= %d\n", static_cast<int>(m_playouts), static_cast<int>(m_maxplayouts));
+    printf("visit:   %d >= %d\n", m_root->get_visits(), static_cast<int>(m_maxvisits));
+    //printf("time:    %d >= %d\n", elapsed_centis, time_for_move);
     // reactivate all pruned root children
     for (const auto& node : m_root->get_children()) {
         node->set_active(true);

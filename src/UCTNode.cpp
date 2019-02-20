@@ -179,6 +179,7 @@ void UCTNode::virtual_loss_undo() {
 
 void UCTNode::update(float eval) {
     m_visits++;
+    printf("visits: %d ", get_visits());
     accumulate_eval(eval);
 }
 
@@ -226,7 +227,7 @@ float UCTNode::get_eval(int tomove) const {
         score = 1.0f - score;
     }
 #ifdef LEARN_ZLIU
-    printf("Q-get_eval=blackeval/visits: %f=%f/%d = (%f+%d)/(%d+%d)\n", score, blackeval, visits, \
+    printf("    Q-get_eval=blackeval/visits: %f=%f/%d = (%f+%d)/(%d+%d)\n", score, blackeval, visits, \
         blackeval-virtual_loss, virtual_loss, get_visits(), virtual_loss);
 #endif
     return score;
@@ -247,7 +248,7 @@ void UCTNode::accumulate_eval(float eval) {
 #ifdef LEARN_ZLIU
     printf("update: %f + %f", get_blackevals(), eval);
     atomic_add(m_blackevals, (double)eval);
-    printf(" = %f\n", get_blackevals());
+    printf(" = %f  Q=%f(%f)\n", get_blackevals(), get_blackevals()/get_visits(), 1.0-get_blackevals()/get_visits());
 #else
     atomic_add(m_blackevals, (double)eval);
 #endif
@@ -276,7 +277,7 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
 
     auto numerator = std::sqrt((double)parentvisits);
 #ifdef LEARN_ZLIU
-    printf("U-numerator=sqrt(parentvisits):                 %f (%ld)\n", numerator, parentvisits);
+    printf("    U-numerator=sqrt(parentvisits):                 %f (%ld)\n", numerator, parentvisits);
 #endif
     auto fpu_reduction = 0.0f;
     // Lower the expected eval for moves that are likely not the best.
@@ -288,8 +289,8 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
     // Estimated eval for unknown nodes = original parent NN eval - reduction
     auto fpu_eval = get_net_eval(color) - fpu_reduction;
 #ifdef LEARN_ZLIU
-    printf("Q-fpu_reduction=cfg*sqrt(total_visited_policy): %f (%f)\n", fpu_reduction, total_visited_policy);
-    printf("Q-fpu_eval=get_net_eval-fpu_reduction:          %f <- initial Q when no visits = (%f-%f)\n", fpu_eval, get_net_eval(color), fpu_reduction);
+    printf("    Q-fpu_reduction=cfg_fpu_reduction*sqrt(total_visited_policy): %f=cfg_fpu_reduction*sqrt(%f)\n", fpu_reduction, total_visited_policy);
+    printf("    Q-fpu_eval=get_net_eval-fpu_reduction:          %f <- initial Q when no visits = (%f-%f)\n", fpu_eval, get_net_eval(color), fpu_reduction);
 #endif
 
     for (const auto& child : m_children) {
@@ -309,7 +310,7 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
 
         if (value > best_value) {
 #ifdef LEARN_ZLIU
-            printf("value: %f Q: %f U: %f cfg*psa*(numerator/denom) %f %f %f\n", value, winrate, puct, psa, numerator, denom);
+            printf("V(%f)=Q(%f)+U(%f) U=P*(n/den)=%f*(%.2f/%.2f)\n", value, winrate, puct, psa, numerator, denom);
 #endif
             best_value = value;
             best = child.get();
