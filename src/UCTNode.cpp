@@ -179,7 +179,9 @@ void UCTNode::virtual_loss_undo() {
 
 void UCTNode::update(float eval) {
     m_visits++;
+#ifdef LEARN_ZLIU
     printf("visits: %d ", get_visits());
+#endif
     accumulate_eval(eval);
 }
 

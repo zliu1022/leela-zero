@@ -802,9 +802,11 @@ int UCTSearch::think(int color, passflag_t passflag) {
         keeprunning &= (current_visits < cfg_topvisits);
     } while(keeprunning);
 
+#ifdef LEARN_ZLIU
     printf("playout: %d >= %d\n", static_cast<int>(m_playouts), static_cast<int>(m_maxplayouts));
     printf("visit:   %d >= %d\n", m_root->get_visits(), static_cast<int>(m_maxvisits));
     //printf("time:    %d >= %d\n", elapsed_centis, time_for_move);
+#endif
     // reactivate all pruned root children
     for (const auto& node : m_root->get_children()) {
         node->set_active(true);
