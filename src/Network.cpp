@@ -243,11 +243,11 @@ std::pair<int, int> Network::load_v1_network(std::istream& wtfile) {
     // 1 format id, 1 input layer (4 x weights), 14 ending weights,
     // the rest are residuals, every residual has 8 x weight lines
     auto residual_blocks = linecount - (1 + 4 + 14);
-    if (residual_blocks % 8 != 0) {
+    if (residual_blocks % 12 != 0) { // Minigo v17 use SENet, so res block has 8 + 4(se layer)
         myprintf("\nInconsistent number of weights in the file.\n");
         return {0, 0};
     }
-    residual_blocks /= 8;
+    residual_blocks /= 12;
     myprintf("%d blocks.\n", residual_blocks);
 
     // Re-read file and process
@@ -257,8 +257,8 @@ std::pair<int, int> Network::load_v1_network(std::istream& wtfile) {
     // Get the file format id out of the way
     std::getline(wtfile, line);
 
-    const auto plain_conv_layers = 1 + (residual_blocks * 2);
-    const auto plain_conv_wts = plain_conv_layers * 4;
+    const auto res_conv_layers = residual_blocks * 2;
+    const auto plain_conv_wts = 4 + res_conv_layers * 6;
     linecount = 0;
     while (std::getline(wtfile, line)) {
         std::vector<float> weights;
@@ -270,19 +270,40 @@ std::pair<int, int> Network::load_v1_network(std::istream& wtfile) {
                     linecount + 2); //+1 from version line, +1 from 0-indexing
             return {0,0};
         }
-        if (linecount < plain_conv_wts) {
-            if (linecount % 4 == 0) {
+		if (linecount < 4) {
+			if (linecount % 4 == 0) {
+				m_fwd_weights->m_conv_weights.emplace_back(weights);
+			}
+			else if (linecount % 4 == 1) {
+				// Redundant in our model, but they encode the
+				// number of outputs so we have to read them in.
+				m_fwd_weights->m_conv_biases.emplace_back(weights);
+			}
+			else if (linecount % 4 == 2) {
+				m_fwd_weights->m_batchnorm_means.emplace_back(weights);
+			}
+			else if (linecount % 4 == 3) {
+				process_bn_var(weights);
+				m_fwd_weights->m_batchnorm_stddevs.emplace_back(weights);
+			}
+		}
+        else if (linecount < plain_conv_wts) {
+			const auto tmp = linecount - 4;
+
+            if (tmp % 6 == 0) {
                 m_fwd_weights->m_conv_weights.emplace_back(weights);
-            } else if (linecount % 4 == 1) {
-                // Redundant in our model, but they encode the
-                // number of outputs so we have to read them in.
+            } else if (tmp % 6 == 1) {
                 m_fwd_weights->m_conv_biases.emplace_back(weights);
-            } else if (linecount % 4 == 2) {
+            } else if (tmp % 6 == 2) {
                 m_fwd_weights->m_batchnorm_means.emplace_back(weights);
-            } else if (linecount % 4 == 3) {
+            } else if (tmp % 6 == 3) {
                 process_bn_var(weights);
                 m_fwd_weights->m_batchnorm_stddevs.emplace_back(weights);
-            }
+			} else if (tmp % 6 == 4) {
+				m_fwd_weights->m_se_weights.emplace_back(weights);
+			} else if (tmp % 6 == 5) {
+				m_fwd_weights->m_se_biases.emplace_back(weights);
+			}
         } else {
             switch (linecount - plain_conv_wts) {
                 case  0: m_fwd_weights->m_conv_pol_w = std::move(weights); break;
