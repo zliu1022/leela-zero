@@ -361,7 +361,7 @@ if ver == 0:
         print('[2/2] Trying the new approach.')
         print()
 
-        weights = getMinigoWeightsV2()
+        weights = getMinigoWeightsV3()
         print()
 elif ver == 1:
     weights = getMinigoWeightsV1()
