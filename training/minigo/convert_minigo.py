@@ -12,7 +12,8 @@ quantize = False
 ver = 0     # Version auto-detect
 
 if len(sys.argv) < 2:
-    print('Usage: convert_minigo.exe <one_of_minigo_model_files> [--gz] [--quantize] [--minigo_v1|--minigo_v2]\n\n--minigo_v1: Don\'t use version auto-detection. Treat the input file as minigo v1 weight.\n--minigo_v2: Don\'t use version auto-detection. Treat the input file as minigo v2 weight.\n\nModified by ZS (eud_coder@naver.com)', file=sys.stderr)
+    print('Usage: convert_minigo.exe <one_of_minigo_model_files> [--gz] [--quantize] '
+          '[--minigo_v1(before v10)|--minigo_v2(v10-16)|--minigo_v3(v17)]', file=sys.stderr)
     sys.exit(1)
 
 for i in range(2, len(sys.argv)):
@@ -50,9 +51,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # or any {'0', '1', '2'}
 def matches(name, parts):
     return all(part in name for part in parts)
 
+
 def deduped(names):
     names = [re.sub('_\d+', '', name) for name in names]
     return sorted([(n, names.count(n)) for n in set(names)])
+
 
 def getMinigoWeightsV1():
     """Load and massage Minigo weights to Leela format.
@@ -86,6 +89,7 @@ def getMinigoWeightsV1():
         weights_v2_format.append((w.name, nparray))
     return weights_v2_format
 
+
 def getMinigoWeightsV2():
     """Load and massage Minigo weights to Leela format.
 
@@ -94,15 +98,17 @@ def getMinigoWeightsV2():
     See: https://github.com/tensorflow/minigo/pull/292 and
          https://github.com/gcp/leela-zero/issues/2020
     """
-    var_names = tf.train.load_checkpoint(working_filename).get_variable_to_dtype_map()
+    var_names = tf.train.load_checkpoint(
+        working_filename).get_variable_to_dtype_map()
 
     print(var_names.keys())
 
     # count() overcounts by 3 from policy/value head and each layer has two convolutions.
     layers = (max([count for n, count in deduped(var_names)]) - 3) // 2
-    print (layers, 'layers')
+    print(layers, 'layers')
 
-    has_conv_bias = any(matches(name, ('conv2d', 'bias')) for name in var_names.keys())
+    has_conv_bias = any(matches(name, ('conv2d', 'bias'))
+                        for name in var_names.keys())
     if not has_conv_bias:
         print('Did not find conv bias in this model, using all zeros')
     empty_conv_bias = tf.constant([], name='placeholder_for_conv_bias')
@@ -128,7 +134,7 @@ def getMinigoWeightsV2():
     weight_names = []
 
     def tensor_number(number):
-        return '' if number ==0 else '_' + str(number)
+        return '' if number == 0 else '_' + str(number)
 
     def add_conv(number, with_gamma=True):
         number = tensor_number(number)
@@ -137,8 +143,10 @@ def getMinigoWeightsV2():
         if with_gamma:
             weight_names.append('batch_normalization{}/gamma:0'.format(number))
             weight_names.append('batch_normalization{}/beta:0'.format(number))
-        weight_names.append('batch_normalization{}/moving_mean:0'.format(number))
-        weight_names.append('batch_normalization{}/moving_variance:0'.format(number))
+        weight_names.append(
+            'batch_normalization{}/moving_mean:0'.format(number))
+        weight_names.append(
+            'batch_normalization{}/moving_variance:0'.format(number))
 
     def add_dense(number):
         number = tensor_number(number)
@@ -166,7 +174,8 @@ def getMinigoWeightsV2():
 #        print ("{:45} {} {}".format(name, type(w), w.shape))
         weights.append((name, w))
     return weights
-	
+
+
 def getMinigoWeightsV3():
     """Load and massage Minigo weights to Leela format.
 
@@ -175,13 +184,15 @@ def getMinigoWeightsV3():
     See: https://github.com/tensorflow/minigo/pull/292 and
          https://github.com/gcp/leela-zero/issues/2020
     """
-    var_names = tf.train.load_checkpoint(working_filename).get_variable_to_dtype_map()
+    var_names = tf.train.load_checkpoint(
+        working_filename).get_variable_to_dtype_map()
 
     # count() overcounts by 3 from policy/value head and each layer has two convolutions.
     layers = (max([count for n, count in deduped(var_names)]) - 3) // 2
-    print (layers, 'layers')
+    print(layers, 'layers')
 
-    has_conv_bias = any(matches(name, ('conv2d', 'bias')) for name in var_names.keys())
+    has_conv_bias = any(matches(name, ('conv2d', 'bias'))
+                        for name in var_names.keys())
     if not has_conv_bias:
         print('Did not find conv bias in this model, using all zeros')
     empty_conv_bias = tf.constant([], name='placeholder_for_conv_bias')
@@ -207,7 +218,7 @@ def getMinigoWeightsV3():
     weight_names = []
 
     def tensor_number(number):
-        return '' if number ==0 else '_' + str(number)
+        return '' if number == 0 else '_' + str(number)
 
     def add_conv(number, with_gamma=True):
         number = tensor_number(number)
@@ -216,8 +227,10 @@ def getMinigoWeightsV3():
         if with_gamma:
             weight_names.append('batch_normalization{}/gamma:0'.format(number))
             weight_names.append('batch_normalization{}/beta:0'.format(number))
-        weight_names.append('batch_normalization{}/moving_mean:0'.format(number))
-        weight_names.append('batch_normalization{}/moving_variance:0'.format(number))
+        weight_names.append(
+            'batch_normalization{}/moving_mean:0'.format(number))
+        weight_names.append(
+            'batch_normalization{}/moving_variance:0'.format(number))
 
     def add_dense(number):
         number = tensor_number(number)
@@ -238,7 +251,7 @@ def getMinigoWeightsV3():
 
     # This tries to load the data for each tensors.
     weights = []
-    for i, name in enumerate(weight_names):	
+    for i, name in enumerate(weight_names):
         if matches(name, ('conv2d', 'bias')) and not has_conv_bias:
             w = np.zeros(weights[-1][1].shape[-1:])
         else:
@@ -248,6 +261,7 @@ def getMinigoWeightsV3():
         weights.append((name, w))
     return weights
 
+
 def merge_gammas(weights):
     out_weights = []
     skip = 0
@@ -256,13 +270,13 @@ def merge_gammas(weights):
             skip -= 1
             continue
 
-        if matches(name, ('conv2d', 'kernel')) and 'gamma' in weights[e+2][0]:
+        if matches(name, ('conv2d', 'kernel')) and 'gamma' in weights[e + 2][0]:
             kernel = w
-            bias = weights[e+1][1]
-            gamma = weights[e+2][1]
-            beta = weights[e+3][1]
-            mean = weights[e+4][1]
-            var = weights[e+5][1]
+            bias = weights[e + 1][1]
+            gamma = weights[e + 2][1]
+            beta = weights[e + 3][1]
+            mean = weights[e + 4][1]
+            var = weights[e + 5][1]
 
             new_kernel = kernel * np.reshape(gamma, (1, 1, 1, -1))
             new_bias = gamma * bias + beta * np.sqrt(var + 1e-5)
@@ -282,7 +296,7 @@ def merge_gammas(weights):
             if planes > 0:
                 w1 = np.reshape(w, [19, 19, planes, -1])
                 w2 = np.transpose(w1, [2, 0, 1, 3])
-                new_kernel = np.reshape(w2, [361*planes, -1])
+                new_kernel = np.reshape(w2, [361 * planes, -1])
                 out_weights.append(new_kernel)
             else:
                 out_weights.append(w)
@@ -290,6 +304,7 @@ def merge_gammas(weights):
             out_weights.append(w)
 
     return out_weights
+
 
 def format_n(x):
     x = float(x)
@@ -300,6 +315,7 @@ def format_n(x):
     if x.startswith('-0.'):
         x = '-' + x[2:]
     return x
+
 
 def save_leelaz_weights(filename, weights):
     file = gzip.open(filename, 'wt') if gz else open(filename, 'w')
@@ -332,19 +348,21 @@ def save_leelaz_weights(filename, weights):
             # Fix input planes
             #
             # Add zero weights for white to play input plane
-            work_weights = np.pad(work_weights, ((0, 0), (0, 1), (0, 0), (0, 0)), 'constant', constant_values=0)
+            work_weights = np.pad(
+                work_weights, ((0, 0), (0, 1), (0, 0), (0, 0)), 'constant', constant_values=0)
 
             # Permutate weights
             p = [0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15, 16, 17]
 
             work_weights = work_weights[:, p, :, :]
-            
+
         if not quantize:
             wt_str = [str(wt) for wt in np.ravel(work_weights)]
         else:
             wt_str = [format_n(wt) for wt in np.ravel(work_weights)]
         file.write(" ".join(wt_str))
     file.close()
+
 
 model = working_filename
 
@@ -369,8 +387,8 @@ elif ver == 2:
     weights = getMinigoWeightsV2()
     print()
 elif ver == 3:
-	weights = getMinigoWeightsV3()
-	print()
+    weights = getMinigoWeightsV3()
+    print()
 
 print('Loaded the minigo weight.')
 print('Saving as leelaz weight format...')
