@@ -164,7 +164,11 @@ void OpenCLScheduler<net_t>::push_residual(unsigned int filter_size,
                                            const std::vector<float>& variances_1,
                                            const std::vector<float>& weights_2,
                                            const std::vector<float>& means_2,
-                                           const std::vector<float>& variances_2) {
+                                           const std::vector<float>& variances_2,
+										   const std::vector<float>& fc1_w,
+										   const std::vector<float>& fc1_b,
+										   const std::vector<float>& fc2_w,
+										   const std::vector<float>& fc2_b) {
     for (const auto& opencl_net : m_networks) {
         const auto tuners = opencl_net->getOpenCL().get_sgemm_tuners();
 
@@ -184,7 +188,11 @@ void OpenCLScheduler<net_t>::push_residual(unsigned int filter_size,
                                   from_float(variances_1),
                                   Upad2,
                                   from_float(means_2),
-                                  from_float(variances_2));
+                                  from_float(variances_2),
+								  from_float(fc1_w),
+								  from_float(fc1_b),
+								  from_float(fc2_w),
+								  from_float(fc2_b));
     }
 }
 
@@ -224,7 +232,11 @@ void OpenCLScheduler<net_t>::push_weights(
                       weights->m_batchnorm_stddevs[weight_index],
                       weights->m_conv_weights[weight_index + 1],
                       weights->m_batchnorm_means[weight_index + 1],
-                      weights->m_batchnorm_stddevs[weight_index + 1]);
+                      weights->m_batchnorm_stddevs[weight_index + 1],
+					  weights->m_se_weights[weight_index - 1],
+					  weights->m_se_biases[weight_index - 1],
+					  weights->m_se_weights[weight_index],
+					  weights->m_se_biases[weight_index]);
         weight_index += 2;
     }
 
