@@ -9,3 +9,5 @@ leelaz-model*
 *.orig
 leelaz_opencl_tuning
 build/
+gtest/
+src/Eigen/
