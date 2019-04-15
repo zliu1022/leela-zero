@@ -101,9 +101,9 @@ AnalyzeTags cfg_analyze_tags;
 #define KR_RANGE 150
 #define KR_STEP 0.5
 #define KR_SIZE (KR_RANGE*2/KR_STEP+1)
-float kr_begin=-150.0;
-float kr_end=150.0;
-float kr_step=0.5;
+float kr_begin=-1.0*KR_RANGE;
+float kr_end=1.0*KR_RANGE;
+float kr_step=1.0*KR_STEP;
 
 #define KR_MAX 6
 std::array<float, size_t(KR_SIZE*KR_MAX)> komi_rate={};
@@ -871,15 +871,43 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             vec = s_network->get_output(
                 &game, Network::Ensemble::AVERAGE, -1, false);
         } else if (symmetry == "komi") {
+            cmdstream >> tmp;
+            if (!cmdstream.fail()) {
+                try {
+                    cfg_max_playouts = std::stoi(tmp);
+                } catch(...) {
+                    gtp_fail_printf(id, "syntax should be: heatmap komi playouts");
+                    return;
+                }
+                //cfg_max_visits = visits;
+            } else {
+                cfg_max_playouts = 0;
+            }
+            //search->set_visit_limit(cfg_max_visits);
+            search->set_playout_limit(cfg_max_playouts);
+
+            int who = FastBoard::WHITE;
+
             myprintf("komi winrate\n");
             auto i=0;
             for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
                 game.set_komi(t_komi);
-                vec = s_network->get_output(
-                    &game, Network::Ensemble::DIRECT,
-                    Network::IDENTITY_SYMMETRY, false);
-                myprintf("%.1f %f\n", t_komi, vec.winrate);
-                komi_rate[kr_n*KR_SIZE+i]=vec.winrate;
+                // clear nncache
+                s_network->nncache_clear();
+
+                float rate = 0.0f;
+                if ( cfg_max_playouts != 0) {
+                    // game.set_to_move(who);
+                    rate = search->think_kr(who);
+                    // game.play_move(move);
+                } else {
+                    vec = s_network->get_output(
+                        &game, Network::Ensemble::DIRECT,
+                        Network::IDENTITY_SYMMETRY, false, false);
+                    rate = vec.winrate;
+                }
+                myprintf("%.1f %f\n\n", t_komi, rate);
+                komi_rate[kr_n*KR_SIZE+i]=rate;
                 i++;
             }
             kr_n++;

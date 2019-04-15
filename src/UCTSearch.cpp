@@ -257,9 +257,9 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     return result;
 }
 
-void UCTSearch::dump_stats(FastState & state, UCTNode & parent) {
+float UCTSearch::dump_stats(FastState & state, UCTNode & parent) {
     if (cfg_quiet || !parent.has_children()) {
-        return;
+        return 0.0f;
     }
 
     const int color = state.get_to_move();
@@ -268,7 +268,7 @@ void UCTSearch::dump_stats(FastState & state, UCTNode & parent) {
     parent.sort_children(color);
 
     if (parent.get_first_child()->first_visit()) {
-        return;
+        return 0.0f;
     }
 
     int movecount = 0;
@@ -288,6 +288,7 @@ void UCTSearch::dump_stats(FastState & state, UCTNode & parent) {
             node->get_visits() ? node->get_raw_eval(color)*100.0f : 0.0f,
             node->get_policy() * 100.0f,
             pv.c_str());
+        return node->get_raw_eval(color);
     }
     tree_stats(parent);
 }
@@ -818,6 +819,127 @@ int UCTSearch::think(int color, passflag_t passflag) {
     // Copy the root state. Use to check for tree re-use in future calls.
     m_last_rootstate = std::make_unique<GameState>(m_rootstate);
     return bestmove;
+}
+
+float UCTSearch::think_kr(int color, passflag_t passflag) {
+    // Start counting time for us
+    m_rootstate.start_clock(color);
+
+    // set up timing info
+    Time start;
+
+    update_root();
+    // set side to move
+    m_rootstate.board.set_to_move(color);
+
+    auto time_for_move =
+        m_rootstate.get_timecontrol().max_time_for_move(
+            m_rootstate.board.get_boardsize(),
+            color, m_rootstate.get_movenum());
+
+    //myprintf("Thinking at most %.1f seconds...\n", time_for_move/100.0f);
+
+    // create a sorted list of legal moves (make sure we
+    // play something legal and decent even in time trouble)
+    m_root->prepare_root_node(m_network, color, m_nodes, m_rootstate);
+
+    m_run = true;
+    int cpus = cfg_num_threads;
+    ThreadGroup tg(thread_pool);
+    for (int i = 1; i < cpus; i++) {
+        tg.add_task(UCTWorker(m_rootstate, this, m_root.get()));
+    }
+
+    auto keeprunning = true;
+    auto last_update = 0;
+    auto last_output = 0;
+    do {
+        auto currstate = std::make_unique<GameState>(m_rootstate);
+
+        auto result = play_simulation(*currstate, m_root.get());
+        if (result.valid()) {
+            increment_playouts();
+        }
+
+        Time elapsed;
+        int elapsed_centis = Time::timediff_centis(start, elapsed);
+
+        if (cfg_analyze_tags.interval_centis() &&
+            elapsed_centis - last_output > cfg_analyze_tags.interval_centis()) {
+            last_output = elapsed_centis;
+            output_analysis(m_rootstate, *m_root);
+        }
+
+        // output some stats every few seconds
+        // check if we should still search
+        if (!cfg_quiet && elapsed_centis - last_update > 250) {
+            last_update = elapsed_centis;
+            myprintf("%s\n", get_analysis().c_str());
+        }
+        keeprunning  = is_running();
+        //myprintf("keeprunning: %d", keeprunning);
+        //keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
+        keeprunning &= !stop_thinking(0, 1);
+        //myprintf(" %d", keeprunning);
+        keeprunning &= have_alternate_moves(elapsed_centis, time_for_move);
+        //myprintf(" %d\n", keeprunning);
+    } while (keeprunning);
+
+    // Make sure to post at least once.
+    if (cfg_analyze_tags.interval_centis() && last_output == 0) {
+        output_analysis(m_rootstate, *m_root);
+    }
+
+    // Stop the search.
+    m_run = false;
+    tg.wait_all();
+
+    // Reactivate all pruned root children.
+    for (const auto& node : m_root->get_children()) {
+        node->set_active(true);
+    }
+
+    m_rootstate.stop_clock(color);
+    if (!m_root->has_children()) {
+        return FastBoard::PASS;
+    }
+
+    // Display search info.
+    /*myprintf("\n");*/
+    float winrate = dump_stats(m_rootstate, *m_root);
+    Training::record(m_network, m_rootstate, *m_root);
+
+    Time elapsed;
+    int elapsed_centis = Time::timediff_centis(start, elapsed);
+    myprintf("%d visits, %d nodes, %d playouts, %.0f n/s\n",
+             m_root->get_visits(),
+             m_nodes.load(),
+             m_playouts.load(),
+             (m_playouts * 100.0) / (elapsed_centis+1));
+
+#ifdef USE_OPENCL
+#ifndef NDEBUG
+    myprintf("batch stats: %d %d\n",
+        batch_stats.single_evals.load(),
+        batch_stats.batch_evals.load()
+    );
+#endif
+#endif
+
+    int bestmove = get_best_move(passflag);
+
+    // Save the explanation.
+    m_think_output =
+        str(boost::format("move %d, %c => %s\n%s")
+        % m_rootstate.get_movenum()
+        % (color == FastBoard::BLACK ? 'B' : 'W')
+        % m_rootstate.move_to_text(bestmove).c_str()
+        % get_analysis().c_str());
+
+    // Copy the root state. Use to check for tree re-use in future calls.
+    m_last_rootstate = std::make_unique<GameState>(m_rootstate);
+    //return bestmove;
+    return winrate;
 }
 
 // Brief output from last think() call.
