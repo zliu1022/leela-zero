@@ -98,8 +98,8 @@ bool cfg_benchmark;
 bool cfg_cpu_only;
 AnalyzeTags cfg_analyze_tags;
 
-#define KR_BEGIN 3.0
-#define KR_END 6.5
+#define KR_BEGIN 3.5
+#define KR_END 7.0
 #define KR_STEP 0.5
 #define KR_SIZE ((KR_END-KR_BEGIN)/KR_STEP+1)
 float kr_begin=1.0*KR_BEGIN;
@@ -919,7 +919,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         } else if (symmetry == "history") {
             myprintf("komi");
             for (auto j = 0; j<KR_MAX; j++) {
-                myprintf(" %d", j);
+                myprintf(" s%d", j);
             }
             myprintf("\n");
             auto i=0;
