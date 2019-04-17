@@ -98,14 +98,15 @@ bool cfg_benchmark;
 bool cfg_cpu_only;
 AnalyzeTags cfg_analyze_tags;
 
-#define KR_RANGE 150
+#define KR_BEGIN 3.0
+#define KR_END 6.5
 #define KR_STEP 0.5
-#define KR_SIZE (KR_RANGE*2/KR_STEP+1)
-float kr_begin=-1.0*KR_RANGE;
-float kr_end=1.0*KR_RANGE;
+#define KR_SIZE ((KR_END-KR_BEGIN)/KR_STEP+1)
+float kr_begin=1.0*KR_BEGIN;
+float kr_end=1.0*KR_END;
 float kr_step=1.0*KR_STEP;
 
-#define KR_MAX 6
+#define KR_MAX 10
 std::array<float, size_t(KR_SIZE*KR_MAX)> komi_rate={};
 int kr_n=0;
 
@@ -896,8 +897,9 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 s_network->nncache_clear();
 
                 float rate = 0.0f;
+                who = game.get_to_move();
                 if ( cfg_max_playouts != 0) {
-                    // game.set_to_move(who);
+                    //game.set_to_move(who);
                     rate = search->think_kr(who);
                     // game.play_move(move);
                 } else {
@@ -906,12 +908,13 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                         Network::IDENTITY_SYMMETRY, false, false);
                     rate = vec.winrate;
                 }
-                myprintf("%.1f %f\n\n", t_komi, rate);
+                myprintf("%s %.1f %f\n\n", who == FastBoard::WHITE?"W":"B", t_komi, rate);
                 komi_rate[kr_n*KR_SIZE+i]=rate;
                 i++;
             }
             kr_n++;
             if(kr_n>KR_MAX) kr_n=0;
+            s_network->nncache_clear();
             symmetry = "all";
         } else if (symmetry == "history") {
             myprintf("komi");
