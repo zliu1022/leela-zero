@@ -74,11 +74,23 @@ static const std::string sourceCode_convolve3 =
     #include "kernels/convolve3.opencl"
 ;
 
+static const std::string sourceCode_global_avg_pooling =
+	#include "kernels/pooling.opencl"
+;
+
+static const std::string sourceCode_apply_se =
+	#include "kernels/apply_se.opencl"
+;
+
 const std::string sourceCode_sgemm =
     #include "kernels/clblast/xgemm_part1.opencl"
     #include "kernels/clblast/xgemm_part2.opencl"
     #include "kernels/clblast/xgemm_part3.opencl"
     #include "kernels/clblast/xgemm_batched.opencl"
+;
+
+const std::string sourceCode_sgemv =
+	#include "kernels/clblast/xgemv.opencl"
 ;
 
 template <typename net_t>
@@ -97,6 +109,12 @@ void OpenCL<net_t>::ensure_context_initialized(OpenCLContext &opencl_context) {
             cl::Kernel(m_program, "out_transform_fused_bn");
         opencl_context.m_out_transform_bn_in_kernel =
             cl::Kernel(m_program, "out_transform_fused_bn_in");
+		opencl_context.m_sgemv_kernel =
+			cl::Kernel(m_program, "Xgemv");
+		opencl_context.m_global_avg_pooling_kernel =
+			cl::Kernel(m_program, "global_avg_pooling");
+		opencl_context.m_apply_se_kernel =
+			cl::Kernel(m_program, "apply_se");
         opencl_context.m_commandqueue =
             cl::CommandQueue(m_context, m_device);
         opencl_context.m_is_initialized = true;
@@ -130,403 +148,561 @@ void OpenCL_Network<net_t>::forward(const std::vector<float>& input,
                              std::vector<float>& output_val,
                              OpenCLContext & opencl_context,
                              const int batch_size) {
-    constexpr auto tiles = WINOGRAD_P;
-    constexpr auto one_plane = NUM_INTERSECTIONS * sizeof(net_t);
-    const auto finalSize_pol = m_layers[m_layers.size()-2].outputs * one_plane;
-    const auto finalSize_val = m_layers.back().outputs * one_plane;
+	constexpr auto tiles = WINOGRAD_P;
+	constexpr auto one_plane = NUM_INTERSECTIONS * sizeof(net_t);
+	const auto finalSize_pol = m_layers[m_layers.size() - 2].outputs * one_plane;
+	const auto finalSize_val = m_layers.back().outputs * one_plane;
 
-    m_opencl.ensure_context_initialized(opencl_context);
+	m_opencl.ensure_context_initialized(opencl_context);
 
-    if (!opencl_context.m_buffers_allocated) {
-        auto max_channels = unsigned{0};
-        for (const auto& layer : m_layers) {
-            max_channels = std::max(max_channels,
-                                    std::max(layer.channels, layer.outputs));
-        }
+	if (!opencl_context.m_buffers_allocated) {
+		auto max_channels = unsigned{ 0 };
+		for (const auto& layer : m_layers) {
+			max_channels = std::max(max_channels,
+				std::max(layer.channels, layer.outputs));
+		}
 
-        const auto mwg = m_opencl.m_sgemm_tuners.mwg;
-        const auto nwg = m_opencl.m_sgemm_tuners.nwg;
-        const auto vwm = m_opencl.m_sgemm_tuners.vwm;
-        const auto vwn = m_opencl.m_sgemm_tuners.vwn;
+		const auto mwg = m_opencl.m_sgemm_tuners.mwg;
+		const auto nwg = m_opencl.m_sgemm_tuners.nwg;
+		const auto vwm = m_opencl.m_sgemm_tuners.vwm;
+		const auto vwn = m_opencl.m_sgemm_tuners.vwn;
 
-        const auto m_ceil = ceilMultiple(ceilMultiple(max_channels, mwg), vwm);
-        const auto n_ceil = ceilMultiple(ceilMultiple(tiles, nwg), vwn);
+		const auto m_ceil = ceilMultiple(ceilMultiple(max_channels, mwg), vwm);
+		const auto n_ceil = ceilMultiple(ceilMultiple(tiles, nwg), vwn);
 
-        const auto alloc_inSize =
-            MAX_BATCH * NUM_INTERSECTIONS * max_channels * sizeof(net_t);
-        const auto alloc_vm_size =
-            MAX_BATCH * WINOGRAD_TILE * m_ceil * n_ceil * sizeof(net_t);
+		const auto alloc_inSize =
+			NUM_INTERSECTIONS * max_channels * sizeof(net_t);
+		const auto alloc_pool_size = 2 * max_channels * sizeof(net_t);
+		const auto alloc_vm_size =
+			WINOGRAD_TILE * m_ceil * n_ceil * sizeof(net_t);
 
-        auto v_zeros = std::vector<net_t>(alloc_vm_size);
+		auto v_zeros = std::vector<net_t>(alloc_vm_size);
 
-        opencl_context.m_inBuffer = cl::Buffer(
-            m_opencl.m_context,
-            CL_MEM_READ_WRITE, alloc_inSize);
-        opencl_context.m_inBuffer2 = cl::Buffer(
-            m_opencl.m_context,
-            CL_MEM_READ_WRITE, alloc_inSize);
-        opencl_context.m_VBuffer = cl::Buffer(
-            m_opencl.m_context,
-            CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS | CL_MEM_COPY_HOST_PTR,
-            alloc_vm_size, v_zeros.data(), nullptr);
-        opencl_context.m_MBuffer = cl::Buffer(
-            m_opencl.m_context,
-            CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, alloc_vm_size);
+		opencl_context.m_inBuffer = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_READ_WRITE, alloc_inSize);
 
-        opencl_context.m_pinnedOutBuffer_pol = cl::Buffer(
-            m_opencl.m_context,
-            CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, MAX_BATCH * finalSize_pol);
-        opencl_context.m_pinnedOutBuffer_val = cl::Buffer(
-            m_opencl.m_context,
-            CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, MAX_BATCH * finalSize_val);
+		opencl_context.m_inBuffer2 = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_READ_WRITE, alloc_inSize);
 
-        opencl_context.m_buffers_allocated = true;
-    }
+		// Zero pad the unused areas in V.
+		// Zeros must not be overwritten or convolution gives incorrect results.
+		opencl_context.m_VBuffer = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS | CL_MEM_COPY_HOST_PTR,
+			alloc_vm_size, v_zeros.data(), nullptr);
 
-    cl::Buffer & inBuffer = opencl_context.m_inBuffer;
-    cl::Buffer & inBuffer2 = opencl_context.m_inBuffer2;
-    cl::Buffer & VBuffer = opencl_context.m_VBuffer;
-    cl::Buffer & MBuffer = opencl_context.m_MBuffer;
-    cl::CommandQueue & queue = opencl_context.m_commandqueue;
+		opencl_context.m_MBuffer = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, alloc_vm_size);
 
-    std::vector<net_t> net_t_input(input.size());
-    std::copy(begin(input), end(input), begin(net_t_input));
+		opencl_context.m_pinnedOutBuffer_pol = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, finalSize_pol);
+		opencl_context.m_pinnedOutBuffer_val = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, finalSize_val);
 
-    const auto inSize = sizeof(net_t) * input.size();
-    queue.enqueueWriteBuffer(inBuffer, CL_FALSE, 0, inSize, net_t_input.data());
+		opencl_context.m_pool_buffer = cl::Buffer(
+			m_opencl.m_context,
+			CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, alloc_pool_size);
 
-    auto skip_in_trans = false;
-    for (auto iter = cbegin(m_layers); iter != cend(m_layers); iter++) {
-        const auto& layer = *iter;
-        const auto niter = std::next(iter);
 
-        if (layer.is_input_convolution) {
-            assert(niter != cend(m_layers));
-            auto conv_weights = begin(layer.weights);
-            auto bn_weights = begin(layer.weights) + 1;
-            auto skip_next_in_trans = false;
-            if (niter->is_residual_block) {
-                skip_next_in_trans = true;
-            }
+		opencl_context.m_buffers_allocated = true;
+	}
 
-            convolve3(opencl_context,
-                     layer.channels,
-                     layer.outputs,
-                     inBuffer,
-                     inBuffer,
-                     VBuffer,
-                     MBuffer,
-                     conv_weights,
-                     nullptr,
-                     bn_weights,
-                     skip_in_trans, skip_next_in_trans, true,
-                     batch_size);
+	cl::Buffer & inBuffer = opencl_context.m_inBuffer;
+	cl::Buffer & inBuffer2 = opencl_context.m_inBuffer2;
+	cl::Buffer & VBuffer = opencl_context.m_VBuffer;
+	cl::Buffer & MBuffer = opencl_context.m_MBuffer;
+	cl::CommandQueue & queue = opencl_context.m_commandqueue;
 
-            skip_in_trans = skip_next_in_trans;
-        } else if (layer.is_residual_block) {
-            assert(layer.channels == layer.outputs);
-            assert(niter != cend(m_layers));
-            auto conv1_weights = begin(layer.weights);
-            auto bn1_weights   = begin(layer.weights) + 1;
-            auto conv2_weights = begin(layer.weights) + 3;
-            auto bn2_weights   = begin(layer.weights) + 4;
-            convolve3(opencl_context,
-                      layer.channels,
-                      layer.outputs,
-                      inBuffer,
-                      inBuffer2,
-                      VBuffer,
-                      MBuffer,
-                      conv1_weights,
-                      nullptr,
-                      bn1_weights,
-                      skip_in_trans, true, false,
-                      batch_size);
+	std::vector<net_t> net_t_input(input.size());
+	std::copy(begin(input), end(input), begin(net_t_input));
+	cl::Buffer & pool_buffer = opencl_context.m_pool_buffer;
 
-            auto skip_next_in_trans = false;
-            if (niter->is_residual_block) {
-                skip_next_in_trans = true;
-            }
-            convolve3(opencl_context,
-                      layer.channels,
-                      layer.outputs,
-                      inBuffer2,
-                      inBuffer,
-                      VBuffer,
-                      MBuffer,
-                      conv2_weights,
-                      &inBuffer,
-                      bn2_weights,
-                      true, skip_next_in_trans, true,
-                      batch_size);
-            skip_in_trans = skip_next_in_trans;
-        } else {
-            assert(layer.is_convolve1);
+	const auto inSize = sizeof(net_t) * input.size();
+	queue.enqueueWriteBuffer(inBuffer, CL_FALSE, 0, inSize, net_t_input.data());
 
-            cl::Buffer out_buffer;
-            if (niter == cend(m_layers)) {
-                out_buffer = opencl_context.m_pinnedOutBuffer_val;
-            } else {
-                out_buffer = opencl_context.m_pinnedOutBuffer_pol;
-            }
+	// Fused in_out transformation kernel is slower with big batch_sizes than
+	// calling out and in transformations separately.
+	// This condition could be tunable in future.
+	auto use_inout = (batch_size == 1);
 
-            convolve1(opencl_context, layer.channels,
-                    layer.outputs,
-                    inBuffer,
-                    out_buffer,
-                    VBuffer,
-                    begin(layer.weights),
-                    batch_size);
-        }
-    }
+	auto skip_in_trans = false;
+	for (auto iter = cbegin(m_layers); iter != cend(m_layers); iter++) {
+		const auto& layer = *iter;
+		const auto niter = std::next(iter);
 
-    auto pinnedOutBufferHost_pol = queue.enqueueMapBuffer(
-        opencl_context.m_pinnedOutBuffer_pol, CL_FALSE,
-        CL_MAP_READ, 0, batch_size * finalSize_pol);
-    auto pinnedOutBufferHost_val = queue.enqueueMapBuffer(
-        opencl_context.m_pinnedOutBuffer_val, CL_FALSE,
-        CL_MAP_READ, 0, batch_size * finalSize_val);
+		if (layer.is_input_convolution) {
+			assert(niter != cend(m_layers));
+			auto conv_weights = begin(layer.weights);
+			auto bn_weights = begin(layer.weights) + 1;
+			auto skip_next_in_trans = false;
+			if (niter->is_residual_block) {
+				skip_next_in_trans = use_inout;
+			}
 
-    {
-        // Finish call is usually a busy wait. When using multiple threads
-        // use the lock to avoid busy waiting with all threads.
-        std::lock_guard<std::mutex> lock(m_queue_finish_mutex);
-        queue.finish();
-    }
+			convolve3(opencl_context,
+				layer.channels,
+				layer.outputs,
+				inBuffer,
+				inBuffer,
+				VBuffer,
+				MBuffer,
+				conv_weights,
+				nullptr,
+				bn_weights,
+				skip_in_trans, skip_next_in_trans, true,
+				true,
+				batch_size);
 
-    auto polptr = static_cast<net_t*>(pinnedOutBufferHost_pol);
-    auto valptr = static_cast<net_t*>(pinnedOutBufferHost_val);
-    std::copy(polptr, polptr + output_pol.size(), begin(output_pol));
-    std::copy(valptr, valptr + output_val.size(), begin(output_val));
+			skip_in_trans = skip_next_in_trans;
+		}
+		else if (layer.is_residual_block) {
+			assert(layer.channels == layer.outputs);
+			assert(niter != cend(m_layers));
 
-    queue.enqueueUnmapMemObject(opencl_context.m_pinnedOutBuffer_pol,
-            pinnedOutBufferHost_pol);
-    queue.enqueueUnmapMemObject(opencl_context.m_pinnedOutBuffer_val,
-            pinnedOutBufferHost_val);
+			auto conv1_weights = begin(layer.weights);
+			auto bn1_weights = begin(layer.weights) + 1;
+			auto conv2_weights = begin(layer.weights) + 3;
+			auto bn2_weights = begin(layer.weights) + 4;
+			auto se_weights = begin(layer.weights) + 6;
 
+			convolve3(opencl_context,
+				layer.channels,
+				layer.outputs,
+				inBuffer,
+				inBuffer2,
+				VBuffer,
+				MBuffer,
+				conv1_weights,
+				nullptr,
+				bn1_weights,
+				skip_in_trans, use_inout, false,
+				true,
+				batch_size);
+
+			auto skip_next_in_trans = false;
+
+			convolve3(opencl_context,
+				layer.channels,
+				layer.outputs,
+				inBuffer2,
+				inBuffer2,
+				VBuffer,
+				MBuffer,
+				conv2_weights,
+				nullptr,
+				bn2_weights,
+				use_inout, skip_next_in_trans, true,
+				false,
+				batch_size);
+
+			squeeze_excitation(opencl_context,
+				layer.outputs,
+				layer.outputs / 2,
+				inBuffer2,
+				pool_buffer,
+				MBuffer,
+				se_weights,
+				inBuffer,
+				batch_size);
+
+			skip_in_trans = skip_next_in_trans;
+		}
+		else {
+			assert(layer.is_convolve1);
+
+			cl::Buffer out_buffer;
+			if (niter == cend(m_layers)) {
+				out_buffer = opencl_context.m_pinnedOutBuffer_val;
+			}
+			else {
+				out_buffer = opencl_context.m_pinnedOutBuffer_pol;
+			}
+
+			convolve1(opencl_context, layer.channels,
+				layer.outputs,
+				inBuffer,
+				out_buffer,
+				VBuffer,
+				begin(layer.weights),
+				batch_size);
+		}
+	}
+
+	auto pinnedOutBufferHost_pol = queue.enqueueMapBuffer(
+		opencl_context.m_pinnedOutBuffer_pol, CL_FALSE,
+		CL_MAP_READ, 0, batch_size * finalSize_pol);
+	auto pinnedOutBufferHost_val = queue.enqueueMapBuffer(
+		opencl_context.m_pinnedOutBuffer_val, CL_FALSE,
+		CL_MAP_READ, 0, batch_size * finalSize_val);
+
+	{
+		// Finish call is usually a busy wait. When using multiple threads
+		// use the lock to avoid busy waiting with all threads.
+		std::lock_guard<std::mutex> lock(m_queue_finish_mutex);
+		queue.finish();
+	}
+
+	auto polptr = static_cast<net_t*>(pinnedOutBufferHost_pol);
+	auto valptr = static_cast<net_t*>(pinnedOutBufferHost_val);
+	std::copy(polptr, polptr + output_pol.size(), begin(output_pol));
+	std::copy(valptr, valptr + output_val.size(), begin(output_val));
+
+	queue.enqueueUnmapMemObject(opencl_context.m_pinnedOutBuffer_pol,
+		pinnedOutBufferHost_pol);
+	queue.enqueueUnmapMemObject(opencl_context.m_pinnedOutBuffer_val,
+		pinnedOutBufferHost_val);
+}
+
+template <typename net_t>
+void OpenCL_Network<net_t>::squeeze_excitation(
+	OpenCLContext & opencl_context,
+	int channels,
+	int fc_outputs,
+	cl::Buffer& bufferIn,
+	cl::Buffer& bufferTemp1,
+	cl::Buffer& bufferTemp2,
+	weight_slice_t weights,
+	cl::Buffer& bufferResidual,
+	int batch_size) {
+
+	cl::Kernel & pooling_kernel = opencl_context.m_global_avg_pooling_kernel;
+	cl::Kernel & apply_se_kernel = opencl_context.m_apply_se_kernel;
+	cl::CommandQueue & queue = opencl_context.m_commandqueue;
+
+	try {
+		pooling_kernel.setArg(0, channels);
+		pooling_kernel.setArg(1, bufferIn);
+		pooling_kernel.setArg(2, bufferTemp1);
+
+		queue.enqueueNDRangeKernel(pooling_kernel, cl::NullRange,
+			cl::NDRange(BOARD_SIZE, batch_size * channels),
+			cl::NDRange(BOARD_SIZE, 1));
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in squeeze_excitation: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
+
+
+	innerproduct(opencl_context, bufferTemp1, weights[0], weights[1], bufferTemp2, channels,
+		fc_outputs, true, batch_size);
+
+	innerproduct(opencl_context, bufferTemp2, weights[2], weights[3], bufferTemp1, fc_outputs,
+		2 * channels, false, batch_size);
+
+	try {
+		apply_se_kernel.setArg(0, channels);
+		apply_se_kernel.setArg(1, batch_size);
+		apply_se_kernel.setArg(2, bufferIn);
+		apply_se_kernel.setArg(3, bufferResidual);
+		apply_se_kernel.setArg(4, bufferTemp1);
+
+		queue.enqueueNDRangeKernel(apply_se_kernel, cl::NullRange,
+			cl::NDRange(BOARD_SIZE, batch_size * channels));
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in squeeze_excitation: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
+}
+
+template <typename net_t>
+void OpenCL_Network<net_t>::innerproduct(
+	OpenCLContext & opencl_context,
+	const cl::Buffer& input,
+	const cl::Buffer& weights,
+	const cl::Buffer& biases,
+	cl::Buffer& output,
+	int inputs, int outputs,
+	bool relu,
+	int batch_size) {
+
+	// TODO: innerproduct batching
+	assert(batch_size == 1);
+
+	auto sgemv_kernel = opencl_context.m_sgemv_kernel;
+	cl::CommandQueue & queue = opencl_context.m_commandqueue;
+
+	//TODO: Tune these
+	size_t wgs1 = 32;
+	size_t wpt1 = 1;
+
+	auto m_ceil = int(ceilMultiple(outputs, wgs1 * wpt1));
+	auto global_size = m_ceil / wpt1;
+	auto local_size = wgs1;
+
+	try {
+		// Sets the kernel arguments
+		sgemv_kernel.setArg(0, static_cast<int>(outputs));
+		sgemv_kernel.setArg(1, static_cast<int>(inputs));
+		sgemv_kernel.setArg(2, weights);
+		sgemv_kernel.setArg(3, static_cast<int>(0));
+		sgemv_kernel.setArg(4, static_cast<int>(inputs));
+		sgemv_kernel.setArg(5, input);
+		sgemv_kernel.setArg(6, static_cast<int>(0));
+		sgemv_kernel.setArg(7, output);
+		sgemv_kernel.setArg(8, static_cast<int>(0));
+		sgemv_kernel.setArg(9, biases);
+		sgemv_kernel.setArg(10, static_cast<int>(relu));
+
+		queue.enqueueNDRangeKernel(sgemv_kernel, cl::NullRange,
+			cl::NDRange(global_size),
+			cl::NDRange(local_size));
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in innerproduct: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
 }
 
 template <typename net_t>
 void OpenCL_Network<net_t>::convolve3(OpenCLContext & opencl_context,
-                              int channels, int outputs,
-                              cl::Buffer& bufferIn,
-                              cl::Buffer& bufferOut,
-                              cl::Buffer& bufferV,
-                              cl::Buffer& bufferM,
-                              weight_slice_t weights,
-                              cl::Buffer* bufferResidual,
-                              weight_slice_t bn_weights,
-                              bool skip_in_transform,
-                              bool fuse_in_transform,
-                              bool store_inout,
-                              int batch_size) {
+	int channels, int outputs,
+	cl::Buffer& bufferIn,
+	cl::Buffer& bufferOut,
+	cl::Buffer& bufferV,
+	cl::Buffer& bufferM,
+	weight_slice_t weights,
+	cl::Buffer* bufferResidual,
+	weight_slice_t bn_weights,
+	bool skip_in_transform,
+	bool fuse_in_transform,
+	bool store_inout,
+	bool relu,
+	int batch_size) {
 
-    cl::Kernel & in_transform_kernel = opencl_context.m_in_transform_kernel;
-    cl::Kernel & sgemm_kernel = opencl_context.m_sgemm_kernel;
-    cl::Kernel & out_transform_bn_kernel =
-        opencl_context.m_out_transform_bn_kernel;
-    cl::Kernel & out_transform_bn_in_kernel =
-        opencl_context.m_out_transform_bn_in_kernel;
+	cl::Kernel & in_transform_kernel = opencl_context.m_in_transform_kernel;
+	cl::Kernel & sgemm_kernel = opencl_context.m_sgemm_kernel;
+	cl::Kernel & out_transform_bn_kernel =
+		opencl_context.m_out_transform_bn_kernel;
+	cl::Kernel & out_transform_bn_in_kernel =
+		opencl_context.m_out_transform_bn_in_kernel;
 
-    auto mwg = m_opencl.m_sgemm_tuners.mwg;
-    auto nwg = m_opencl.m_sgemm_tuners.nwg;
-    auto kwg = m_opencl.m_sgemm_tuners.kwg;
-    auto vwm = m_opencl.m_sgemm_tuners.vwm;
-    auto vwn = m_opencl.m_sgemm_tuners.vwn;
-    auto mdimc = m_opencl.m_sgemm_tuners.mdimc;
-    auto ndimc = m_opencl.m_sgemm_tuners.ndimc;
-    auto wavefront_size = m_opencl.m_wavefront_size;
+	auto mwg = m_opencl.m_sgemm_tuners.mwg;
+	auto nwg = m_opencl.m_sgemm_tuners.nwg;
+	auto kwg = m_opencl.m_sgemm_tuners.kwg;
+	auto vwm = m_opencl.m_sgemm_tuners.vwm;
+	auto vwn = m_opencl.m_sgemm_tuners.vwn;
+	auto mdimc = m_opencl.m_sgemm_tuners.mdimc;
+	auto ndimc = m_opencl.m_sgemm_tuners.ndimc;
+	auto wavefront_size = m_opencl.m_wavefront_size;
 
-    assert(mwg != 0);
-    assert(nwg != 0);
-    assert(kwg != 0);
-    assert(mdimc != 0);
-    assert(ndimc != 0);
-    assert(vwm != 0);
-    assert(vwn != 0);
-    assert(wavefront_size != 0);
+	assert(mwg != 0);
+	assert(nwg != 0);
+	assert(kwg != 0);
+	assert(mdimc != 0);
+	assert(ndimc != 0);
+	assert(vwm != 0);
+	assert(vwn != 0);
+	assert(wavefront_size != 0);
 
-    constexpr auto tiles = WINOGRAD_P;
-    constexpr auto width = BOARD_SIZE;
-    constexpr auto height = BOARD_SIZE;
+	constexpr auto tiles = WINOGRAD_P;
+	constexpr auto width = BOARD_SIZE;
+	constexpr auto height = BOARD_SIZE;
 
-    auto wgs = ceilMultiple(batch_size * tiles, wavefront_size);
-    auto wgs_single = ceilMultiple(tiles, wavefront_size);
+	auto wgs = ceilMultiple(batch_size * tiles, wavefront_size);
+	auto wgs_single = ceilMultiple(tiles, wavefront_size);
 
-    auto m_ceil = int(ceilMultiple(ceilMultiple(outputs, mwg), vwm));
-    auto n_ceil = int(ceilMultiple(ceilMultiple(batch_size * tiles, nwg), vwn));
-    auto k_ceil = int(ceilMultiple(ceilMultiple(channels, kwg), vwm));
+	auto m_ceil = int(ceilMultiple(ceilMultiple(outputs, mwg), vwm));
+	auto n_ceil = int(ceilMultiple(ceilMultiple(batch_size * tiles, nwg), vwn));
+	auto k_ceil = int(ceilMultiple(ceilMultiple(channels, kwg), vwm));
 
-    cl::CommandQueue & queue = opencl_context.m_commandqueue;
+	cl::CommandQueue & queue = opencl_context.m_commandqueue;
 
-    if (!skip_in_transform) {
-        try {
-            in_transform_kernel.setArg(0, bufferIn);
-            in_transform_kernel.setArg(1, bufferV);
-            in_transform_kernel.setArg(2, channels);
-            in_transform_kernel.setArg(3, k_ceil);
-            in_transform_kernel.setArg(4, n_ceil);
-            in_transform_kernel.setArg(5, batch_size);
+	if (!skip_in_transform) {
+		try {
+			in_transform_kernel.setArg(0, bufferIn);
+			in_transform_kernel.setArg(1, bufferV);
+			in_transform_kernel.setArg(2, channels);
+			in_transform_kernel.setArg(3, k_ceil);
+			in_transform_kernel.setArg(4, n_ceil);
+			in_transform_kernel.setArg(5, batch_size);
 
-            queue.enqueueNDRangeKernel(in_transform_kernel, cl::NullRange,
-                                       cl::NDRange(wgs, channels));
-        } catch (const cl::Error &e) {
-            std::cerr << "Error in convolve3: " << e.what() << ": "
-                << e.err() << std::endl;
-            throw;
-        }
-    }
+			queue.enqueueNDRangeKernel(in_transform_kernel, cl::NullRange,
+				cl::NDRange(wgs, channels));
+		}
+		catch (const cl::Error &e) {
+			std::cerr << "Error in convolve3: " << e.what() << ": "
+				<< e.err() << std::endl;
+			throw;
+		}
+	}
 
-    try {
-        sgemm_kernel.setArg(0, m_ceil);
-        sgemm_kernel.setArg(1, n_ceil);
-        sgemm_kernel.setArg(2, k_ceil);
-        sgemm_kernel.setArg(3, weights[0]);
-        sgemm_kernel.setArg(4, bufferV);
-        sgemm_kernel.setArg(5, bufferM);
+	try {
+		sgemm_kernel.setArg(0, m_ceil);
+		sgemm_kernel.setArg(1, n_ceil);
+		sgemm_kernel.setArg(2, k_ceil);
+		sgemm_kernel.setArg(3, weights[0]);
+		sgemm_kernel.setArg(4, bufferV);
+		sgemm_kernel.setArg(5, bufferM);
 
-        cl::NDRange local_sgemm = {mdimc, ndimc, 1};
+		cl::NDRange local_sgemm = { mdimc, ndimc, 1 };
 
-        cl::NDRange size_sgemm = {(m_ceil * mdimc) / mwg,
-                                  (n_ceil * ndimc) / nwg,
-                                  cl::size_type(WINOGRAD_TILE)};
+		cl::NDRange size_sgemm = { (m_ceil * mdimc) / mwg,
+								  (n_ceil * ndimc) / nwg,
+								  cl::size_type(WINOGRAD_TILE) };
 
-        queue.enqueueNDRangeKernel(sgemm_kernel, cl::NullRange,
-                                   size_sgemm, local_sgemm);
-    } catch (const cl::Error &e) {
-        std::cerr << "Error in convolve3: " << e.what() << ": "
-            << e.err() << std::endl;
-        throw;
-    }
+		queue.enqueueNDRangeKernel(sgemm_kernel, cl::NullRange,
+			size_sgemm, local_sgemm);
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in convolve3: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
 
-    try {
-        if (fuse_in_transform) {
-            // TODO : Eventually this might also be something tuneable?
-            constexpr auto dim_size = 2;
-            out_transform_bn_in_kernel.setArg(0, bufferM);
-            if (store_inout) {
-                out_transform_bn_in_kernel.setArg(1, bufferOut);
-            } else {
-                out_transform_bn_in_kernel.setArg(1, nullptr);
-            }
-            out_transform_bn_in_kernel.setArg(2, bufferV);
-            out_transform_bn_in_kernel.setArg(3, outputs);
-            out_transform_bn_in_kernel.setArg(4, m_ceil);
-            out_transform_bn_in_kernel.setArg(5, n_ceil);
-            // k_ceil of the next convolution
-            auto k_ceil2 = int(ceilMultiple(ceilMultiple(outputs, kwg), vwm));
-            out_transform_bn_in_kernel.setArg(6, k_ceil2);
-            if (bufferResidual) {
-                out_transform_bn_in_kernel.setArg(7, *bufferResidual);
-            } else {
-                out_transform_bn_in_kernel.setArg(7, nullptr);
-            }
-            out_transform_bn_in_kernel.setArg(8, bn_weights[0]);
-            out_transform_bn_in_kernel.setArg(9, bn_weights[1]);
-            out_transform_bn_in_kernel.setArg(10,
-                cl::Local(dim_size * width * height * sizeof(float)));
+	try {
+		if (fuse_in_transform) {
+			assert(relu);
+			// TODO : Eventually this might also be something tuneable?
+			// Needs to match OUTIN_KWG in kernel
+			constexpr auto dim_size = 2;
+			out_transform_bn_in_kernel.setArg(0, bufferM);
+			if (store_inout) {
+				out_transform_bn_in_kernel.setArg(1, bufferOut);
+			}
+			else {
+				out_transform_bn_in_kernel.setArg(1, nullptr);
+			}
+			out_transform_bn_in_kernel.setArg(2, bufferV);
+			out_transform_bn_in_kernel.setArg(3, outputs);
+			out_transform_bn_in_kernel.setArg(4, m_ceil);
+			out_transform_bn_in_kernel.setArg(5, n_ceil);
+			// k_ceil of the next convolution
+			auto k_ceil2 = int(ceilMultiple(ceilMultiple(outputs, kwg), vwm));
+			out_transform_bn_in_kernel.setArg(6, k_ceil2);
+			if (bufferResidual) {
+				out_transform_bn_in_kernel.setArg(7, *bufferResidual);
+			}
+			else {
+				out_transform_bn_in_kernel.setArg(7, nullptr);
+			}
+			out_transform_bn_in_kernel.setArg(8, bn_weights[0]);
+			out_transform_bn_in_kernel.setArg(9, bn_weights[1]);
 
-            queue.enqueueNDRangeKernel(out_transform_bn_in_kernel,
-                                       cl::NullRange,
-                                       cl::NDRange(outputs, wgs_single, batch_size),
-                                       cl::NDRange(dim_size, wgs_single, 1));
-        } else {
-            out_transform_bn_kernel.setArg(0, bufferM);
-            out_transform_bn_kernel.setArg(1, bufferOut);
-            out_transform_bn_kernel.setArg(2, outputs);
-            out_transform_bn_kernel.setArg(3, m_ceil);
-            out_transform_bn_kernel.setArg(4, n_ceil);
-            out_transform_bn_kernel.setArg(5, batch_size);
-            if (bufferResidual) {
-                out_transform_bn_kernel.setArg(6, *bufferResidual);
-            } else {
-                out_transform_bn_kernel.setArg(6, nullptr);
-            }
-            out_transform_bn_kernel.setArg(7, bn_weights[0]);
-            out_transform_bn_kernel.setArg(8, bn_weights[1]);
+			queue.enqueueNDRangeKernel(out_transform_bn_in_kernel,
+				cl::NullRange,
+				cl::NDRange(outputs, wgs_single, batch_size),
+				cl::NDRange(dim_size, wgs_single, 1));
+		}
+		else {
+			out_transform_bn_kernel.setArg(0, bufferM);
+			out_transform_bn_kernel.setArg(1, bufferOut);
+			out_transform_bn_kernel.setArg(2, outputs);
+			out_transform_bn_kernel.setArg(3, m_ceil);
+			out_transform_bn_kernel.setArg(4, n_ceil);
+			out_transform_bn_kernel.setArg(5, batch_size);
+			if (bufferResidual) {
+				out_transform_bn_kernel.setArg(6, *bufferResidual);
+			}
+			else {
+				out_transform_bn_kernel.setArg(6, nullptr);
+			}
+			out_transform_bn_kernel.setArg(7, bn_weights[0]);
+			out_transform_bn_kernel.setArg(8, bn_weights[1]);
+			out_transform_bn_kernel.setArg(9, static_cast<int>(relu));
 
-            queue.enqueueNDRangeKernel(out_transform_bn_kernel, cl::NullRange,
-                                       cl::NDRange(outputs, wgs));
-        }
-    } catch (const cl::Error &e) {
-        std::cerr << "Error in convolve3: " << e.what() << ": "
-            << e.err() << std::endl;
-        throw;
-    }
+			// Needs to match OUT_KWG, OUT_BWG in the kernel.
+			// This could be tuned.
+			cl::NDRange local_out = { 32, 2 };
+
+			cl::NDRange global_out = { ceilMultiple(outputs, local_out[0]),
+									  ceilMultiple(tiles * batch_size, local_out[1]) };
+
+			queue.enqueueNDRangeKernel(out_transform_bn_kernel, cl::NullRange,
+				global_out,
+				local_out);
+		}
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in convolve3: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
 }
 
 template <typename net_t>
 void OpenCL_Network<net_t>::convolve1(OpenCLContext & opencl_context,
-                              int channels, int outputs,
-                              cl::Buffer& bufferInput,
-                              cl::Buffer& bufferOutput,
-                              cl::Buffer& bufferMerge,
-                              weight_slice_t weights,
-                              int batch_size) {
-    // The size of the board is defined at compile time
-    constexpr int width = BOARD_SIZE;
-    constexpr int boardsize = NUM_INTERSECTIONS;
-    constexpr int rowTiles = BOARD_SIZE;
+	int channels, int outputs,
+	cl::Buffer& bufferInput,
+	cl::Buffer& bufferOutput,
+	cl::Buffer& bufferMerge,
+	weight_slice_t weights,
+	int batch_size) {
+	// The size of the board is defined at compile time
+	constexpr int width = BOARD_SIZE;
+	constexpr int boardsize = NUM_INTERSECTIONS;
+	constexpr int rowTiles = BOARD_SIZE;
 
-    // Input channel grouping in multiples of 8
-    constexpr int channelGroup = 8;
-    constexpr int channelShift = 3;
-    constexpr int rowGroup = 1;
-    size_t outputGroup = std::min(outputs, 32);
+	// Input channel grouping in multiples of 8
+	constexpr int channelGroup = 8;
+	constexpr int channelShift = 3;
+	constexpr int rowGroup = 1;
+	size_t outputGroup = std::min(outputs, 32);
 
-    auto m_convolve_kernel = &opencl_context.m_convolve1_kernel;
+	auto m_convolve_kernel = &opencl_context.m_convolve1_kernel;
 
 #ifndef NDEBUG
-    // Total output size after reducing
-    size_t outSize = boardsize * outputs * sizeof(net_t);
+	// Total output size after reducing
+	size_t outSize = boardsize * outputs * sizeof(net_t);
 
-    // Produce channel * output planes and merge them at the end
-    size_t mergeSize = (channels >> channelShift) * outSize;
-    assert(mergeSize <= bufferMerge.getInfo<CL_MEM_SIZE>());
+	// Produce channel * output planes and merge them at the end
+	size_t mergeSize = (channels >> channelShift) * outSize;
+	assert(mergeSize <= bufferMerge.getInfo<CL_MEM_SIZE>());
 #endif
 
-    // Copy the rows locally
-    size_t stripSize = width * sizeof(float);
+	// Copy the rows locally
+	size_t stripSize = width * sizeof(float);
 
-    int rowBuffer = std::min<int>(channelGroup, 7);
-    size_t rowSize = channelGroup * outputGroup * rowBuffer * sizeof(float);
+	int rowBuffer = std::min<int>(channelGroup, 7);
+	size_t rowSize = channelGroup * outputGroup * rowBuffer * sizeof(float);
 
-    cl::CommandQueue & queue = opencl_context.m_commandqueue;
+	cl::CommandQueue & queue = opencl_context.m_commandqueue;
 
-    try {
-        m_convolve_kernel->setArg(0, bufferInput);
-        m_convolve_kernel->setArg(1, bufferMerge);
-        m_convolve_kernel->setArg(2, weights[0]);
-        m_convolve_kernel->setArg(3, cl::Local(stripSize * channelGroup * rowGroup));
-        m_convolve_kernel->setArg(4, cl::Local(rowSize));
+	try {
+		m_convolve_kernel->setArg(0, bufferInput);
+		m_convolve_kernel->setArg(1, bufferMerge);
+		m_convolve_kernel->setArg(2, weights[0]);
+		m_convolve_kernel->setArg(3, cl::Local(stripSize * channelGroup * rowGroup));
+		m_convolve_kernel->setArg(4, cl::Local(rowSize));
 
-        queue.enqueueNDRangeKernel(
-            *m_convolve_kernel, cl::NullRange,
-            cl::NDRange(channels, outputs, batch_size * rowTiles),
-            cl::NDRange(channelGroup, outputGroup, rowGroup));
-    } catch (const cl::Error &e) {
-        std::cerr << "Error in convolve1: " << e.what() << ": "
-                  << e.err() << std::endl;
-        throw;
-    }
+		queue.enqueueNDRangeKernel(
+			*m_convolve_kernel, cl::NullRange,
+			cl::NDRange(channels, outputs, batch_size * rowTiles),
+			cl::NDRange(channelGroup, outputGroup, rowGroup));
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in convolve1: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
 
-    cl::Kernel & merge_kernel = opencl_context.m_merge_kernel;
-    assert(channels % (1 << channelShift) == 0);
+	cl::Kernel & merge_kernel = opencl_context.m_merge_kernel;
+	assert(channels % (1 << channelShift) == 0);
 
-    try {
-        merge_kernel.setArg(0, bufferMerge);
-        merge_kernel.setArg(1, bufferOutput);
-        merge_kernel.setArg(2, channels >> channelShift);
+	try {
+		merge_kernel.setArg(0, bufferMerge);
+		merge_kernel.setArg(1, bufferOutput);
+		merge_kernel.setArg(2, channels >> channelShift);
 
-        queue.enqueueNDRangeKernel(
-            merge_kernel, cl::NullRange,
-            cl::NDRange(outputs, boardsize, batch_size),
-            cl::NDRange(std::min(8, outputs), BOARD_SIZE, 1));
-    } catch (const cl::Error &e) {
-        std::cerr << "Error in merge: " << e.what() << ": "
-                  << e.err() << std::endl;
-        throw;
-    }
+		queue.enqueueNDRangeKernel(
+			merge_kernel, cl::NullRange,
+			cl::NDRange(outputs, boardsize, batch_size),
+			cl::NDRange(std::min(8, outputs), BOARD_SIZE, 1));
+	}
+	catch (const cl::Error &e) {
+		std::cerr << "Error in merge: " << e.what() << ": "
+			<< e.err() << std::endl;
+		throw;
+	}
 }
 
 template<class T>
@@ -778,7 +954,10 @@ void OpenCL<net_t>::initialize(const int channels) {
                                 + sourceCode_config
                                 + sourceCode_convolve1
                                 + sourceCode_convolve3
-                                + sourceCode_sgemm);
+                                + sourceCode_sgemm
+								+ sourceCode_global_avg_pooling
+								+ sourceCode_sgemv
+								+ sourceCode_apply_se);
     } catch (const cl::Error &e) {
         myprintf("Error getting kernels: %s: %d", e.what(), e.err());
         throw std::runtime_error("Error getting OpenCL kernels.");
