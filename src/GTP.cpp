@@ -916,6 +916,19 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             if(kr_n>KR_MAX) kr_n=0;
             s_network->nncache_clear();
             symmetry = "all";
+        } else if (symmetry == "set") {
+            cmdstream >> kr_begin;
+            cmdstream >> kr_end;
+            if (cmdstream.fail()) {
+                gtp_fail_printf(id, "heatmap set komi_rate_begin end [step]");
+                return;
+            }
+            cmdstream >> kr_step;
+            if (cmdstream.fail()) {
+            }
+            myprintf("%f %f %f\n", kr_begin, kr_end, kr_step);
+
+            symmetry = "all";
         } else if (symmetry == "history") {
             myprintf("komi");
             for (auto j = 0; j<KR_MAX; j++) {
