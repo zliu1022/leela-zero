@@ -101,7 +101,7 @@ AnalyzeTags cfg_analyze_tags;
 #define KR_BEGIN -150.0
 #define KR_END 150.0
 #define KR_STEP 0.5
-#define KR_SIZE ((KR_END-KR_BEGIN)/KR_STEP+1)
+#define KR_SIZE (((KR_END)-(KR_BEGIN))/KR_STEP+1)
 float kr_begin=1.0*KR_BEGIN;
 float kr_end=1.0*KR_END;
 float kr_step=1.0*KR_STEP;
