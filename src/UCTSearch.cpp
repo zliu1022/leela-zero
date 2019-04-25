@@ -821,7 +821,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
         }
         auto first_child = m_root->get_first_child();
         //int color = m_rootstate.board.get_to_move();
-        myprintf("%s-%s-%s %s No. %3d %3.1fs %3s %5d %3.2f%% %3.2f%%\n\n",
+        myprintf("%s-%s-%s %s No. %3d %3.1fs %3s %5d %3.6f%% %3.2f%%\n\n",
             "LeelaZero", PROGRAM_VERSION, s.c_str(),
             (color == FastBoard::BLACK) ? "B" : "W",
             int(m_rootstate.get_movenum()) + 1,
