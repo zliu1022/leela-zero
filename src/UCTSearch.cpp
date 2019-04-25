@@ -808,7 +808,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
         // zliu
 #ifdef _WIN32
         int pos = cfg_weightsfile.find_last_of('\\');
-#elif
+#else
         int pos = cfg_weightsfile.find_last_of('/');
 #endif
         int pos1 = cfg_weightsfile.find(".gz");
