@@ -528,7 +528,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     } else if (command == "name") {
 #ifdef _WIN32
         int pos = cfg_weightsfile.find_last_of('\\');
-#elif
+#else
         int pos = cfg_weightsfile.find_last_of('/');
 #endif
         int pos1 = cfg_weightsfile.find(".gz");
