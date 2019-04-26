@@ -68,7 +68,7 @@ size_t cfg_max_tree_size;
 int cfg_max_cache_ratio_percent;
 TimeManagement::enabled_t cfg_timemanage;
 int cfg_lagbuffer_cs;
-int cfg_resignpct;
+float cfg_resignpct;
 int cfg_noise;
 int cfg_random_cnt;
 int cfg_random_min_visits;

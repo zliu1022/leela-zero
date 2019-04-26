@@ -120,7 +120,8 @@ public:
 
 private:
     float get_min_psa_ratio() const;
-    float dump_stats(FastState& state, UCTNode& parent);
+    void dump_stats(FastState& state, UCTNode& parent);
+    float dump_stats_kr(FastState& state, UCTNode& parent);
     void tree_stats(const UCTNode& node);
     std::string get_pv(FastState& state, UCTNode& parent);
     std::string get_analysis();

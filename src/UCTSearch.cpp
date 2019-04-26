@@ -257,7 +257,42 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     return result;
 }
 
-float UCTSearch::dump_stats(FastState & state, UCTNode & parent) {
+void UCTSearch::dump_stats(FastState & state, UCTNode & parent) {
+    if (cfg_quiet || !parent.has_children()) {
+        return;
+    }
+
+    const int color = state.get_to_move();
+
+    // sort children, put best move on top
+    parent.sort_children(color);
+
+    if (parent.get_first_child()->first_visit()) {
+        return;
+    }
+
+    int movecount = 0;
+    for (const auto& node : parent.get_children()) {
+        // Always display at least two moves. In the case there is
+        // only one move searched the user could get an idea why.
+        if (++movecount > 2 && !node->get_visits()) break;
+
+        auto move = state.move_to_text(node->get_move());
+        auto tmpstate = FastState{ state };
+        tmpstate.play_move(node->get_move());
+        auto pv = move + " " + get_pv(tmpstate, *node);
+
+        myprintf("%4s -> %7d (V: %5.8f%%) (N: %5.2f%%) PV: %s\n",
+            move.c_str(),
+            node->get_visits(),
+            node->get_visits() ? node->get_raw_eval(color)*100.0f : 0.0f,
+            node->get_policy() * 100.0f,
+            pv.c_str());
+    }
+    tree_stats(parent);
+}
+
+float UCTSearch::dump_stats_kr(FastState & state, UCTNode & parent) {
     if (cfg_quiet || !parent.has_children()) {
         return 0.0f;
     }
@@ -549,7 +584,7 @@ int UCTSearch::get_best_move(passflag_t passflag) {
     // if we aren't passing, should we consider resigning?
     if (bestmove != FastBoard::PASS) {
         if (should_resign(passflag, besteval)) {
-            myprintf("Eval (%.2f%%) looks bad. Resigning.\n",
+            myprintf("Eval (%.8f%%) looks bad. Resigning.\n",
                      100.0f * besteval);
             bestmove = FastBoard::RESIGN;
         }
@@ -595,7 +630,7 @@ std::string UCTSearch::get_analysis() {
 
     auto pvstring = get_pv(tempstate, *m_root);
     float winrate = 100.0f * m_root->get_raw_eval(color);
-    return str(boost::format("Playouts: %d, Win: %5.6f%%, PV: %s")
+    return str(boost::format("Playouts: %d, Win: %5.8f%%, PV: %s")
         % playouts % winrate % pvstring.c_str());
 }
 
@@ -821,7 +856,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
         }
         auto first_child = m_root->get_first_child();
         //int color = m_rootstate.board.get_to_move();
-        myprintf("%s-%s-%s %s No. %3d %3.1fs %3s %5d %3.6f%% %3.2f%%\n\n",
+        myprintf("%s-%s-%s %s No. %3d %3.1fs %3s %5d %3.8f%% %3.2f%%\n\n",
             "LeelaZero", PROGRAM_VERSION, s.c_str(),
             (color == FastBoard::BLACK) ? "B" : "W",
             int(m_rootstate.get_movenum()) + 1,
@@ -930,7 +965,7 @@ float UCTSearch::think_kr(int color, passflag_t passflag) {
 
     // Display search info.
     /*myprintf("\n");*/
-    float winrate = dump_stats(m_rootstate, *m_root);
+    float winrate = dump_stats_kr(m_rootstate, *m_root);
     Training::record(m_network, m_rootstate, *m_root);
 
     Time elapsed;
