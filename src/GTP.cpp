@@ -885,13 +885,13 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         } else if (symmetry == "average" || symmetry == "avg") {
             vec = s_network->get_output(
                 &game, Network::Ensemble::AVERAGE, -1, false);
-        } else if (symmetry == "komi") {
+        } else if (symmetry == "rate") {
             cmdstream >> tmp;
             if (!cmdstream.fail()) {
                 try {
                     cfg_max_playouts = std::stoi(tmp);
                 } catch(...) {
-                    gtp_fail_printf(id, "syntax should be: heatmap komi playouts");
+                    gtp_fail_printf(id, "syntax should be: heatmap winrate [playouts]");
                     return;
                 }
                 //cfg_max_visits = visits;
@@ -931,6 +931,8 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             s_network->nncache_clear();
             symmetry = "all";
         } else if (symmetry == "set") {
+            myprintf("%f %f %f\n", kr_begin, kr_end, kr_step);
+            myprintf("->\n");
             cmdstream >> kr_begin;
             cmdstream >> kr_end;
             if (cmdstream.fail()) {
@@ -958,6 +960,24 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 myprintf("\n");
                 i++;
             }
+            symmetry = "all";
+        } else if (symmetry == "policy") {
+            auto i=0;
+            int who = game.get_to_move();
+            for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
+                // clear nncache
+                s_network->nncache_clear();
+
+                game.set_komi(t_komi);
+
+                vec = s_network->get_output(
+                	&game, Network::Ensemble::DIRECT,
+		            Network::IDENTITY_SYMMETRY, false, false);
+                myprintf("komi-%.2f policy %s\n", who == FastBoard::WHITE?"W":"B", t_komi);
+                Network::show_heatmap(&game, vec, false);
+            }
+            s_network->nncache_clear();
+
             symmetry = "all";
         } else {
             vec = s_network->get_output(
