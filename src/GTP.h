@@ -114,6 +114,10 @@ extern float cfg_logconst;
 extern float cfg_softmax_temp;
 extern float cfg_fpu_reduction;
 extern float cfg_fpu_root_reduction;
+
+extern float cfg_ra;
+extern float cfg_rb;
+
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern FILE* cfg_logfile_handle;

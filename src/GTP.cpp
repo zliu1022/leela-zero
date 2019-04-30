@@ -89,6 +89,10 @@ float cfg_logconst;
 float cfg_softmax_temp;
 float cfg_fpu_reduction;
 float cfg_fpu_root_reduction;
+
+float cfg_ra;
+float cfg_rb;
+
 std::string cfg_weightsfile;
 std::string cfg_logfile;
 FILE* cfg_logfile_handle;
@@ -355,6 +359,10 @@ void GTP::setup_default_parameters() {
     cfg_logconst = 1.7f;
     cfg_softmax_temp = 1.0f;
     cfg_fpu_reduction = 0.25f;
+
+    cfg_ra = 1.0f;
+    cfg_rb = 0.0f;
+
     // see UCTSearch::should_resign
     cfg_resignpct = -1;
     cfg_noise = false;
