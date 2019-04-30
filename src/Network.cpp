@@ -818,7 +818,11 @@ Network::Netresult Network::get_output_internal(
     const auto policy_out =
         innerproduct<OUTPUTS_POLICY * NUM_INTERSECTIONS, POTENTIAL_MOVES, false>(
             policy_data, m_ip_pol_w, m_ip_pol_b);
-    const auto outputs = softmax(policy_out, cfg_softmax_temp);
+    // will recover temperature to 1 when move number is 100 
+    auto movenum = state->get_movenum();
+    auto new_softmax_temp = (cfg_softmax_temp*100-8+(1-cfg_softmax_temp)*movenum)/(100-8);
+    const auto outputs = softmax(policy_out, new_softmax_temp);
+    //const auto outputs = softmax(policy_out, cfg_softmax_temp);
 
     // Now get the value
     batchnorm<NUM_INTERSECTIONS>(OUTPUTS_VALUE, value_data,

@@ -291,6 +291,7 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
         assert(value > std::numeric_limits<double>::lowest());
 
         if (value > best_value) {
+            dbgprintf("%s rate puct %.8f %.8f\n", color==FastBoard::BLACK?"B":"W",winrate, puct);
             best_value = value;
             best = &child;
         }
