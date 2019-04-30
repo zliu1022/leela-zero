@@ -43,6 +43,7 @@ extern Utils::ThreadPool thread_pool;
 namespace Utils {
     void myprintf_error(const char *fmt, ...);
     void myprintf(const char *fmt, ...);
+    void dbgprintf(const char *fmt, ...);
     void gtp_printf(int id, const char *fmt, ...);
     void gtp_printf_raw(const char *fmt, ...);
     void gtp_fail_printf(int id, const char *fmt, ...);

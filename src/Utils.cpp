@@ -117,6 +117,17 @@ void Utils::myprintf(const char *fmt, ...) {
     va_end(ap);
 }
 
+void Utils::dbgprintf(const char *fmt, ...) {
+    if (!cfg_debug) {
+        return;
+    }
+
+    va_list ap;
+    va_start(ap, fmt);
+    myprintf_base(fmt, ap);
+    va_end(ap);
+}
+
 void Utils::myprintf_error(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);

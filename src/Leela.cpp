@@ -151,6 +151,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("weights,w", po::value<std::string>()->default_value(cfg_weightsfile), "File with network weights.")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
+        ("debug", "Open debug output.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
                        "[auto|on|off|fast|no_pruning] Enable time management features.\n"
                        "auto = no_pruning when using -n, otherwise on.\n"
@@ -258,6 +259,10 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("quiet")) {
         cfg_quiet = true;
+    }
+
+    if (vm.count("debug")) {
+        cfg_debug = true;
     }
 
     if (vm.count("benchmark")) {

@@ -97,6 +97,7 @@ std::string cfg_weightsfile;
 std::string cfg_logfile;
 FILE* cfg_logfile_handle;
 bool cfg_quiet;
+bool cfg_debug;
 std::string cfg_options_str;
 bool cfg_benchmark;
 bool cfg_cpu_only;
@@ -373,6 +374,7 @@ void GTP::setup_default_parameters() {
     cfg_dumbpass = false;
     cfg_logfile_handle = nullptr;
     cfg_quiet = false;
+    cfg_debug = false;
     cfg_benchmark = false;
 #ifdef USE_CPU_ONLY
     cfg_cpu_only = true;

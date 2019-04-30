@@ -122,6 +122,7 @@ extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;
+extern bool cfg_debug;
 extern std::string cfg_options_str;
 extern bool cfg_benchmark;
 extern bool cfg_cpu_only;
