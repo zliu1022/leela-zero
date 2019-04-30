@@ -820,7 +820,9 @@ Network::Netresult Network::get_output_internal(
             policy_data, m_ip_pol_w, m_ip_pol_b);
     // will recover temperature to 1 when move number is 100 
     auto movenum = state->get_movenum();
-    auto new_softmax_temp = (cfg_softmax_temp*100-8+(1-cfg_softmax_temp)*movenum)/(100-8);
+    auto recov_num = 180;
+    auto new_softmax_temp = (cfg_softmax_temp*recov_num-8+(1-cfg_softmax_temp)*movenum)/(recov_num-8);
+    if (cfg_softmax_temp==1.0||new_softmax_temp<1.0) new_softmax_temp = 1.0;
     const auto outputs = softmax(policy_out, new_softmax_temp);
     //const auto outputs = softmax(policy_out, cfg_softmax_temp);
 
@@ -834,7 +836,10 @@ Network::Netresult Network::get_output_internal(
         innerproduct<VALUE_LAYER, 1, false>(winrate_data, m_ip2_val_w, m_ip2_val_b);
 
     // Map TanH output range [-1..1] to [0..1] range
-    const auto winrate = (1.0f + std::tanh(cfg_ra*winrate_out[0]+cfg_rb)) / 2.0f;
+    // will recover ra to 1 when move number is 100
+    auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
+    if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
+    const auto winrate = (1.0f + std::tanh(new_ra*winrate_out[0]+cfg_rb)) / 2.0f;
 
     Netresult result;
 
