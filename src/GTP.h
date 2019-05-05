@@ -116,6 +116,7 @@ extern float cfg_fpu_reduction;
 extern float cfg_fpu_root_reduction;
 extern float cfg_ci_alpha;
 extern float cfg_lcb_min_visit_ratio;
+extern float cfg_ra;
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern std::string cfg_weightsfile_aux;

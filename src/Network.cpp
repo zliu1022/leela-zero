@@ -837,7 +837,11 @@ Network::Netresult Network::get_output_internal(
         innerproduct<VALUE_LAYER, 1, false>(winrate_data, m_ip2_val_w, m_ip2_val_b);
 
     // Map TanH output range [-1..1] to [0..1] range
-    const auto winrate = (1.0f + std::tanh(winrate_out[0])) / 2.0f;
+    auto movenum = state->get_movenum();
+    auto recov_num = 180;
+    auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
+    if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
+    const auto winrate = (1.0f + std::tanh(new_ra*winrate_out[0])) / 2.0f;
 
     Netresult result;
 

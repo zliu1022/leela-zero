@@ -205,6 +205,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("softmax_temp", po::value<float>())
         ("fpu_reduction", po::value<float>())
         ("ci_alpha", po::value<float>())
+        ("ra", po::value<float>())
         ;
 #endif
     // These won't be shown, we use them to catch incorrect usage of the
@@ -287,6 +288,9 @@ static void parse_commandline(int argc, char *argv[]) {
     }
     if (vm.count("ci_alpha")) {
         cfg_ci_alpha = vm["ci_alpha"].as<float>();
+    }
+    if (vm.count("ra")) {
+        cfg_ra = vm["ra"].as<float>();
     }
 #endif
 
