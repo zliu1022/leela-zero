@@ -525,7 +525,21 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         gtp_printf(id, "%d", GTP_VERSION);
         return;
     } else if (command == "name") {
-        gtp_printf(id, PROGRAM_NAME);
+#ifdef _WIN32
+        int pos = cfg_weightsfile.find_last_of('\\');
+#else
+        int pos = cfg_weightsfile.find_last_of('/');
+#endif
+        int pos1 = cfg_weightsfile.find(".gz");
+        std::string s = "";
+        if (pos1 > pos) {
+            s = cfg_weightsfile.substr(pos + 1, pos1 - pos - 1);
+        }
+        else {
+            s = cfg_weightsfile.substr(pos + 1);
+        }
+        gtp_printf(id, s.c_str());
+        //gtp_printf(id, PROGRAM_NAME);
         return;
     } else if (command == "version") {
         gtp_printf(id, PROGRAM_VERSION);
