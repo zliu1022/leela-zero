@@ -107,7 +107,7 @@ public:
     static constexpr auto UNLIMITED_PLAYOUTS =
         std::numeric_limits<int>::max() / 2;
 
-    UCTSearch(GameState& g, Network & network);
+    UCTSearch(GameState& g, Network & network, Network & network_aux);
     int think(int color, passflag_t passflag = NORMAL);
     void set_playout_limit(int playouts);
     void set_visit_limit(int visits);
@@ -147,6 +147,7 @@ private:
     std::list<Utils::ThreadGroup> m_delete_futures;
 
     Network & m_network;
+    Network & m_network_aux;
 };
 
 class UCTWorker {

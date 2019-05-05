@@ -149,6 +149,7 @@ static void parse_commandline(int argc, char *argv[]) {
                         "Resign when winrate is less than x%.\n"
                         "-1 uses 10% but scales for handicap.")
         ("weights,w", po::value<std::string>()->default_value(cfg_weightsfile), "File with network weights.")
+        ("aux",       po::value<std::string>(), "File with another network weights.")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
@@ -298,6 +299,16 @@ static void parse_commandline(int argc, char *argv[]) {
     cfg_weightsfile = vm["weights"].as<std::string>();
     if (vm["weights"].defaulted() && !boost::filesystem::exists(cfg_weightsfile)) {
         printf("A network weights file is required to use the program.\n");
+        printf("By default, Leela Zero looks for it in %s.\n", cfg_weightsfile.c_str());
+        exit(EXIT_FAILURE);
+    }
+
+    if (vm.count("aux")) {
+        cfg_weightsfile_aux = vm["aux"].as<std::string>();
+        cfg_have_aux = true;
+    }
+    if (cfg_have_aux && !boost::filesystem::exists(cfg_weightsfile)) {
+        printf("Another network weights file is required to use the program.\n");
         printf("By default, Leela Zero looks for it in %s.\n", cfg_weightsfile.c_str());
         exit(EXIT_FAILURE);
     }
@@ -484,10 +495,14 @@ static void parse_commandline(int argc, char *argv[]) {
 
 static void initialize_network() {
     auto network = std::make_unique<Network>();
+    auto network_aux = std::make_unique<Network>();
     auto playouts = std::min(cfg_max_playouts, cfg_max_visits);
     network->initialize(playouts, cfg_weightsfile);
+    if (cfg_have_aux) {
+        network_aux->initialize(playouts, cfg_weightsfile_aux);
+    }
 
-    GTP::initialize(std::move(network));
+    GTP::initialize(std::move(network), std::move(network_aux));
 }
 
 // Setup global objects after command line has been parsed
@@ -514,7 +529,7 @@ void benchmark(GameState& game) {
     game.play_textmove("w", "d4");
     game.play_textmove("b", "c3");
 
-    auto search = std::make_unique<UCTSearch>(game, *GTP::s_network);
+    auto search = std::make_unique<UCTSearch>(game, *GTP::s_network, *GTP::s_network_aux);
     game.set_to_move(FastBoard::WHITE);
     search->think(FastBoard::WHITE);
 }

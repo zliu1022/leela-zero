@@ -58,7 +58,7 @@ bool UCTNode::first_visit() const {
     return m_visits == 0;
 }
 
-bool UCTNode::create_children(Network & network,
+bool UCTNode::create_children(Network & network, Network & network_aux,
                               std::atomic<int>& nodecount,
                               GameState& state,
                               float& eval,
@@ -81,6 +81,7 @@ bool UCTNode::create_children(Network & network,
 
     const auto raw_netlist = network.get_output(
         &state, Network::Ensemble::RANDOM_SYMMETRY);
+    Network::Netresult raw_netlist_aux;
 
     // DCNN returns winrate as side to move
     const auto stm_eval = raw_netlist.winrate;
@@ -95,14 +96,23 @@ bool UCTNode::create_children(Network & network,
 
     std::vector<Network::PolicyVertexPair> nodelist;
 
+    if (cfg_have_aux && to_move == FastBoard::BLACK) {
+        raw_netlist_aux = network_aux.get_output(
+            &state, Network::Ensemble::RANDOM_SYMMETRY, -1, false, false);
+    }
     auto legal_sum = 0.0f;
     for (auto i = 0; i < NUM_INTERSECTIONS; i++) {
         const auto x = i % BOARD_SIZE;
         const auto y = i / BOARD_SIZE;
         const auto vertex = state.board.get_vertex(x, y);
         if (state.is_move_legal(to_move, vertex)) {
-            nodelist.emplace_back(raw_netlist.policy[i], vertex);
-            legal_sum += raw_netlist.policy[i];
+            if (cfg_have_aux && to_move == FastBoard::BLACK) {
+                nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
+                legal_sum += raw_netlist_aux.policy[i];
+            } else {
+                nodelist.emplace_back(raw_netlist.policy[i], vertex);
+                legal_sum += raw_netlist.policy[i];
+            }
         }
     }
 
@@ -125,8 +135,13 @@ bool UCTNode::create_children(Network & network,
     }
 
     if (allow_pass) {
-        nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
-        legal_sum += raw_netlist.policy_pass;
+        if (cfg_have_aux && to_move == FastBoard::BLACK) {
+            nodelist.emplace_back(raw_netlist_aux.policy_pass, FastBoard::PASS);
+            legal_sum += raw_netlist_aux.policy_pass;
+        } else {
+            nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
+            legal_sum += raw_netlist.policy_pass;
+        }
     }
 
     if (legal_sum > std::numeric_limits<float>::min()) {
@@ -366,7 +381,7 @@ public:
 
         // Need at least 2 visits for LCB.
         if (m_lcb_min_visits < 2) {
-            m_lcb_min_visits = 2;
+            m_lcb_min_visits = 200000000;
         }
 
         // Calculate the lower confidence bound for each node.

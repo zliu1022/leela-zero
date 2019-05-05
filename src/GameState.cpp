@@ -279,7 +279,7 @@ bool GameState::valid_handicap(int handicap) {
     return true;
 }
 
-void GameState::place_free_handicap(int stones, Network & network) {
+void GameState::place_free_handicap(int stones, Network & network, Network & network_aux) {
     int limit = board.get_boardsize() * board.get_boardsize();
     if (stones > limit / 2) {
         stones = limit / 2;
@@ -295,7 +295,7 @@ void GameState::place_free_handicap(int stones, Network & network) {
     stones -= set_fixed_handicap_2(stones);
 
     for (int i = 0; i < stones; i++) {
-        auto search = std::make_unique<UCTSearch>(*this, network);
+        auto search = std::make_unique<UCTSearch>(*this, network, network_aux);
         auto move = search->think(FastBoard::BLACK, UCTSearch::NOPASS);
         play_move(FastBoard::BLACK, move);
     }

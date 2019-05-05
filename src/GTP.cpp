@@ -92,6 +92,8 @@ float cfg_fpu_root_reduction;
 float cfg_ci_alpha;
 float cfg_lcb_min_visit_ratio;
 std::string cfg_weightsfile;
+std::string cfg_weightsfile_aux;
+bool cfg_have_aux;
 std::string cfg_logfile;
 FILE* cfg_logfile_handle;
 bool cfg_quiet;
@@ -295,9 +297,11 @@ bool AnalyzeTags::has_move_restrictions() const {
 }
 
 std::unique_ptr<Network> GTP::s_network;
+std::unique_ptr<Network> GTP::s_network_aux;
 
-void GTP::initialize(std::unique_ptr<Network>&& net) {
+void GTP::initialize(std::unique_ptr<Network>&& net, std::unique_ptr<Network>&& net_aux) {
     s_network = std::move(net);
+    s_network_aux = std::move(net_aux);
 
     bool result;
     std::string message;
@@ -331,6 +335,7 @@ void GTP::setup_default_parameters() {
     cfg_timemanage = TimeManagement::AUTO;
     cfg_lagbuffer_cs = 100;
     cfg_weightsfile = leelaz_file("best-network");
+    cfg_have_aux = false;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
@@ -460,7 +465,7 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
 
 void GTP::execute(GameState & game, const std::string& xinput) {
     std::string input;
-    static auto search = std::make_unique<UCTSearch>(game, *s_network);
+    static auto search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
 
     bool transform_lowercase = true;
 
@@ -574,7 +579,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     } else if (command.find("clear_board") == 0) {
         Training::clear_training();
         game.reset_game();
-        search = std::make_unique<UCTSearch>(game, *s_network);
+        search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
         assert(UCTNodePointer::get_tree_size() == 0);
         gtp_printf(id, "");
         return;
@@ -927,7 +932,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         cmdstream >> stones;
 
         if (!cmdstream.fail()) {
-            game.place_free_handicap(stones, *s_network);
+            game.place_free_handicap(stones, *s_network, *s_network_aux);
             auto stonestring = game.board.get_stone_list();
             gtp_printf(id, "%s", stonestring.c_str());
         } else {

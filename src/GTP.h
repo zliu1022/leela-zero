@@ -118,6 +118,8 @@ extern float cfg_ci_alpha;
 extern float cfg_lcb_min_visit_ratio;
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
+extern std::string cfg_weightsfile_aux;
+extern bool cfg_have_aux;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;
 extern std::string cfg_options_str;
@@ -135,7 +137,8 @@ static constexpr size_t MiB = 1024LL * 1024LL;
 class GTP {
 public:
     static std::unique_ptr<Network> s_network;
-    static void initialize(std::unique_ptr<Network>&& network);
+    static std::unique_ptr<Network> s_network_aux;
+    static void initialize(std::unique_ptr<Network>&& network, std::unique_ptr<Network>&& network_aux);
     static void execute(GameState & game, const std::string& xinput);
     static void setup_default_parameters();
 private:
