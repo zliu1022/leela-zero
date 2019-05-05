@@ -103,6 +103,18 @@ bool cfg_benchmark;
 bool cfg_cpu_only;
 AnalyzeTags cfg_analyze_tags;
 
+#define KR_BEGIN -150.0
+#define KR_END 150.0
+#define KR_STEP 0.5
+#define KR_SIZE (((KR_END)-(KR_BEGIN))/KR_STEP+1)
+float kr_begin=1.0*KR_BEGIN;
+float kr_end=1.0*KR_END;
+float kr_step=1.0*KR_STEP;
+
+#define KR_MAX 10
+std::array<float, size_t(KR_SIZE*KR_MAX)> komi_rate={};
+int kr_n=0;
+
 /* Parses tags for the lz-analyze GTP command and friends */
 AnalyzeTags::AnalyzeTags(std::istringstream& cmdstream, const GameState& game) {
     std::string tag;
@@ -884,6 +896,100 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         } else if (symmetry == "average" || symmetry == "avg") {
             vec = s_network->get_output(
                 &game, Network::Ensemble::AVERAGE, -1, false);
+        } else if (symmetry == "rate") {
+            cmdstream >> tmp;
+            if (!cmdstream.fail()) {
+                try {
+                    cfg_max_playouts = std::stoi(tmp);
+                } catch(...) {
+                    gtp_fail_printf(id, "syntax should be: heatmap winrate [playouts]");
+                    return;
+                }
+                //cfg_max_visits = visits;
+            } else {
+                cfg_max_playouts = 0;
+            }
+            //search->set_visit_limit(cfg_max_visits);
+            search->set_playout_limit(cfg_max_playouts);
+
+            int who = FastBoard::WHITE;
+
+            myprintf("komi winrate\n");
+            auto i=0;
+            for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
+                game.set_komi(t_komi);
+                // clear nncache
+                s_network->nncache_clear();
+
+                float rate = 0.0f;
+                who = game.get_to_move();
+                if ( cfg_max_playouts != 0) {
+                    //game.set_to_move(who);
+                    rate = search->think_kr(who);
+                    // game.play_move(move);
+                } else {
+                    vec = s_network->get_output(
+                        &game, Network::Ensemble::DIRECT,
+                        Network::IDENTITY_SYMMETRY, false, false);
+                    rate = vec.winrate;
+                }
+                myprintf("%s %.1f %f\n\n", who == FastBoard::WHITE?"W":"B", t_komi, rate);
+                komi_rate[kr_n*KR_SIZE+i]=rate;
+                i++;
+            }
+            kr_n++;
+            if(kr_n>KR_MAX) kr_n=0;
+            s_network->nncache_clear();
+            symmetry = "all";
+        } else if (symmetry == "set") {
+            myprintf("%f %f %f\n", kr_begin, kr_end, kr_step);
+            myprintf("->\n");
+            cmdstream >> kr_begin;
+            cmdstream >> kr_end;
+            if (cmdstream.fail()) {
+                gtp_fail_printf(id, "heatmap set komi_rate_begin end [step]");
+                return;
+            }
+            cmdstream >> kr_step;
+            if (cmdstream.fail()) {
+            }
+            myprintf("%f %f %f\n", kr_begin, kr_end, kr_step);
+
+            symmetry = "all";
+        } else if (symmetry == "history") {
+            myprintf("komi");
+            for (auto j = 0; j<KR_MAX; j++) {
+                myprintf(" s%d", j);
+            }
+            myprintf("\n");
+            auto i=0;
+            for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
+                myprintf("%.1f", t_komi);
+                for (auto j = 0; j<KR_MAX; j++) {
+                    myprintf(" %f", komi_rate[j*KR_SIZE+i]);
+                }
+                myprintf("\n");
+                i++;
+            }
+            symmetry = "all";
+        } else if (symmetry == "policy") {
+            auto i=0;
+            int who = game.get_to_move();
+            for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
+                // clear nncache
+                s_network->nncache_clear();
+
+                game.set_komi(t_komi);
+
+                vec = s_network->get_output(
+                	&game, Network::Ensemble::DIRECT,
+		            Network::IDENTITY_SYMMETRY, false, false);
+                myprintf("komi-%.2f policy %s\n", t_komi, who == FastBoard::WHITE?"W":"B");
+                Network::show_heatmap(&game, vec, false);
+            }
+            s_network->nncache_clear();
+
+            symmetry = "all";
         } else {
             vec = s_network->get_output(
                 &game, Network::Ensemble::DIRECT, std::stoi(symmetry), false);

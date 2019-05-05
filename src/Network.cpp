@@ -1052,3 +1052,7 @@ size_t Network::get_estimated_cache_size() {
 void Network::nncache_resize(int max_count) {
     return m_nncache.resize(max_count);
 }
+
+void Network::nncache_clear() {
+    m_nncache.clear();
+}

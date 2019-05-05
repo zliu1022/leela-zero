@@ -109,6 +109,7 @@ public:
 
     UCTSearch(GameState& g, Network & network, Network & network_aux);
     int think(int color, passflag_t passflag = NORMAL);
+    float think_kr(int color, passflag_t passflag = NORMAL);
     void set_playout_limit(int playouts);
     void set_visit_limit(int visits);
     void ponder();
@@ -120,6 +121,7 @@ public:
 private:
     float get_min_psa_ratio() const;
     void dump_stats(FastState& state, UCTNode& parent);
+    float dump_stats_kr(FastState& state, UCTNode& parent);
     void tree_stats(const UCTNode& node);
     std::string get_pv(FastState& state, UCTNode& parent);
     std::string get_analysis(int playouts);
