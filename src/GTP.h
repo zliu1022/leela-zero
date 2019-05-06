@@ -120,6 +120,7 @@ extern float cfg_ra;
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern std::string cfg_weightsfile_aux;
+extern AuxMode::enabled_t cfg_auxmode;
 extern bool cfg_have_aux;
 extern FILE* cfg_logfile_handle;
 extern bool cfg_quiet;

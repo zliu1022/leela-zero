@@ -82,24 +82,33 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
     const auto raw_netlist = network.get_output(
         &state, Network::Ensemble::RANDOM_SYMMETRY);
     Network::Netresult raw_netlist_aux;
+    if (cfg_have_aux) {
+        raw_netlist_aux = network_aux.get_output(
+            &state, Network::Ensemble::RANDOM_SYMMETRY);
+    }
 
     // DCNN returns winrate as side to move
     const auto stm_eval = raw_netlist.winrate;
+    float stm_eval_aux;
+    if (cfg_have_aux) {
+        stm_eval_aux = raw_netlist_aux.winrate;
+    }
     const auto to_move = state.board.get_to_move();
+
     // our search functions evaluate from black's point of view
     if (to_move == FastBoard::WHITE) {
         m_net_eval = 1.0f - stm_eval;
     } else {
-        m_net_eval = stm_eval;
+        if (cfg_have_aux && cfg_auxmode==AuxMode::BW) {
+            m_net_eval = stm_eval_aux;
+        } else {
+            m_net_eval = stm_eval;
+        }
     }
     eval = m_net_eval;
 
     std::vector<Network::PolicyVertexPair> nodelist;
 
-    if (cfg_have_aux && to_move == FastBoard::BLACK) {
-        raw_netlist_aux = network_aux.get_output(
-            &state, Network::Ensemble::RANDOM_SYMMETRY, -1, false, false);
-    }
     auto legal_sum = 0.0f;
     for (auto i = 0; i < NUM_INTERSECTIONS; i++) {
         const auto x = i % BOARD_SIZE;
@@ -110,8 +119,13 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                 nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
                 legal_sum += raw_netlist_aux.policy[i];
             } else {
-                nodelist.emplace_back(raw_netlist.policy[i], vertex);
-                legal_sum += raw_netlist.policy[i];
+                if (cfg_have_aux && cfg_auxmode == AuxMode::PR) {
+                    nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
+                    legal_sum += raw_netlist_aux.policy[i];
+                } else {
+                    nodelist.emplace_back(raw_netlist.policy[i], vertex);
+                    legal_sum += raw_netlist.policy[i];
+                }
             }
         }
     }
@@ -139,8 +153,13 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
             nodelist.emplace_back(raw_netlist_aux.policy_pass, FastBoard::PASS);
             legal_sum += raw_netlist_aux.policy_pass;
         } else {
-            nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
-            legal_sum += raw_netlist.policy_pass;
+            if (cfg_have_aux && cfg_auxmode == AuxMode::PR) {
+                nodelist.emplace_back(raw_netlist_aux.policy_pass, FastBoard::PASS);
+                legal_sum += raw_netlist_aux.policy_pass;
+            } else {
+                nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
+                legal_sum += raw_netlist.policy_pass;
+            }
         }
     }
 

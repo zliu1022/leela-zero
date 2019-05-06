@@ -149,7 +149,18 @@ static void parse_commandline(int argc, char *argv[]) {
                         "Resign when winrate is less than x%.\n"
                         "-1 uses 10% but scales for handicap.")
         ("weights,w", po::value<std::string>()->default_value(cfg_weightsfile), "File with network weights.")
-        ("aux",       po::value<std::string>(), "File with another network weights.")
+        ("aux",       po::value<std::string>(), "Optional aux weights.")
+        ("auxmode",   po::value<std::string>()->default_value("HP"),
+                       "[HP|PR|BW] aux weight working mode.\n"
+                       "HP: HandicaP mode\n"
+                       "PR: Policy and winRate mode\n"
+                       "BW: Black and White mode\n"
+                       "Assume -w A --aux B\n"
+                       "         Black           White\n"
+                       "     policy winrate, policy winrate\n"
+                       "HP =   B      A        A      A\n"
+                       "PR =   B      A        B      A\n"
+                       "BW =   B      B        A      A\n")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
@@ -205,7 +216,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("softmax_temp", po::value<float>())
         ("fpu_reduction", po::value<float>())
         ("ci_alpha", po::value<float>())
-        ("ra", po::value<float>())
+        ("ra", po::value<float>(), "winrate = (1+tanh(ra*rate)/2,        ex. ra=0.25 for 4 stones handicap game")
         ;
 #endif
     // These won't be shown, we use them to catch incorrect usage of the
@@ -315,6 +326,21 @@ static void parse_commandline(int argc, char *argv[]) {
         printf("Another network weights file is required to use the program.\n");
         printf("By default, Leela Zero looks for it in %s.\n", cfg_weightsfile.c_str());
         exit(EXIT_FAILURE);
+    }
+
+    if (vm.count("auxmode")) {
+        auto tm = vm["auxmode"].as<std::string>();
+        std::transform(tm.begin(), tm.end(), tm.begin(), ::tolower);
+        if (tm == "hp") {
+            cfg_auxmode = AuxMode::HP;
+        } else if (tm == "pr") {
+            cfg_auxmode = AuxMode::PR;
+        } else if (tm == "bw") {
+            cfg_auxmode = AuxMode::BW;
+        } else {
+            printf("Invalid auxmode value.\n");
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (vm.count("gtp")) {

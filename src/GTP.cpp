@@ -94,6 +94,7 @@ float cfg_lcb_min_visit_ratio;
 float cfg_ra;
 std::string cfg_weightsfile;
 std::string cfg_weightsfile_aux;
+AuxMode::enabled_t cfg_auxmode;
 bool cfg_have_aux;
 std::string cfg_logfile;
 FILE* cfg_logfile_handle;
@@ -349,6 +350,7 @@ void GTP::setup_default_parameters() {
     cfg_lagbuffer_cs = 100;
     cfg_weightsfile = leelaz_file("best-network");
     cfg_have_aux = false;
+    cfg_auxmode = AuxMode::HP;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
@@ -973,7 +975,6 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             }
             symmetry = "all";
         } else if (symmetry == "policy") {
-            auto i=0;
             int who = game.get_to_move();
             for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
                 // clear nncache
@@ -1382,6 +1383,9 @@ std::pair<bool, std::string> GTP::set_max_memory(size_t max_memory,
     cfg_max_tree_size = remove_overhead(max_tree_size);
     // Resize cache.
     s_network->nncache_resize(max_cache_count);
+    if (cfg_have_aux) {
+        s_network_aux->nncache_resize(max_cache_count);
+    }
 
     return std::make_pair(true, "Setting max tree size to " +
         std::to_string(max_tree_size / MiB) + " MiB and cache size to " +
