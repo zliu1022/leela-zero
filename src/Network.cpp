@@ -909,6 +909,59 @@ void Network::show_heatmap(const FastState* const state,
     }
 }
 
+void Network::show_heatmap_kr(const FastState* const state,
+                           const Netresult& result, const Netresult& result_aux,
+                           const bool topmoves) {
+    std::vector<std::string> display_map;
+    std::string line;
+
+    for (unsigned int y = 0; y < BOARD_SIZE; y++) {
+        for (unsigned int x = 0; x < BOARD_SIZE; x++) {
+            auto policy = 0;
+            const auto vertex = state->board.get_vertex(x, y);
+            if (state->board.get_state(vertex) == FastBoard::EMPTY) {
+                policy = (result.policy[y * BOARD_SIZE + x] + result_aux.policy[y * BOARD_SIZE + x])* 1000/2;
+            }
+
+            line += boost::str(boost::format("%3d ") % policy);
+        }
+
+        display_map.push_back(line);
+        line.clear();
+    }
+
+    for (int i = display_map.size() - 1; i >= 0; --i) {
+        myprintf("%s\n", display_map[i].c_str());
+    }
+    const auto pass_policy = int((result.policy_pass+result_aux.policy_pass)* 1000/2);
+    myprintf("pass: %d\n", pass_policy);
+    myprintf("winrate: %f\n", (result.winrate+result_aux.winrate)/2.0);
+
+    if (topmoves) {
+        std::vector<Network::PolicyVertexPair> moves;
+        for (auto i=0; i < NUM_INTERSECTIONS; i++) {
+            const auto x = i % BOARD_SIZE;
+            const auto y = i / BOARD_SIZE;
+            const auto vertex = state->board.get_vertex(x, y);
+            if (state->board.get_state(vertex) == FastBoard::EMPTY) {
+                moves.emplace_back((result.policy[i]+result_aux.policy[i])/2, vertex);
+            }
+        }
+        moves.emplace_back((result.policy_pass+result_aux.policy_pass)/2, FastBoard::PASS);
+
+        std::stable_sort(rbegin(moves), rend(moves));
+
+        auto cum = 0.0f;
+        for (const auto& move : moves) {
+            if (cum > 0.85f || move.first < 0.01f) break;
+            myprintf("%1.3f (%s)\n",
+                    move.first,
+                    state->board.move_to_text(move.second).c_str());
+            cum += move.first;
+        }
+    }
+}
+
 void Network::fill_input_plane_pair(const FullBoard& board,
                                     std::vector<float>::iterator black,
                                     std::vector<float>::iterator white,

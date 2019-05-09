@@ -884,11 +884,17 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         cmdstream >> symmetry;
 
         Network::Netresult vec;
+        Network::Netresult vec_aux;
         if (cmdstream.fail()) {
             // Default = DIRECT with no symmetric change
             vec = s_network->get_output(
                 &game, Network::Ensemble::DIRECT,
                 Network::IDENTITY_SYMMETRY, false);
+            if (cfg_have_aux) {
+                vec_aux = s_network_aux->get_output(
+                    &game, Network::Ensemble::DIRECT,
+                    Network::IDENTITY_SYMMETRY, false);
+            }
         } else if (symmetry == "all") {
             for (auto s = 0; s < Network::NUM_SYMMETRIES; ++s) {
                 vec = s_network->get_output(
@@ -994,10 +1000,18 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         } else {
             vec = s_network->get_output(
                 &game, Network::Ensemble::DIRECT, std::stoi(symmetry), false);
+            if (cfg_have_aux) {
+                vec_aux = s_network_aux->get_output(
+                    &game, Network::Ensemble::DIRECT, std::stoi(symmetry), false);
+            }
         }
 
         if (symmetry != "all") {
-            Network::show_heatmap(&game, vec, false);
+            if (cfg_have_aux) {
+                Network::show_heatmap_kr(&game, vec, vec_aux, true);
+            } else {
+                Network::show_heatmap(&game, vec, false);
+            }
         }
 
         gtp_printf(id, "");

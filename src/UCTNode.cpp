@@ -79,12 +79,15 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         return false;
     }
 
+    auto state_aux = state; //maybe useless, i found change w,aux sequence, even same rand will get diff result
     const auto raw_netlist = network.get_output(
         &state, Network::Ensemble::RANDOM_SYMMETRY);
+        //&state, Network::Ensemble::DIRECT, 0);
     Network::Netresult raw_netlist_aux;
     if (cfg_have_aux) {
         raw_netlist_aux = network_aux.get_output(
-            &state, Network::Ensemble::RANDOM_SYMMETRY);
+            &state_aux, Network::Ensemble::RANDOM_SYMMETRY);
+            //&state_aux, Network::Ensemble::DIRECT, 0);
     }
 
     // DCNN returns winrate as side to move
@@ -97,10 +100,22 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
 
     // our search functions evaluate from black's point of view
     if (to_move == FastBoard::WHITE) {
-        m_net_eval = 1.0f - stm_eval;
+        if (cfg_have_aux && cfg_auxmode==AuxMode::AVG) {
+            m_net_eval = ((1.0f - stm_eval)+(1.0f - stm_eval_aux))/2;
+            //myprintf("W %.8f %.8f\n", (1.0f - stm_eval), (1.0f - stm_eval_aux));
+        } else {
+            m_net_eval = 1.0f - stm_eval;
+        }
     } else {
-        if (cfg_have_aux && cfg_auxmode==AuxMode::BW) {
-            m_net_eval = stm_eval_aux;
+        if (cfg_have_aux) {
+            if (cfg_auxmode==AuxMode::BW) {
+                m_net_eval = stm_eval_aux;
+            } else if (cfg_auxmode==AuxMode::AVG) {
+                m_net_eval = (stm_eval+stm_eval_aux)/2;
+                //myprintf("B %.8f %.8f\n", stm_eval, stm_eval_aux);
+            } else {
+                m_net_eval = stm_eval;
+            }
         } else {
             m_net_eval = stm_eval;
         }
@@ -116,12 +131,27 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         const auto vertex = state.board.get_vertex(x, y);
         if (state.is_move_legal(to_move, vertex)) {
             if (cfg_have_aux && to_move == FastBoard::BLACK) {
-                nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
-                legal_sum += raw_netlist_aux.policy[i];
-            } else {
-                if (cfg_have_aux && cfg_auxmode == AuxMode::PR) {
+                if (cfg_auxmode==AuxMode::AVG) {
+                    auto policy_avg = (raw_netlist.policy[i]+raw_netlist_aux.policy[i])/2;
+                    nodelist.emplace_back(policy_avg, vertex);
+                    legal_sum += policy_avg;
+                } else {
                     nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
                     legal_sum += raw_netlist_aux.policy[i];
+                }
+            } else {
+                if (cfg_have_aux) {
+                    if (cfg_auxmode == AuxMode::PR) {
+                        nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
+                        legal_sum += raw_netlist_aux.policy[i];
+                    } else if (cfg_auxmode == AuxMode::AVG) {
+                        auto policy_avg = (raw_netlist.policy[i]+raw_netlist_aux.policy[i])/2;
+                        nodelist.emplace_back(policy_avg, vertex);
+                        legal_sum += policy_avg;
+                    } else {
+                        nodelist.emplace_back(raw_netlist.policy[i], vertex);
+                        legal_sum += raw_netlist.policy[i];
+                    }
                 } else {
                     nodelist.emplace_back(raw_netlist.policy[i], vertex);
                     legal_sum += raw_netlist.policy[i];
@@ -150,12 +180,27 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
 
     if (allow_pass) {
         if (cfg_have_aux && to_move == FastBoard::BLACK) {
-            nodelist.emplace_back(raw_netlist_aux.policy_pass, FastBoard::PASS);
-            legal_sum += raw_netlist_aux.policy_pass;
-        } else {
-            if (cfg_have_aux && cfg_auxmode == AuxMode::PR) {
+            if (cfg_auxmode==AuxMode::AVG) {
+                auto pass_avg = (raw_netlist.policy_pass+raw_netlist_aux.policy_pass)/2;
+                nodelist.emplace_back(pass_avg, FastBoard::PASS);
+                legal_sum += pass_avg;
+            } else {
                 nodelist.emplace_back(raw_netlist_aux.policy_pass, FastBoard::PASS);
                 legal_sum += raw_netlist_aux.policy_pass;
+            }
+        } else {
+            if (cfg_have_aux) {
+                if (cfg_auxmode == AuxMode::PR) {
+                    nodelist.emplace_back(raw_netlist_aux.policy_pass, FastBoard::PASS);
+                    legal_sum += raw_netlist_aux.policy_pass;
+                } else if (cfg_auxmode == AuxMode::AVG) {
+                    auto pass_avg = (raw_netlist.policy_pass+raw_netlist_aux.policy_pass)/2;
+                    nodelist.emplace_back(pass_avg, FastBoard::PASS);
+                    legal_sum += pass_avg;
+                } else {
+                    nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
+                    legal_sum += raw_netlist.policy_pass;
+                }
             } else {
                 nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
                 legal_sum += raw_netlist.policy_pass;

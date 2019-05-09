@@ -151,16 +151,18 @@ static void parse_commandline(int argc, char *argv[]) {
         ("weights,w", po::value<std::string>()->default_value(cfg_weightsfile), "File with network weights.")
         ("aux",       po::value<std::string>(), "Optional aux weights.")
         ("auxmode",   po::value<std::string>()->default_value("HP"),
-                       "[HP|PR|BW] aux weight working mode.\n"
+                       "[HP|PR|BW|AVG] aux weight working mode.\n"
                        "HP: HandicaP mode\n"
                        "PR: Policy and winRate mode\n"
                        "BW: Black and White mode\n"
+                       "AVG:AVeraGe ode\n"
                        "Assume -w A --aux B\n"
-                       "         Black           White\n"
-                       "     policy winrate, policy winrate\n"
-                       "HP =   B      A        A      A\n"
-                       "PR =   B      A        B      A\n"
-                       "BW =   B      B        A      A\n")
+                       "         Black             White\n"
+                       "     policy winrate,   policy winrate\n"
+                       "HP =   B      A          A      A\n"
+                       "PR =   B      A          B      A\n"
+                       "BW =   B      B          A      A\n"
+                       "AVG= Avg(B+A) Avg(B+A) Avg(B+A) Avg(B+A)\n")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
@@ -337,6 +339,8 @@ static void parse_commandline(int argc, char *argv[]) {
             cfg_auxmode = AuxMode::PR;
         } else if (tm == "bw") {
             cfg_auxmode = AuxMode::BW;
+        } else if (tm == "avg") {
+            cfg_auxmode = AuxMode::AVG;
         } else {
             printf("Invalid auxmode value.\n");
             exit(EXIT_FAILURE);

@@ -904,17 +904,20 @@ int UCTSearch::think(int color, passflag_t passflag) {
         else {
             s = cfg_weightsfile.substr(pos + 1, 8);
         }
-        if (pos1_aux > pos_aux) {
-            s_aux = cfg_weightsfile_aux.substr(pos_aux + 1, ((pos1_aux-pos_aux-1)>8)?8:(pos1_aux-pos_aux-1));
-        }
-        else {
-            s_aux = cfg_weightsfile_aux.substr(pos_aux + 1, 8);
+        if (cfg_have_aux) {
+            if (pos1_aux > pos_aux) {
+                s_aux = cfg_weightsfile_aux.substr(pos_aux + 1, ((pos1_aux-pos_aux-1)>8)?8:(pos1_aux-pos_aux-1));
+            }
+            else {
+                s_aux = cfg_weightsfile_aux.substr(pos_aux + 1, 8);
+            }
         }
 
         auto first_child = m_root->get_first_child();
+        float tmp_komi = m_rootstate.get_komi();
         //int color = m_rootstate.board.get_to_move();
-        myprintf("%s-%s-%s-%s %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
-            "LeelaZero", PROGRAM_VERSION, s.c_str(),s_aux.c_str(),
+        myprintf("%s-%s-%s-%d(%.1f) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
+            PROGRAM_VERSION, s.c_str(),s_aux.c_str(),cfg_auxmode,tmp_komi, 
             (color == FastBoard::BLACK) ? "B" : "W",
             int(m_rootstate.get_movenum()) + 1,
             (elapsed_centis + 1) / 100.0f,

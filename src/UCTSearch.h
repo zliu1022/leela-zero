@@ -77,7 +77,7 @@ namespace TimeManagement {
 
 namespace AuxMode {
     enum enabled_t {
-        HP = 0, PR = 1, BW = 2
+        HP = 0, PR = 1, BW = 2, AVG = 3
     };
 };
 
