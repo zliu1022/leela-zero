@@ -946,13 +946,8 @@ Network::Netresult Network::get_output_internal(
         m_forward->forward(input_data, policy_data, value_data);
     }
 #else
-    if (m_value_head_not_stm) {
-        m_forward->forward_senet(input_data, policy_data, value_data);
-        (void) selfcheck;
-    } else {
-        m_forward->forward(input_data, policy_data, value_data);
-        (void) selfcheck;
-    }
+    m_forward->forward(input_data, policy_data, value_data);
+    (void) selfcheck;
 #endif
 
     // Get the moves
