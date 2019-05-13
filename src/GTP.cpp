@@ -788,7 +788,33 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         game.display_state();
         return;
     } else if (command.find("final_score") == 0) {
+        float old_komi = game.get_komi();
+        auto who = game.get_to_move();
+        float delta = 1.0f;
+        float last_rate = 0.5f;
+        float last_komi = 0.0f;
+        for (auto t_komi = -150.0; t_komi <= 150.0; t_komi+=1.0) {
+            Network::Netresult vec;
+            game.set_komi(t_komi);
+            float rate = 0.0f;
+            if (0) {
+                rate = search->think_kr(who);
+            } else {
+                vec = s_network->get_output(
+                    &game, Network::Ensemble::DIRECT,
+                    Network::IDENTITY_SYMMETRY, false, false);
+                rate = vec.winrate;
+            }
+            if (std::abs(rate-0.5) < delta ) {
+                myprintf("%.1f(%f%%) -> %.1f(%f%%)\n", last_komi,last_rate, t_komi,rate);
+                last_rate = rate;
+                last_komi = t_komi;
+                delta = std::abs(rate-0.5);
+            }
+        }
+        game.set_komi(old_komi);
         float ftmp = game.final_score();
+        ftmp = last_komi;
         /* white wins */
         if (ftmp < -0.1) {
             gtp_printf(id, "W+%3.1f", float(fabs(ftmp)));
