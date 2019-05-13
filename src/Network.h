@@ -112,6 +112,7 @@ public:
 
 private:
     std::pair<int, int> load_v1_network(std::istream& wtfile);
+    std::pair<int, int> load_senet_network(std::istream& wtfile);
     std::pair<int, int> load_network_file(const std::string& filename);
 
     static std::vector<float> winograd_transform_f(const std::vector<float>& f,
