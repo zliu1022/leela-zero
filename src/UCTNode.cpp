@@ -445,8 +445,9 @@ public:
 
         // Need at least 2 visits for LCB.
         if (m_lcb_min_visits < 2) {
-            m_lcb_min_visits = 200000000;
+            m_lcb_min_visits = 2;
         }
+        m_lcb_min_visits = 20000000;
 
         // Calculate the lower confidence bound for each node.
         if ((a_visit > m_lcb_min_visits) && (b_visit > m_lcb_min_visits)) {

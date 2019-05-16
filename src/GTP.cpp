@@ -372,7 +372,7 @@ void GTP::setup_default_parameters() {
     cfg_noise = false;
     cfg_fpu_root_reduction = cfg_fpu_reduction;
     cfg_ci_alpha = 1e-5f;
-    cfg_lcb_min_visit_ratio = 0.10f;
+    cfg_lcb_min_visit_ratio = 1.0f;
     cfg_ra = 1.0f;
     cfg_random_cnt = 0;
     cfg_random_min_visits = 1;
