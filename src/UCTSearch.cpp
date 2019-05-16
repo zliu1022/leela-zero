@@ -935,7 +935,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
             first_child->get_policy()*100.0f);
     int bestmove = get_best_move(passflag);
     if (cfg_have_aux==false) {
-        myprintf("AuxMode already closed\n");
+        //myprintf("AuxMode already closed\n");
     } else if ((first_child->get_eval(color)*100.0f)>cfg_aux_recover_rate) {
         myprintf("AuxMode closed, winrate > %.2f%%\n", cfg_aux_recover_rate);
         cfg_have_aux = false;

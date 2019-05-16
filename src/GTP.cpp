@@ -352,7 +352,7 @@ void GTP::setup_default_parameters() {
     cfg_weightsfile = leelaz_file("best-network");
     cfg_have_aux = false;
     cfg_auxmode = AuxMode::HP;
-    cfg_aux_recover_rate = 1.0f;
+    cfg_aux_recover_rate = 100.0f;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
