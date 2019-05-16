@@ -163,6 +163,8 @@ static void parse_commandline(int argc, char *argv[]) {
                        "PR =   B      A          B      A\n"
                        "BW =   B      B          A      A\n"
                        "AVG= Avg(B+A) Avg(B+A) Avg(B+A) Avg(B+A)\n")
+        ("auxrr", po::value<float>()->default_value(cfg_aux_recover_rate),
+                        "Auxmode Recover winRate >x%.\n")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
@@ -345,6 +347,10 @@ static void parse_commandline(int argc, char *argv[]) {
             printf("Invalid auxmode value.\n");
             exit(EXIT_FAILURE);
         }
+    }
+
+    if (vm.count("auxrr")) {
+        cfg_aux_recover_rate = vm["auxrr"].as<float>();
     }
 
     if (vm.count("gtp")) {
