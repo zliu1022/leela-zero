@@ -808,7 +808,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 rate = vec.winrate;
             }
             if (std::abs(rate-0.5) < delta ) {
-                myprintf("%.1f(%f%%) -> %.1f(%f%%)\n", last_komi,last_rate, t_komi,rate);
+                //myprintf("%.1f(%f%%) -> %.1f(%f%%)\n", last_komi,last_rate, t_komi,rate);
                 last_rate = rate;
                 last_komi = t_komi;
                 delta = std::abs(rate-0.5);
@@ -976,6 +976,8 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             kr_n++;
             if(kr_n>KR_MAX) kr_n=0;
             s_network->nncache_clear();
+            cfg_max_playouts = UCTSearch::UNLIMITED_PLAYOUTS;
+            search->set_playout_limit(cfg_max_playouts);
             symmetry = "all";
         } else if (symmetry == "set") {
             myprintf("%f %f %f\n", kr_begin, kr_end, kr_step);
