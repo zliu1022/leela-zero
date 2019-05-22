@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, os, argparse, gzip
+import sys, os, argparse
 
 def format_n(x):
     x = float(x)
@@ -29,21 +29,20 @@ if __name__ == "__main__":
         output_name = output_name[0] + '_quantized' + output_name[1]
     else:
         output_name = args.output
-    output = gzip.open(output_name, 'wb')
+    output = open(output_name, 'w')
 
     calculate_error = True
     error = 0
 
-    with gzip.open(args.input, 'rb') as f:
+    with open(args.input, 'r') as f:
         for line in f:
-            line = line.decode('utf8').split(' ')
+            line = line.split(' ')
             lineq = list(map(format_n, line))
 
             if calculate_error:
                 e = sum((float(line[i]) - float(lineq[i]))**2 for i in range(len(line)))
                 error += e/len(line)
-            out_line = ' '.join(lineq) + '\n'
-            output.write(out_line.encode('utf8'))
+            output.write(' '.join(lineq) + '\n')
 
     if calculate_error:
         print('Weight file difference L2-norm: {}'.format(error**0.5))
