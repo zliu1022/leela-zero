@@ -339,7 +339,7 @@ std::pair<int, int> Network::load_v1_network(std::istream& wtfile) {
 //senet
 std::pair<int, int> Network::load_senet_network(std::istream& wtfile) {
     // Count size of the network
-    myprintf("Detecting residual layers...");
+    myprintf("Senet Detecting residual layers...");
     // We are version 1 or 2
     if (m_value_head_not_stm) {
         myprintf("v%d...", 2);
@@ -504,7 +504,12 @@ std::pair<int, int> Network::load_network_file(const std::string& filename) {
             // that they return the value for black instead of
             // the player to move. This is used by ELF Open Go.
             if (format_version == 3) {
+                if (!cfg_cpu_only) {
+                    myprintf("senet only work in cpu-only mode\n");
+                    return {0, 0};
+                }
                 m_value_head_not_stm = true;
+                cfg_senet = true;
                 return load_senet_network(buffer);
             } else if (format_version == 2) {
                 m_value_head_not_stm = true;
@@ -941,13 +946,26 @@ Network::Netresult Network::get_output_internal(
     std::vector<float> value_data(OUTPUTS_VALUE * width * height);
 #ifdef USE_OPENCL_SELFCHECK
     if (selfcheck) {
+        if (cfg_cpu_only && cfg_senet) {
+            m_forward->forward_senet(input_data, policy_data, value_data);
+        } else {
         m_forward_cpu->forward(input_data, policy_data, value_data);
+        }
     } else {
+        if (cfg_cpu_only && cfg_senet) {
+            m_forward->forward_senet(input_data, policy_data, value_data);
+        } else {
         m_forward->forward(input_data, policy_data, value_data);
+        }
     }
 #else
+    if (cfg_cpu_only && cfg_senet) {
+    m_forward->forward_senet(input_data, policy_data, value_data);
+    (void) selfcheck;
+    } else {
     m_forward->forward(input_data, policy_data, value_data);
     (void) selfcheck;
+    }
 #endif
 
     // Get the moves

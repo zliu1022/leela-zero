@@ -103,6 +103,7 @@ bool cfg_quiet;
 std::string cfg_options_str;
 bool cfg_benchmark;
 bool cfg_cpu_only;
+bool cfg_senet;
 AnalyzeTags cfg_analyze_tags;
 
 #define KR_BEGIN -150.0
@@ -386,6 +387,7 @@ void GTP::setup_default_parameters() {
 #else
     cfg_cpu_only = false;
 #endif
+    cfg_senet = false;
 
     cfg_analyze_tags = AnalyzeTags{};
 

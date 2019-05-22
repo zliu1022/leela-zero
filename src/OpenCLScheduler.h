@@ -71,6 +71,12 @@ public:
     virtual void forward(const std::vector<float>& input,
                          std::vector<float>& output_pol,
                          std::vector<float>& output_val);
+
+    //senet
+    virtual void forward_senet(const std::vector<float>& input,
+                         std::vector<float>& output_pol,
+                         std::vector<float>& output_val);
+
     virtual bool needs_autodetect();
     virtual void push_weights(unsigned int filter_size,
                               unsigned int channels,

@@ -330,6 +330,17 @@ void OpenCL_Network<net_t>::forward(const std::vector<float>& input,
 
 }
 
+//senet
+template <typename net_t>
+void OpenCL_Network<net_t>::forward_senet(const std::vector<float>& input,
+                             std::vector<float>& output_pol,
+                             std::vector<float>& output_val,
+                             OpenCLContext & opencl_context,
+                             const int batch_size) {
+    return forward(input, output_pol, output_val, opencl_context, batch_size);
+}
+
+
 template <typename net_t>
 void OpenCL_Network<net_t>::convolve3(OpenCLContext & opencl_context,
                               int channels, int outputs,

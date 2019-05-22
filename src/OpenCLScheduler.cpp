@@ -280,6 +280,13 @@ void OpenCLScheduler<net_t>::forward(const std::vector<float>& input,
     entry->cv.wait(lk);
 }
 
+template <typename net_t>
+void OpenCLScheduler<net_t>::forward_senet(const std::vector<float>& input,
+                                     std::vector<float>& output_pol,
+                                     std::vector<float>& output_val) {
+    return forward(input, output_pol, output_val);
+}
+
 #ifndef NDEBUG
 struct batch_stats_t batch_stats;
 #endif
