@@ -80,14 +80,22 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
     }
 
     auto state_aux = state; //maybe useless, i found change w,aux sequence, even same rand will get diff result
-    const auto raw_netlist = network.get_output(
-        &state, Network::Ensemble::RANDOM_SYMMETRY);
-        //&state, Network::Ensemble::DIRECT, 0);
+    Network::Netresult raw_netlist;
     Network::Netresult raw_netlist_aux;
-    if (cfg_have_aux) {
-        raw_netlist_aux = network_aux.get_output(
-            &state_aux, Network::Ensemble::RANDOM_SYMMETRY);
-            //&state_aux, Network::Ensemble::DIRECT, 0);
+    if (cfg_rng_seed==0) {
+        raw_netlist = network.get_output(
+            &state, Network::Ensemble::DIRECT, 0);
+        if (cfg_have_aux) {
+            raw_netlist_aux = network_aux.get_output(
+                &state_aux, Network::Ensemble::DIRECT, 0);
+        }
+    } else {
+        raw_netlist = network.get_output(
+            &state, Network::Ensemble::RANDOM_SYMMETRY);
+        if (cfg_have_aux) {
+            raw_netlist_aux = network_aux.get_output(
+                &state_aux, Network::Ensemble::RANDOM_SYMMETRY);
+        }
     }
 
     // DCNN returns winrate as side to move
@@ -131,28 +139,37 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         const auto vertex = state.board.get_vertex(x, y);
         if (state.is_move_legal(to_move, vertex)) {
             if (cfg_have_aux && to_move == FastBoard::BLACK) {
+                //myprintf("(cfg_have_aux && to_move == FastBoard::BLACK)\n");
                 if (cfg_auxmode==AuxMode::AVG) {
+                    //myprintf("(cfg_auxmode==AuxMode::AVG)\n");
                     auto policy_avg = (raw_netlist.policy[i]+raw_netlist_aux.policy[i])/2;
                     nodelist.emplace_back(policy_avg, vertex);
                     legal_sum += policy_avg;
                 } else {
+                    //myprintf("!(cfg_auxmode==AuxMode::AVG)\n");
                     nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
                     legal_sum += raw_netlist_aux.policy[i];
                 }
             } else {
+                //myprintf("!(cfg_have_aux && to_move == FastBoard::BLACK)\n");
                 if (cfg_have_aux) {
+                    //myprintf("cfg_have_aux\n");
                     if (cfg_auxmode == AuxMode::PR) {
+                        //myprintf("(cfg_auxmode==AuxMode::PR)\n");
                         nodelist.emplace_back(raw_netlist_aux.policy[i], vertex);
                         legal_sum += raw_netlist_aux.policy[i];
                     } else if (cfg_auxmode == AuxMode::AVG) {
+                        //myprintf("(cfg_auxmode==AuxMode::AVG)\n");
                         auto policy_avg = (raw_netlist.policy[i]+raw_netlist_aux.policy[i])/2;
                         nodelist.emplace_back(policy_avg, vertex);
                         legal_sum += policy_avg;
                     } else {
+                        //myprintf("(cfg_auxmode==?, should be HP)\n");
                         nodelist.emplace_back(raw_netlist.policy[i], vertex);
                         legal_sum += raw_netlist.policy[i];
                     }
                 } else {
+                    //myprintf("!cfg_have_aux\n");
                     nodelist.emplace_back(raw_netlist.policy[i], vertex);
                     legal_sum += raw_netlist.policy[i];
                 }
@@ -416,7 +433,13 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
         const auto psa = child.get_policy();
         const auto denom = 1.0 + child.get_visits();
         const auto puct = cfg_puct * psa * (numerator / denom);
-        const auto value = winrate + puct;
+
+        //zliu: auxmode HP
+        auto cfg_auxhp_rate = 1.0; 
+        if( cfg_have_aux && (cfg_auxmode==AuxMode::HP) && (color==FastBoard::BLACK)) {
+            cfg_auxhp_rate = 0.0; 
+        }
+        const auto value = cfg_auxhp_rate * winrate + puct;
         assert(value > std::numeric_limits<double>::lowest());
 
         if (value > best_value) {
