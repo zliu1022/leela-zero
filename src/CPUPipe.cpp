@@ -49,6 +49,12 @@
 #ifndef USE_BLAS
 // Eigen helpers
 template <typename T>
+using EigenVectorMap =
+    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>>;
+template <typename T>
+using ConstEigenVectorMap =
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>>;
+template <typename T>
 using EigenMatrixMap =
     Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>;
 template <typename T>
@@ -417,6 +423,7 @@ void batchnorm(const size_t channels,
                std::vector<float>& data,
                const float* const means,
                const float* const stddevs,
+               const bool relu = true,
                const float* const eltwise = nullptr) {
     const auto lambda_ReLU = [](const auto val) { return (val > 0.0f) ?
                                                           val : 0.0f; };
@@ -428,111 +435,95 @@ void batchnorm(const size_t channels,
         if (eltwise == nullptr) {
             // Classical BN
             for (auto b = size_t{0}; b < spatial_size; b++) {
-                arr[b] = lambda_ReLU(scale_stddev * (arr[b] - mean));
+                auto val = scale_stddev * (arr[b] - mean);
+                if (relu) {
+                    val = lambda_ReLU(val);
+                }
+                arr[b] = val;
             }
         } else {
             // BN + residual add
             const auto res = &eltwise[c * spatial_size];
             for (auto b = size_t{0}; b < spatial_size; b++) {
-                arr[b] = lambda_ReLU((scale_stddev * (arr[b] - mean)) + res[b]);
+                auto val = scale_stddev * (arr[b] - mean) + res[b];
+                if (relu) {
+                    val = lambda_ReLU(val);
+                }
+                arr[b] = val;
             }
         }
     }
 }
 
-//senet
-template <size_t spatial_size>
-void batchnorm_no_relu(const size_t channels,
-	std::vector<float>& data,
-	const float* const means,
-	const float* const stddevs) {
-	for (auto c = size_t{ 0 }; c < channels; ++c) {
-		const auto mean = means[c];
-		const auto scale_stddev = stddevs[c];
-		const auto arr = &data[c * spatial_size];
+std::vector<float> innerproduct(const size_t inputs,
+                                const size_t outputs,
+                                const bool ReLU,
+                                const std::vector<float>& input,
+                                const std::vector<float>& weights,
+                                const std::vector<float>& biases) {
+    std::vector<float> output(outputs);
 
-		for (auto b = size_t{ 0 }; b < spatial_size; b++) {
-			arr[b] = scale_stddev * (arr[b] - mean);
-		}
-	}
-}
-
-void CPUPipe::forward_senet(const std::vector<float>& input,
-                      std::vector<float>& output_pol,
-                      std::vector<float>& output_val) {
-	const auto lambda_Sig = [](const auto val) { return 1.f / (1.f + std::exp(-val)); };
-
-    // Input convolution
-    constexpr auto P = WINOGRAD_P;
-    // Calculate output channels
-    const auto output_channels = m_input_channels;
-    // input_channels is the maximum number of input channels of any
-    // convolution. Residual blocks are identical, but the first convolution
-    // might be bigger when the network has very few filters
-    const auto input_channels = std::max(static_cast<size_t>(output_channels),
-                                         static_cast<size_t>(Network::INPUT_CHANNELS));
-    auto conv_out = std::vector<float>(output_channels * NUM_INTERSECTIONS);
-	auto se_pool = std::vector<float>(output_channels);
-	auto se_fc1 = std::vector<float>(output_channels / 2);
-	auto se_fc2 = std::vector<float>(output_channels * 2);
-
-    auto V = std::vector<float>(WINOGRAD_TILE * input_channels * P);
-    auto M = std::vector<float>(WINOGRAD_TILE * output_channels * P);
-
-    winograd_convolve3(output_channels, input, m_weights->m_conv_weights[0], V, M, conv_out);
-    batchnorm<NUM_INTERSECTIONS>(output_channels, conv_out,
-                                 m_weights->m_batchnorm_means[0].data(),
-                                 m_weights->m_batchnorm_stddevs[0].data());
-
-    // Residual tower
-    auto conv_in = std::vector<float>(output_channels * NUM_INTERSECTIONS);
-    auto res = std::vector<float>(output_channels * NUM_INTERSECTIONS);
-    for (auto i = size_t{1}; i < m_weights->m_conv_weights.size(); i += 2) {
-        auto output_channels = m_input_channels;
-        std::swap(conv_out, conv_in);
-        winograd_convolve3(output_channels, conv_in,
-                           m_weights->m_conv_weights[i], V, M, conv_out);
-        batchnorm<NUM_INTERSECTIONS>(output_channels, conv_out,
-                                     m_weights->m_batchnorm_means[i].data(),
-                                     m_weights->m_batchnorm_stddevs[i].data());
-
-        std::swap(conv_in, res);
-        std::swap(conv_out, conv_in);
-        winograd_convolve3(output_channels, conv_in,
-                           m_weights->m_conv_weights[i + 1], V, M, conv_out);
-        batchnorm_no_relu<NUM_INTERSECTIONS>(output_channels, conv_out,
-                                     m_weights->m_batchnorm_means[i + 1].data(),
-                                     m_weights->m_batchnorm_stddevs[i + 1].data());
-
-		avg_pool<NUM_INTERSECTIONS>(output_channels, conv_out, se_pool);
-		innerproduct(output_channels, output_channels / 2, se_pool,
-			m_weights->m_se_weights[i - 1],
-			m_weights->m_se_biases[i - 1],
-			se_fc1);
-		relu(output_channels / 2, se_fc1);
-
-		innerproduct(output_channels / 2, output_channels * 2, se_fc1,
-			m_weights->m_se_weights[i],
-			m_weights->m_se_biases[i],
-			se_fc2);
-
-		for (auto c = size_t{ 0 }; c < output_channels; ++c) {
-			const auto w = lambda_Sig(se_fc2[c]);
-
-			for (auto b = size_t{ 0 }; b < NUM_INTERSECTIONS; ++b) {
-				const auto idx = (c * NUM_INTERSECTIONS) + b;
-
-				conv_out[idx] *= w;
-				conv_out[idx] += se_fc2[output_channels + c] + res[idx];
-				conv_out[idx] = (conv_out[idx] > 0) ? conv_out[idx] : 0;
-			}
-		}
+#ifdef USE_BLAS
+    cblas_sgemv(CblasRowMajor, CblasNoTrans,
+                // M     K
+                outputs, inputs,
+                1.0f, &weights[0], inputs,
+                &input[0], 1,
+                0.0f, &output[0], 1);
+#else
+    EigenVectorMap<float> y(output.data(), outputs);
+    y.noalias() =
+        ConstEigenMatrixMap<float>(weights.data(),
+                                   inputs,
+                                   outputs).transpose()
+        * ConstEigenVectorMap<float>(input.data(), inputs);
+#endif
+    const auto lambda_ReLU = [](const auto val) { return (val > 0.0f) ?
+                                                          val : 0.0f; };
+    for (unsigned int o = 0; o < outputs; o++) {
+        auto val = biases[o] + output[o];
+        if (ReLU) {
+            val = lambda_ReLU(val);
+        }
+        output[o] = val;
     }
-    convolve<1>(Network::OUTPUTS_POLICY, conv_out, m_conv_pol_w, m_conv_pol_b, output_pol);
-    convolve<1>(Network::OUTPUTS_VALUE, conv_out, m_conv_val_w, m_conv_val_b, output_val);
+
+    return output;
 }
 
-//end senet
+void global_avg_pooling(const size_t channels,
+                        const std::vector<float>& input,
+                        std::vector<float>& output) {
+
+    for (auto c = size_t{0}; c < channels; c++) {
+        auto acc = 0.0f;
+        for (auto i = size_t{0}; i < NUM_INTERSECTIONS; i++) {
+            acc += input[c * NUM_INTERSECTIONS + i];
+        }
+        output[c] = acc / NUM_INTERSECTIONS;
+    }
+}
+
+void apply_se(const size_t channels,
+              const std::vector<float>& input,
+              const std::vector<float>& res,
+              const std::vector<float>& scale,
+              std::vector<float>& output) {
+
+    const auto lambda_ReLU = [](const auto val) { return (val > 0.0f) ?
+                                                          val : 0.0f; };
+
+    const auto lambda_sigmoid = [](const auto val) { return 1.0f/(1.0f + std::exp(-val)); };
+
+    for (auto c = size_t{0}; c < channels; c++) {
+        const auto gamma = lambda_sigmoid(scale[c]);
+        const auto beta = scale[c + channels];
+        for (auto i = size_t{0}; i < NUM_INTERSECTIONS; i++) {
+          output[c * NUM_INTERSECTIONS + i] = lambda_ReLU(gamma * input[c * NUM_INTERSECTIONS+ i] +
+                                              beta + res[c * NUM_INTERSECTIONS + i]);
+        }
+    }
+}
 
 void CPUPipe::forward(const std::vector<float>& input,
                       std::vector<float>& output_pol,
@@ -557,8 +548,11 @@ void CPUPipe::forward(const std::vector<float>& input,
                                  m_weights->m_batchnorm_stddevs[0].data());
 
     // Residual tower
+    auto pooling = std::vector<float>(output_channels);
     auto conv_in = std::vector<float>(output_channels * NUM_INTERSECTIONS);
     auto res = std::vector<float>(output_channels * NUM_INTERSECTIONS);
+    auto block = 0;
+    auto se = m_weights->m_se_fc1_w.size() != 0;
     for (auto i = size_t{1}; i < m_weights->m_conv_weights.size(); i += 2) {
         auto output_channels = m_input_channels;
         std::swap(conv_out, conv_in);
@@ -572,10 +566,31 @@ void CPUPipe::forward(const std::vector<float>& input,
         std::swap(conv_out, conv_in);
         winograd_convolve3(output_channels, conv_in,
                            m_weights->m_conv_weights[i + 1], V, M, conv_out);
-        batchnorm<NUM_INTERSECTIONS>(output_channels, conv_out,
-                                     m_weights->m_batchnorm_means[i + 1].data(),
-                                     m_weights->m_batchnorm_stddevs[i + 1].data(),
-                                     res.data());
+
+        if (se) {
+            batchnorm<NUM_INTERSECTIONS>(output_channels, conv_out,
+                                         m_weights->m_batchnorm_means[i + 1].data(),
+                                         m_weights->m_batchnorm_stddevs[i + 1].data(),
+                                         false);
+
+            std::swap(conv_out, conv_in);
+
+            global_avg_pooling(output_channels, conv_in, pooling);
+
+            auto fc_outputs = m_weights->m_se_fc1_w[block].size() / output_channels;
+            auto se1 = innerproduct(output_channels, fc_outputs, true, pooling, m_weights->m_se_fc1_w[block], m_weights->m_se_fc1_b[block]);
+            auto se2 = innerproduct(fc_outputs, 2 * output_channels, false, se1, m_weights->m_se_fc2_w[block], m_weights->m_se_fc2_b[block]);
+
+            apply_se(output_channels, conv_in, res, se2, conv_out);
+        } else {
+             batchnorm<NUM_INTERSECTIONS>(output_channels, conv_out,
+                                                 m_weights->m_batchnorm_means[i + 1].data(),
+                                                 m_weights->m_batchnorm_stddevs[i + 1].data(),
+                                                 true,
+                                                 res.data());
+        }
+
+        block++;
     }
     convolve<1>(Network::OUTPUTS_POLICY, conv_out, m_conv_pol_w, m_conv_pol_b, output_pol);
     convolve<1>(Network::OUTPUTS_VALUE, conv_out, m_conv_val_w, m_conv_val_b, output_val);
