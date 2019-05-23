@@ -45,10 +45,6 @@ public:
         std::vector<std::vector<float>> m_batchnorm_means;
         std::vector<std::vector<float>> m_batchnorm_stddevs;
 
-        //senet
-        std::vector<std::vector<float>> m_se_weights;
-        std::vector<std::vector<float>> m_se_biases;
-
         // Policy head
         std::vector<float> m_conv_pol_w;
         std::vector<float> m_conv_pol_b;
@@ -62,10 +58,6 @@ public:
     virtual void initialize(const int channels) = 0;
     virtual bool needs_autodetect() { return false; };
     virtual void forward(const std::vector<float>& input,
-                         std::vector<float>& output_pol,
-                         std::vector<float>& output_val) = 0;
-    //senet
-    virtual void forward_senet(const std::vector<float>& input,
                          std::vector<float>& output_pol,
                          std::vector<float>& output_val) = 0;
     virtual void push_weights(unsigned int filter_size,

@@ -336,133 +336,6 @@ std::pair<int, int> Network::load_v1_network(std::istream& wtfile) {
     return {channels, static_cast<int>(residual_blocks)};
 }
 
-//senet
-std::pair<int, int> Network::load_senet_network(std::istream& wtfile) {
-    // Count size of the network
-    myprintf("Senet Detecting residual layers...");
-    // We are version 1 or 2
-    if (m_value_head_not_stm) {
-        myprintf("v%d...", 2);
-    } else {
-        myprintf("v%d...", 1);
-    }
-    // First line was the version number
-    auto linecount = size_t{1};
-    auto channels = 0;
-    auto line = std::string{};
-    while (std::getline(wtfile, line)) {
-        auto iss = std::stringstream{line};
-        // Third line of parameters are the convolution layer biases,
-        // so this tells us the amount of channels in the residual layers.
-        // We are assuming all layers have the same amount of filters.
-        if (linecount == 2) {
-            auto count = std::distance(std::istream_iterator<std::string>(iss),
-                                       std::istream_iterator<std::string>());
-            myprintf("%d channels...", count);
-            channels = count;
-        }
-        linecount++;
-    }
-    // 1 format id, 1 input layer (4 x weights), 14 ending weights,
-    // the rest are residuals, every residual has 8 x weight lines
-    auto residual_blocks = linecount - (1 + 4 + 14);
-    if (residual_blocks % 12 != 0) { // Minigo v17 use SENet, so res block has 8 + 4(se layer)
-        myprintf("\nInconsistent number of weights in the file.\n");
-        return {0, 0};
-    }
-    residual_blocks /= 12;
-    myprintf("%d blocks.\n", residual_blocks);
-
-    // Re-read file and process
-    wtfile.clear();
-    wtfile.seekg(0, std::ios::beg);
-
-    // Get the file format id out of the way
-    std::getline(wtfile, line);
-
-    const auto res_conv_layers = residual_blocks * 2;
-    const auto plain_conv_wts = 4 + res_conv_layers * 6;
-    linecount = 0;
-    while (std::getline(wtfile, line)) {
-        std::vector<float> weights;
-        auto it_line = line.cbegin();
-        const auto ok = phrase_parse(it_line, line.cend(),
-                                     *x3::float_, x3::space, weights);
-        if (!ok || it_line != line.cend()) {
-            myprintf("\nFailed to parse weight file. Error on line %d.\n",
-                    linecount + 2); //+1 from version line, +1 from 0-indexing
-            return {0,0};
-        }
-		if (linecount < 4) {
-			if (linecount % 4 == 0) {
-				m_fwd_weights->m_conv_weights.emplace_back(weights);
-			}
-			else if (linecount % 4 == 1) {
-				// Redundant in our model, but they encode the
-				// number of outputs so we have to read them in.
-				m_fwd_weights->m_conv_biases.emplace_back(weights);
-			}
-			else if (linecount % 4 == 2) {
-				m_fwd_weights->m_batchnorm_means.emplace_back(weights);
-			}
-			else if (linecount % 4 == 3) {
-				process_bn_var(weights);
-				m_fwd_weights->m_batchnorm_stddevs.emplace_back(weights);
-			}
-		}
-        else if (linecount < plain_conv_wts) {
-			const auto tmp = linecount - 4;
-
-            if (tmp % 6 == 0) {
-                m_fwd_weights->m_conv_weights.emplace_back(weights);
-            } else if (tmp % 6 == 1) {
-                m_fwd_weights->m_conv_biases.emplace_back(weights);
-            } else if (tmp % 6 == 2) {
-                m_fwd_weights->m_batchnorm_means.emplace_back(weights);
-            } else if (tmp % 6 == 3) {
-                process_bn_var(weights);
-                m_fwd_weights->m_batchnorm_stddevs.emplace_back(weights);
-			} else if (tmp % 6 == 4) {
-				m_fwd_weights->m_se_weights.emplace_back(weights);
-			} else if (tmp % 6 == 5) {
-				m_fwd_weights->m_se_biases.emplace_back(weights);
-			}
-        } else {
-            switch (linecount - plain_conv_wts) {
-                case  0: m_fwd_weights->m_conv_pol_w = std::move(weights); break;
-                case  1: m_fwd_weights->m_conv_pol_b = std::move(weights); break;
-                case  2: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_bn_pol_w1)); break;
-                case  3: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_bn_pol_w2)); break;
-                case  4: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_ip_pol_w)); break;
-                case  5: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_ip_pol_b)); break;
-                case  6: m_fwd_weights->m_conv_val_w = std::move(weights); break;
-                case  7: m_fwd_weights->m_conv_val_b = std::move(weights); break;
-                case  8: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_bn_val_w1)); break;
-                case  9: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_bn_val_w2)); break;
-                case 10: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_ip1_val_w)); break;
-                case 11: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_ip1_val_b)); break;
-                case 12: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_ip2_val_w)); break;
-                case 13: std::copy(cbegin(weights), cend(weights),
-                                   begin(m_ip2_val_b)); break;
-            }
-        }
-        linecount++;
-    }
-    process_bn_var(m_bn_pol_w2);
-    process_bn_var(m_bn_val_w2);
-
-    return {channels, static_cast<int>(residual_blocks)};
-}
-
 std::pair<int, int> Network::load_network_file(const std::string& filename) {
     // gzopen supports both gz and non-gz files, will decompress
     // or just read directly as needed.
@@ -496,22 +369,14 @@ std::pair<int, int> Network::load_network_file(const std::string& filename) {
         // First line is the file format version id
         iss >> format_version;
         myprintf("weight format %d\n", format_version);
-        if (iss.fail() || (format_version != 1 && format_version != 2 && format_version != 3)) {
+        if (iss.fail() || (format_version != 1 && format_version != 2)) {
             myprintf("Weights file is the wrong version.\n");
             return {0, 0};
         } else {
             // Version 2 networks are identical to v1, except
             // that they return the value for black instead of
             // the player to move. This is used by ELF Open Go.
-            if (format_version == 3) {
-                if (!cfg_cpu_only) {
-                    myprintf("senet only work in cpu-only mode\n");
-                    return {0, 0};
-                }
-                m_value_head_not_stm = true;
-                cfg_senet = true;
-                return load_senet_network(buffer);
-            } else if (format_version == 2) {
+            if (format_version == 2) {
                 m_value_head_not_stm = true;
             } else {
                 m_value_head_not_stm = false;
@@ -946,26 +811,13 @@ Network::Netresult Network::get_output_internal(
     std::vector<float> value_data(OUTPUTS_VALUE * width * height);
 #ifdef USE_OPENCL_SELFCHECK
     if (selfcheck) {
-        if (cfg_cpu_only && cfg_senet) {
-            m_forward->forward_senet(input_data, policy_data, value_data);
-        } else {
         m_forward_cpu->forward(input_data, policy_data, value_data);
-        }
     } else {
-        if (cfg_cpu_only && cfg_senet) {
-            m_forward->forward_senet(input_data, policy_data, value_data);
-        } else {
         m_forward->forward(input_data, policy_data, value_data);
-        }
     }
 #else
-    if (cfg_cpu_only && cfg_senet) {
-    m_forward->forward_senet(input_data, policy_data, value_data);
-    (void) selfcheck;
-    } else {
     m_forward->forward(input_data, policy_data, value_data);
     (void) selfcheck;
-    }
 #endif
 
     // Get the moves
