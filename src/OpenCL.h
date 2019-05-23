@@ -151,13 +151,6 @@ public:
             OpenCLContext & opencl_context,
             const int batch_size = 1);
 
-    //senet
-    void forward_senet(const std::vector<float>& input,
-            std::vector<float>& output_pol,
-            std::vector<float>& output_val,
-            OpenCLContext & opencl_context,
-            const int batch_size = 1);
-
 private:
     using weight_slice_t = std::vector<cl::Buffer>::const_iterator;
 
