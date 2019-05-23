@@ -432,12 +432,13 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
         }
         const auto psa = child.get_policy();
         const auto denom = 1.0 + child.get_visits();
-        const auto puct = cfg_puct * psa * (numerator / denom);
+        auto puct = cfg_puct * psa * (numerator / denom);
 
         //zliu: auxmode HP
         auto cfg_auxhp_rate = 1.0; 
         if( cfg_have_aux && (cfg_auxmode==AuxMode::HP) && (color==FastBoard::BLACK)) {
             cfg_auxhp_rate = 0.0; 
+            puct = cfg_puct * psa;
         }
         const auto value = cfg_auxhp_rate * winrate + puct;
         assert(value > std::numeric_limits<double>::lowest());

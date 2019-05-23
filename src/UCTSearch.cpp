@@ -254,6 +254,8 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     if (node->has_children() && !result.valid()) {
         auto next = node->uct_select_child(color, node == m_root.get());
         auto move = next->get_move();
+        auto move_str = currstate.move_to_text(move);
+        //myprintf("%s %s\n", color==FastBoard::BLACK?"B":"W", move_str.c_str());
 
         currstate.play_move(move);
         if (move != FastBoard::PASS && currstate.superko()) {
