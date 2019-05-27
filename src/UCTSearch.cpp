@@ -820,6 +820,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
     auto keeprunning = true;
     auto last_update = 0;
     auto last_output = 0;
+    float print_threshold = 0.001;
     do {
         auto currstate = std::make_unique<GameState>(m_rootstate);
 
@@ -842,6 +843,15 @@ int UCTSearch::think(int color, passflag_t passflag) {
         if (!cfg_quiet && elapsed_centis - last_update > 250) {
             last_update = elapsed_centis;
             myprintf("%s\n", get_analysis(m_playouts.load()).c_str());
+            float winrate = 100.0f * m_root->get_raw_eval(color);
+            if (winrate>=print_threshold){
+                if(print_threshold<10) {
+                    print_threshold *= 10;
+                } else {
+                    print_threshold += 10;
+                }
+                dump_stats(m_rootstate, *m_root);
+            }
         }
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
