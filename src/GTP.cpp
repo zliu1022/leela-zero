@@ -613,6 +613,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     } else if (command.find("clear_board") == 0) {
         Training::clear_training();
         game.reset_game();
+        s_network->nncache_clear();
         search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
         assert(UCTNodePointer::get_tree_size() == 0);
         gtp_printf(id, "");
