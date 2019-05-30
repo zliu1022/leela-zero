@@ -206,6 +206,7 @@ void UCTNode::inflate_all_children() {
 void UCTNode::prepare_root_node(Network & network, Network & network_aux, int color,
                                 std::atomic<int>& nodes,
                                 GameState& root_state) {
+    //printf("prepare_root_node: %d\n", color);
     float root_eval;
     const auto had_children = has_children();
     if (expandable()) {
@@ -217,7 +218,9 @@ void UCTNode::prepare_root_node(Network & network, Network & network_aux, int co
         update(root_eval);
         root_eval = (color == FastBoard::BLACK ? root_eval : 1.0f - root_eval);
     }
+    if(&network!=&network_aux) {
     Utils::myprintf("NN eval=%f\n", root_eval);
+    }
 
     // There are a lot of special cases where code assumes
     // all children of the root are inflated, so do that.

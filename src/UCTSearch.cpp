@@ -252,7 +252,12 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     }
 
     if (node->has_children() && !result.valid()) {
-        auto next = node->uct_select_child(color, node == m_root.get());
+        UCTNode* next;
+        if (&m_network==&m_network_aux){
+        next = node->uct_select_child(color, node == m_root.get(), false);
+        } else {
+        next = node->uct_select_child(color, node == m_root.get());
+        }
         auto move = next->get_move();
         auto move_str = currstate.move_to_text(move);
         //myprintf("%s %s\n", color==FastBoard::BLACK?"B":"W", move_str.c_str());
@@ -965,6 +970,212 @@ int UCTSearch::think(int color, passflag_t passflag) {
     m_last_rootstate = std::make_unique<GameState>(m_rootstate);
     return bestmove;
 }
+
+int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyVertexPair> *nodelist, passflag_t passflag) {
+    //myprintf("think_hp: %d\n", color);
+    // Start counting time for us
+    m_rootstate.start_clock(color);
+
+    // set up timing info
+    Time start;
+
+    update_root();
+    // set side to move
+    m_rootstate.board.set_to_move(color);
+
+    auto time_for_move =
+        m_rootstate.get_timecontrol().max_time_for_move(
+            m_rootstate.board.get_boardsize(),
+            color, m_rootstate.get_movenum());
+
+    //myprintf("HP Thinking at most %.1f seconds...\n", time_for_move/100.0f);
+
+    // create a sorted list of legal moves (make sure we
+    // play something legal and decent even in time trouble)
+    m_root->prepare_root_node(m_network, m_network_aux, color, m_nodes, m_rootstate);
+
+    m_run = true;
+    int cpus = cfg_num_threads;
+    cpus = 1;
+    ThreadGroup tg(thread_pool);
+    for (int i = 1; i < cpus; i++) {
+        tg.add_task(UCTWorker(m_rootstate, this, m_root.get()));
+    }
+
+    auto keeprunning = true;
+    auto last_update = 0;
+    auto last_output = 0;
+    float print_threshold = 100;
+    do {
+        auto currstate = std::make_unique<GameState>(m_rootstate);
+
+        auto result = play_simulation(*currstate, m_root.get());
+        if (result.valid()) {
+            increment_playouts();
+        }
+
+        Time elapsed;
+        int elapsed_centis = Time::timediff_centis(start, elapsed);
+
+        if (cfg_analyze_tags.interval_centis() &&
+            elapsed_centis - last_output > cfg_analyze_tags.interval_centis()) {
+            last_output = elapsed_centis;
+            //output_analysis(m_rootstate, *m_root);
+        }
+
+        // output some stats every few seconds
+        // check if we should still search
+        if (!cfg_quiet && elapsed_centis - last_update > 250) {
+            last_update = elapsed_centis;
+            //myprintf("HP %s\n", get_analysis(m_playouts.load()).c_str());
+            float winrate = 100.0f * m_root->get_raw_eval(color);
+            if (winrate>=print_threshold){
+                if(print_threshold<10) {
+                    print_threshold *= 10;
+                } else {
+                    print_threshold += 10;
+                }
+                dump_stats(m_rootstate, *m_root);
+            }
+        }
+        keeprunning  = is_running();
+        keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
+        keeprunning &= have_alternate_moves(elapsed_centis, time_for_move);
+        keeprunning &= (m_playouts < max_playout);
+    } while (keeprunning);
+
+    // Make sure to post at least once.
+    if (cfg_analyze_tags.interval_centis() && last_output == 0) {
+        //output_analysis(m_rootstate, *m_root);
+    }
+
+    // Stop the search.
+    m_run = false;
+    tg.wait_all();
+
+    // Reactivate all pruned root children.
+    for (const auto& node : m_root->get_children()) {
+        node->set_active(true);
+    }
+
+    m_rootstate.stop_clock(color);
+    if (!m_root->has_children()) {
+        return FastBoard::PASS;
+    }
+
+    // Display search info.
+    //myprintf("\n");
+    //dump_stats(m_rootstate, *m_root);
+
+    /*
+    auto max_visits = 0;
+    for (const auto& node : m_root->get_children()) {
+        max_visits = std::max(max_visits, node->get_visits());
+    }
+    myprintf("cfg_lcb_min_visit_ratio: %f\n", cfg_lcb_min_visit_ratio); 
+    m_root->sort_children(color, cfg_lcb_min_visit_ratio * max_visits);
+    */
+    for (const auto& node : m_root->get_children()) {
+        nodelist->emplace_back(node->get_policy(), node->get_move());
+        if ((node->get_move()==22) || (node->get_move()==387)){
+            //myprintf("%d %f\n", node->get_move(), node->get_policy());
+        }
+        continue;
+        /*
+        auto move = state.move_to_text(node->get_move());
+        node->get_visits(),
+        node->get_raw_eval(color)
+        */
+    }
+
+    Training::record(m_network, m_rootstate, *m_root);
+
+    Time elapsed;
+    int elapsed_centis = Time::timediff_centis(start, elapsed);
+    /*
+    myprintf("HP %d visits, %d nodes, %d playouts, %.0f n/s\n",
+             m_root->get_visits(),
+             m_nodes.load(),
+             m_playouts.load(),
+             (m_playouts * 100.0) / (elapsed_centis+1));
+    */
+
+#ifdef USE_OPENCL
+#ifndef NDEBUG
+    myprintf("batch stats: %d %d\n",
+        batch_stats.single_evals.load(),
+        batch_stats.batch_evals.load()
+    );
+#endif
+#endif
+        // zliu
+#ifdef _WIN32
+        int pos = cfg_weightsfile.find_last_of('\\');
+        int pos_aux = cfg_weightsfile_aux.find_last_of('\\');
+#else
+        int pos = cfg_weightsfile.find_last_of('/');
+        int pos_aux = cfg_weightsfile_aux.find_last_of('/');
+#endif
+        int pos1 = cfg_weightsfile.find(".gz");
+        int pos1_aux = cfg_weightsfile_aux.find(".gz");
+        std::string s = "";
+        std::string s_aux = "";
+        if (pos1 > pos) {
+            s = cfg_weightsfile.substr(pos + 1, ((pos1 - pos - 1)>8)?8:(pos1-pos-1));
+        }
+        else {
+            s = cfg_weightsfile.substr(pos + 1, 8);
+        }
+        if (cfg_have_aux) {
+            if (pos1_aux > pos_aux) {
+                s_aux = cfg_weightsfile_aux.substr(pos_aux + 1, ((pos1_aux-pos_aux-1)>8)?8:(pos1_aux-pos_aux-1));
+            }
+            else {
+                s_aux = cfg_weightsfile_aux.substr(pos_aux + 1, 8);
+            }
+        }
+
+        auto first_child = m_root->get_first_child();
+        //myprintf("firstchild: %d %f\n", first_child->get_move(), first_child->get_policy());
+        float tmp_komi = m_rootstate.get_komi();
+        //int color = m_rootstate.board.get_to_move();
+
+    auto movenum = int(m_rootstate.get_movenum());
+    auto recov_num = 180; 
+    auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
+    if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
+    auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
+    auto act_rate = (1+std::tanh(tmp_rate))/2;
+        myprintf("HP %s-(%s)%d(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n",
+            PROGRAM_VERSION, s_aux.c_str(),cfg_auxmode,tmp_komi,act_rate*100.0f, 
+            (color == FastBoard::BLACK) ? "B" : "W",
+            int(m_rootstate.get_movenum()) + 1,
+            (elapsed_centis + 1) / 100.0f,
+            m_rootstate.move_to_text(first_child->get_move()).c_str(),
+            first_child->get_visits(),
+            first_child->get_eval(color)*100.0f,
+            first_child->get_policy()*100.0f);
+    int bestmove = get_best_move(passflag);
+    if (cfg_have_aux==false) {
+        //myprintf("AuxMode already closed\n");
+    } else if ((first_child->get_eval(color)*100.0f)>cfg_aux_recover_rate) {
+        myprintf("AuxMode closed, winrate > %.2f%%\n", cfg_aux_recover_rate);
+        cfg_have_aux = false;
+    }
+
+    // Save the explanation.
+    m_think_output =
+        str(boost::format("move %d, %c => %s\n%s")
+        % m_rootstate.get_movenum()
+        % (color == FastBoard::BLACK ? 'B' : 'W')
+        % m_rootstate.move_to_text(bestmove).c_str()
+        % get_analysis(m_root->get_visits()).c_str());
+
+    // Copy the root state. Use to check for tree re-use in future calls.
+    m_last_rootstate = std::make_unique<GameState>(m_rootstate);
+    return bestmove;
+}
+
 
 float UCTSearch::think_kr(int color, passflag_t passflag) {
     // Start counting time for us

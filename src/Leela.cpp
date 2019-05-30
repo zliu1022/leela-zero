@@ -162,9 +162,11 @@ static void parse_commandline(int argc, char *argv[]) {
                        "HP =   B      A          A      A\n"
                        "PR =   B      A          B      A\n"
                        "BW =   B      B          A      A\n"
-                       "AVG= Avg(B+A) Avg(B+A) Avg(B+A) Avg(B+A)\n")
+                       "AVG=Avg(B+A) Avg(B+A) Avg(B+A) Avg(B+A)\n")
         ("auxrr", po::value<float>()->default_value(cfg_aux_recover_rate),
-                        "Auxmode Recover winRate >x%.\n")
+                        "Auxmode Recover winRate >x%.")
+        ("auxp", po::value<int>()->default_value(cfg_aux_maxplayout),
+                        "Auxmode HP, aux weight's max playout.")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
         ("timemanage", po::value<std::string>()->default_value("auto"),
@@ -352,6 +354,11 @@ static void parse_commandline(int argc, char *argv[]) {
     if (vm.count("auxrr")) {
         cfg_aux_recover_rate = vm["auxrr"].as<float>();
     }
+
+    if (vm.count("auxp")) {
+        cfg_aux_maxplayout = vm["auxp"].as<int>();
+    }
+
 
     if (vm.count("gtp")) {
         cfg_gtp_mode = true;

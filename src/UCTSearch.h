@@ -115,6 +115,7 @@ public:
 
     UCTSearch(GameState& g, Network & network, Network & network_aux);
     int think(int color, passflag_t passflag = NORMAL);
+    int think_hp(int color, int max_playout, std::vector<Network::PolicyVertexPair> *nodelist, passflag_t passflag=NORMAL);
     float think_kr(int color, passflag_t passflag = NORMAL);
     void set_playout_limit(int playouts);
     void set_visit_limit(int visits);

@@ -96,6 +96,7 @@ std::string cfg_weightsfile;
 std::string cfg_weightsfile_aux;
 AuxMode::enabled_t cfg_auxmode;
 float cfg_aux_recover_rate;
+int cfg_aux_maxplayout;
 bool cfg_have_aux;
 std::string cfg_logfile;
 FILE* cfg_logfile_handle;
@@ -354,6 +355,7 @@ void GTP::setup_default_parameters() {
     cfg_have_aux = false;
     cfg_auxmode = AuxMode::HP;
     cfg_aux_recover_rate = 100.0f;
+    cfg_aux_maxplayout = 1;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;

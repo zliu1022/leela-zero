@@ -48,6 +48,8 @@
 #include "GameState.h"
 #include "Network.h"
 #include "Utils.h"
+#include "UCTSearch.h"
+#include "GTP.h"
 
 using namespace Utils;
 
@@ -63,6 +65,7 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                               GameState& state,
                               float& eval,
                               float min_psa_ratio) {
+    //myprintf("\ncreate_children: %d\n", state.board.get_to_move());
     // no successors in final state
     if (state.get_passes() >= 2) {
         return false;
@@ -77,6 +80,26 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
     if (!expandable(min_psa_ratio)) {
         expand_done();
         return false;
+    }
+
+    std::vector<Network::PolicyVertexPair> nodelist_tmp;
+    if ( cfg_have_aux && (cfg_auxmode==AuxMode::HP) && (&network!=&network_aux) && (state.board.get_to_move()==FastBoard::BLACK) ) {
+        //myprintf("think_hp begin\n");
+        auto tmp_search = std::make_unique<UCTSearch>(state, *GTP::s_network_aux, *GTP::s_network_aux);
+        tmp_search->think_hp(state.get_to_move(), cfg_aux_maxplayout, &nodelist_tmp);
+        //myprintf("think_hp end\n");
+
+        //copy m_children as policy
+        //use main weight to eval
+
+        for (const auto& node : nodelist_tmp) {
+            //myprintf("%d %f\n", node.second, node.first);
+            if ((node.second==22) || (node.second==387)){
+                //myprintf("%d %f\n", node.second, node.first);
+            }
+            continue;
+        }
+        //myprintf("\n");
     }
 
     auto state_aux = state; //maybe useless, i found change w,aux sequence, even same rand will get diff result
@@ -238,7 +261,22 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         }
     }
 
+    if (cfg_have_aux && to_move==FastBoard::BLACK) {
+        //myprintf("aux: %ld\n", &network_aux);
+        for (const auto& node : nodelist) {
+            //myprintf("%d %f\n", node.second, node.first);
+            if ((node.second==22) || (node.second==387)){
+                //myprintf("%d %f\n", node.second, node.first);
+            }
+            continue;
+        }
+        //myprintf("\n");
+    }
+    if (cfg_have_aux && (&network!=&network_aux) && (cfg_auxmode==AuxMode::HP) && (to_move==FastBoard::BLACK) ){
+    link_nodelist(nodecount, nodelist_tmp, min_psa_ratio);
+    } else {
     link_nodelist(nodecount, nodelist, min_psa_ratio);
+    }
     expand_done();
     return true;
 }
@@ -393,7 +431,7 @@ void UCTNode::accumulate_eval(float eval) {
     atomic_add(m_blackevals, double(eval));
 }
 
-UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
+UCTNode* UCTNode::uct_select_child(int color, bool is_root, bool is_hp) {
     wait_expanded();
 
     // Count parentvisits manually to avoid issues with transpositions.
@@ -436,7 +474,7 @@ UCTNode* UCTNode::uct_select_child(int color, bool is_root) {
 
         //zliu: auxmode HP
         auto cfg_auxhp_rate = 1.0; 
-        if( cfg_have_aux && (cfg_auxmode==AuxMode::HP) && (color==FastBoard::BLACK)) {
+        if( is_hp && cfg_have_aux && (cfg_auxmode==AuxMode::HP) && (color==FastBoard::BLACK)) {
             cfg_auxhp_rate = 0.0; 
             puct = cfg_puct * psa;
         }
