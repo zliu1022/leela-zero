@@ -1028,6 +1028,7 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
         if (!cfg_quiet && elapsed_centis - last_update > 250) {
             last_update = elapsed_centis;
             //myprintf("HP %s\n", get_analysis(m_playouts.load()).c_str());
+            /*
             float winrate = 100.0f * m_root->get_raw_eval(color);
             if (winrate>=print_threshold){
                 if(print_threshold<10) {
@@ -1037,6 +1038,7 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
                 }
                 dump_stats(m_rootstate, *m_root);
             }
+            */
         }
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
@@ -1077,15 +1079,12 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
     */
     for (const auto& node : m_root->get_children()) {
         nodelist->emplace_back(node->get_policy(), node->get_move());
-        if ((node->get_move()==22) || (node->get_move()==387)){
-            //myprintf("%d %f\n", node->get_move(), node->get_policy());
-        }
-        continue;
         /*
-        auto move = state.move_to_text(node->get_move());
-        node->get_visits(),
-        node->get_raw_eval(color)
+        if ((node->get_move()==22) || (node->get_move()==387)){
+            myprintf("%d %f\n", node->get_move(), node->get_policy());
+        }
         */
+        continue;
     }
 
     Training::record(m_network, m_rootstate, *m_root);
@@ -1146,6 +1145,7 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
     if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
     auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
     auto act_rate = (1+std::tanh(tmp_rate))/2;
+    /*
         myprintf("HP %s-(%s)%d(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n",
             PROGRAM_VERSION, s_aux.c_str(),cfg_auxmode,tmp_komi,act_rate*100.0f, 
             (color == FastBoard::BLACK) ? "B" : "W",
@@ -1155,6 +1155,7 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
             first_child->get_visits(),
             first_child->get_eval(color)*100.0f,
             first_child->get_policy()*100.0f);
+    */
     int bestmove = get_best_move(passflag);
     if (cfg_have_aux==false) {
         //myprintf("AuxMode already closed\n");
