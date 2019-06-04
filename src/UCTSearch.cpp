@@ -825,7 +825,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
     auto keeprunning = true;
     auto last_update = 0;
     auto last_output = 0;
-    float print_threshold = 0.001;
+    float print_interval = 0;
     do {
         auto currstate = std::make_unique<GameState>(m_rootstate);
 
@@ -848,14 +848,10 @@ int UCTSearch::think(int color, passflag_t passflag) {
         if (!cfg_quiet && elapsed_centis - last_update > 250) {
             last_update = elapsed_centis;
             myprintf("%s\n", get_analysis(m_playouts.load()).c_str());
-            float winrate = 100.0f * m_root->get_raw_eval(color);
-            if (winrate>=print_threshold){
-                if(print_threshold<10) {
-                    print_threshold *= 10;
-                } else {
-                    print_threshold += 10;
-                }
+            print_interval++;
+            if (print_interval > 20) {
                 dump_stats(m_rootstate, *m_root);
+                print_interval = 0;
             }
         }
         keeprunning  = is_running();
@@ -1005,7 +1001,6 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
     auto keeprunning = true;
     auto last_update = 0;
     auto last_output = 0;
-    float print_threshold = 100;
     do {
         auto currstate = std::make_unique<GameState>(m_rootstate);
 
@@ -1028,17 +1023,6 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
         if (!cfg_quiet && elapsed_centis - last_update > 250) {
             last_update = elapsed_centis;
             //myprintf("HP %s\n", get_analysis(m_playouts.load()).c_str());
-            /*
-            float winrate = 100.0f * m_root->get_raw_eval(color);
-            if (winrate>=print_threshold){
-                if(print_threshold<10) {
-                    print_threshold *= 10;
-                } else {
-                    print_threshold += 10;
-                }
-                dump_stats(m_rootstate, *m_root);
-            }
-            */
         }
         keeprunning  = is_running();
         keeprunning &= !stop_thinking(elapsed_centis, time_for_move);
