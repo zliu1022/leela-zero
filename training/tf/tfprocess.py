@@ -47,7 +47,7 @@ def bias_variable(name, shape, dtype):
 
 
 def conv2d(x, W):
-    return tf.nn.conv2d(x, W, data_format='NCHW',
+    return tf.nn.conv2d(x, W, data_format='NHWC',
                         strides=[1, 1, 1, 1], padding='SAME')
 
 # Restore session from checkpoint. It silently ignore mis-matches
@@ -543,7 +543,7 @@ class TFProcess:
                                custom_getter=float32_variable_storage_getter):
             net = tf.layers.batch_normalization(
                     net,
-                    epsilon=1e-5, axis=1, fused=True,
+                    epsilon=1e-5, axis=3, fused=True,
                     center=True, scale=False,
                     training=self.training,
                     reuse=self.reuse_var)
