@@ -26,23 +26,23 @@ import unittest
 from mixprec import float32_variable_storage_getter, LossScalingOptimizer
 
 
-def weight_variable(name, shape, dtype):
+def weight_variable(name, shape, dtype, trainable):
     """Xavier initialization"""
     stddev = np.sqrt(2.0 / (sum(shape)))
     # Do not use a constant as the initializer, that will cause the
     # variable to be stored in wrong dtype.
     weights = tf.get_variable(
         name, shape, dtype=dtype,
-        initializer=tf.truncated_normal_initializer(stddev=stddev, dtype=dtype))
+        initializer=tf.truncated_normal_initializer(stddev=stddev, dtype=dtype), trainable=trainable)
     tf.add_to_collection(tf.GraphKeys.WEIGHTS, weights)
     return weights
 
 # Bias weights for layers not followed by BatchNorm
 # We do not regularlize biases, so they are not
 # added to the regularlizer collection
-def bias_variable(name, shape, dtype):
+def bias_variable(name, shape, dtype, trainable):
     bias = tf.get_variable(name, shape, dtype=dtype,
-                           initializer=tf.zeros_initializer())
+                           initializer=tf.zeros_initializer(), trainable=trainable)
     return bias
 
 
@@ -555,11 +555,11 @@ class TFProcess:
 
         return net
 
-    def conv_block(self, inputs, filter_size, input_channels, output_channels, name):
+    def conv_block(self, inputs, filter_size, input_channels, output_channels, name, trainable):
         W_conv = weight_variable(
             name,
             [filter_size, filter_size, input_channels, output_channels],
-            self.model_dtype)
+            self.model_dtype, trainable)
 
         self.add_weights(W_conv)
 
@@ -569,13 +569,13 @@ class TFProcess:
         net = tf.nn.relu(net)
         return net
 
-    def residual_block(self, inputs, channels, name):
+    def residual_block(self, inputs, channels, name, trainable):
         net = inputs
         orig = tf.identity(net)
 
         # First convnet weights
         W_conv_1 = weight_variable(name + "_conv_1", [3, 3, channels, channels],
-                                   self.model_dtype)
+                                   self.model_dtype, trainable)
         self.add_weights(W_conv_1)
 
         net = conv2d(net, W_conv_1)
@@ -584,7 +584,7 @@ class TFProcess:
 
         # Second convnet weights
         W_conv_2 = weight_variable(name + "_conv_2", [3, 3, channels, channels],
-                                   self.model_dtype)
+                                   self.model_dtype, trainable)
         self.add_weights(W_conv_2)
 
         net = conv2d(net, W_conv_2)
@@ -603,21 +603,21 @@ class TFProcess:
         flow = self.conv_block(x_planes, filter_size=3,
                                input_channels=18,
                                output_channels=self.RESIDUAL_FILTERS,
-                               name="first_conv")
+                               name="first_conv", trainable=True)
         # Residual tower
         for i in range(0, self.RESIDUAL_BLOCKS):
             block_name = "res_" + str(i)
             flow = self.residual_block(flow, self.RESIDUAL_FILTERS,
-                                       name=block_name)
+                                       name=block_name, trainable=True)
 
         # Policy head
         conv_pol = self.conv_block(flow, filter_size=1,
                                    input_channels=self.RESIDUAL_FILTERS,
                                    output_channels=2,
-                                   name="policy_head")
+                                   name="policy_head", trainable=True)
         h_conv_pol_flat = tf.reshape(conv_pol, [-1, 2 * 19 * 19])
-        W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype)
-        b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype)
+        W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype, trainable=True)
+        b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype, trainable=True)
         self.add_weights(W_fc1)
         self.add_weights(b_fc1)
         h_fc1 = tf.add(tf.matmul(h_conv_pol_flat, W_fc1), b_fc1)
@@ -626,15 +626,15 @@ class TFProcess:
         conv_val = self.conv_block(flow, filter_size=1,
                                    input_channels=self.RESIDUAL_FILTERS,
                                    output_channels=1,
-                                   name="value_head")
+                                   name="value_head", trainable=True)
         h_conv_val_flat = tf.reshape(conv_val, [-1, 19 * 19])
-        W_fc2 = weight_variable("w_fc_2", [19 * 19, 256], self.model_dtype)
-        b_fc2 = bias_variable("b_fc_2", [256], self.model_dtype)
+        W_fc2 = weight_variable("w_fc_2", [19 * 19, 256], self.model_dtype, trainable=True)
+        b_fc2 = bias_variable("b_fc_2", [256], self.model_dtype, trainable=True)
         self.add_weights(W_fc2)
         self.add_weights(b_fc2)
         h_fc2 = tf.nn.relu(tf.add(tf.matmul(h_conv_val_flat, W_fc2), b_fc2))
-        W_fc3 = weight_variable("w_fc_3", [256, 1], self.model_dtype)
-        b_fc3 = bias_variable("b_fc_3", [1], self.model_dtype)
+        W_fc3 = weight_variable("w_fc_3", [256, 1], self.model_dtype, trainable=True)
+        b_fc3 = bias_variable("b_fc_3", [1], self.model_dtype, trainable=True)
         self.add_weights(W_fc3)
         self.add_weights(b_fc3)
         h_fc3 = tf.nn.tanh(tf.add(tf.matmul(h_fc2, W_fc3), b_fc3))
