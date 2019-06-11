@@ -132,7 +132,7 @@ class TFProcess:
         self.weights = []
 
         # Output weight file with averaged weights
-        self.swa_enabled = True
+        self.swa_enabled = False
 
         # Net sampling rate (e.g 2 == every 2nd network).
         self.swa_c = 1
@@ -188,7 +188,7 @@ class TFProcess:
         # You need to change the learning rate here if you are training
         # from a self-play training set, for example start with 0.005 instead.
         opt = tf.train.MomentumOptimizer(
-            learning_rate=0.05, momentum=0.9, use_nesterov=True)
+            learning_rate=0.0005, momentum=0.9, use_nesterov=True)
 
         opt = LossScalingOptimizer(opt, scale=self.loss_scale)
 
@@ -346,7 +346,8 @@ class TFProcess:
 
         # For training from a (smaller) dataset of strong players, you will
         # want to reduce the factor in front of self.mse_loss here.
-        loss = 1.0 * policy_loss + 1.0 * mse_loss + reg_term
+        #loss = 1.0 * policy_loss + 1.0 * mse_loss + reg_term
+        loss = 0.0 * policy_loss + 1.0 * mse_loss + reg_term
 
         return loss, policy_loss, mse_loss, reg_term, y_conv
 
@@ -418,7 +419,7 @@ class TFProcess:
                 'accuracy': r[3], 'total': r[0]+r[1]+r[2] }
 
     def process(self, train_data, test_data):
-        info_steps=1000
+        info_steps=250
         stats = Stats()
         timer = Timer()
         while True:
@@ -445,9 +446,9 @@ class TFProcess:
                     tf.Summary(value=summaries), steps)
                 stats.clear()
 
-            if steps % 8000 == 0:
+            if (steps == 1) or (steps % 2000 == 0):
                 test_stats = Stats()
-                test_batches = 800 # reduce sample mean variance by ~28x
+                test_batches = 200 # reduce sample mean variance by ~28x
                 for _ in range(0, test_batches):
                     test_batch = next(test_data)
                     losses = self.measure_loss(test_batch, training=False)
@@ -604,21 +605,21 @@ class TFProcess:
         flow = self.conv_block(x_planes, filter_size=3,
                                input_channels=18,
                                output_channels=self.RESIDUAL_FILTERS,
-                               name="first_conv", trainable=True)
+                               name="first_conv", trainable=False)
         # Residual tower
         for i in range(0, self.RESIDUAL_BLOCKS):
             block_name = "res_" + str(i)
             flow = self.residual_block(flow, self.RESIDUAL_FILTERS,
-                                       name=block_name, trainable=True)
+                                       name=block_name, trainable=False)
 
         # Policy head
         conv_pol = self.conv_block(flow, filter_size=1,
                                    input_channels=self.RESIDUAL_FILTERS,
                                    output_channels=2,
-                                   name="policy_head", trainable=True)
+                                   name="policy_head", trainable=False)
         h_conv_pol_flat = tf.reshape(conv_pol, [-1, 2 * 19 * 19])
-        W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype, trainable=True)
-        b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype, trainable=True)
+        W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype, trainable=False)
+        b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype, trainable=False)
         self.add_weights(W_fc1)
         self.add_weights(b_fc1)
         h_fc1 = tf.add(tf.matmul(h_conv_pol_flat, W_fc1), b_fc1)
