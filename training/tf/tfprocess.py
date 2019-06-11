@@ -534,7 +534,7 @@ class TFProcess:
             assert var.dtype.base_dtype == tf.float32
             self.weights.append(var)
 
-    def batch_norm(self, net):
+    def batch_norm(self, net, trainable):
         # The weights are internal to the batchnorm layer, so apply
         # a unique scope that we can store, and use to look them back up
         # later on.
@@ -545,7 +545,8 @@ class TFProcess:
                     net,
                     epsilon=1e-5, axis=3, fused=True,
                     center=True, scale=False,
-                    training=self.training,
+                    #training=self.training,
+                    training=trainable,
                     reuse=self.reuse_var)
 
         for v in ['beta', 'moving_mean', 'moving_variance' ]:
@@ -565,7 +566,7 @@ class TFProcess:
 
         net = inputs
         net = conv2d(net, W_conv)
-        net = self.batch_norm(net)
+        net = self.batch_norm(net, trainable)
         net = tf.nn.relu(net)
         return net
 
@@ -579,7 +580,7 @@ class TFProcess:
         self.add_weights(W_conv_1)
 
         net = conv2d(net, W_conv_1)
-        net = self.batch_norm(net)
+        net = self.batch_norm(net, trainable)
         net = tf.nn.relu(net)
 
         # Second convnet weights
@@ -588,7 +589,7 @@ class TFProcess:
         self.add_weights(W_conv_2)
 
         net = conv2d(net, W_conv_2)
-        net = self.batch_norm(net)
+        net = self.batch_norm(net, trainable)
         net = tf.add(net, orig)
         net = tf.nn.relu(net)
 
