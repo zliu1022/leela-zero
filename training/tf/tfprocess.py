@@ -347,7 +347,7 @@ class TFProcess:
         # For training from a (smaller) dataset of strong players, you will
         # want to reduce the factor in front of self.mse_loss here.
         #loss = 1.0 * policy_loss + 1.0 * mse_loss + reg_term
-        loss = 0.0 * policy_loss + 1.0 * mse_loss + reg_term
+        loss = 1.0 * mse_loss + reg_term
 
         return loss, policy_loss, mse_loss, reg_term, y_conv
 
@@ -445,6 +445,9 @@ class TFProcess:
                 self.train_writer.add_summary(
                     tf.Summary(value=summaries), steps)
                 stats.clear()
+
+                time.sleep(60)
+                print("finish sleep 60 seconds ...")
 
             if (steps == 1) or (steps % 2000 == 0):
                 test_stats = Stats()
@@ -546,8 +549,8 @@ class TFProcess:
                     net,
                     epsilon=1e-5, axis=3, fused=True,
                     center=True, scale=False,
-                    #training=self.training,
-                    training=trainable,
+                    training=self.training,
+                    trainable=trainable,
                     reuse=self.reuse_var)
 
         for v in ['beta', 'moving_mean', 'moving_variance' ]:
