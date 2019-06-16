@@ -46,8 +46,12 @@ def bias_variable(name, shape, dtype, trainable):
     return bias
 
 
-def conv2d(x, W):
-    return tf.nn.conv2d(x, W, data_format='NHWC',
+def conv2d(x, W, cpuonly=False):
+    if cpuonly:
+        return tf.nn.conv2d(x, W, data_format='NHWC',
+                        strides=[1, 1, 1, 1], padding='SAME')
+    else:
+        return tf.nn.conv2d(x, W, data_format='NCHW',
                         strides=[1, 1, 1, 1], padding='SAME')
 
 # Restore session from checkpoint. It silently ignore mis-matches
@@ -111,7 +115,7 @@ class Timer:
         return e
 
 class TFProcess:
-    def __init__(self):
+    def __init__(self, cpuonly=False):
         # Network structure
         self.RESIDUAL_FILTERS = 128
         self.RESIDUAL_BLOCKS = 6
@@ -151,6 +155,8 @@ class TFProcess:
 
         self.training = tf.placeholder(tf.bool)
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
+
+        self.cpuonly = cpuonly
 
     def init(self, batch_size, macrobatch=1, gpus_num=None, logbase='leelalogs'):
         self.batch_size = batch_size
@@ -446,8 +452,7 @@ class TFProcess:
                     tf.Summary(value=summaries), steps)
                 stats.clear()
 
-                time.sleep(60)
-                print("finish sleep 60 seconds ...")
+                time.sleep(90)
 
             if (steps == 1) or (steps % 2000 == 0):
                 test_stats = Stats()
@@ -482,6 +487,8 @@ class TFProcess:
                 save_path = self.saver.save(self.session, path,
                                             global_step=steps)
                 print("Model saved in file: {}".format(save_path))
+
+                time.sleep(90)
 
     def save_leelaz_weights(self, filename):
         with open(filename, "w") as file:
@@ -545,13 +552,23 @@ class TFProcess:
         scope = self.get_batchnorm_key()
         with tf.variable_scope(scope,
                                custom_getter=float32_variable_storage_getter):
-            net = tf.layers.batch_normalization(
-                    net,
-                    epsilon=1e-5, axis=3, fused=True,
-                    center=True, scale=False,
-                    training=self.training,
-                    trainable=trainable,
-                    reuse=self.reuse_var)
+            if self.cpuonly:
+                net = tf.layers.batch_normalization(
+                        net,
+                        epsilon=1e-5, axis=3, fused=True,
+                        center=True, scale=False,
+                        training=self.training,
+                        trainable=trainable,
+                        reuse=self.reuse_var)
+            else:
+                net = tf.layers.batch_normalization(
+                        net,
+                        epsilon=1e-5, axis=1, fused=True,
+                        center=True, scale=False,
+                        training=self.training,
+                        trainable=trainable,
+                        reuse=self.reuse_var)
+
 
         for v in ['beta', 'moving_mean', 'moving_variance' ]:
             name = "fp32_storage/" + scope + '/batch_normalization/' + v + ':0'
@@ -602,7 +619,10 @@ class TFProcess:
     def construct_net(self, planes):
         # NCHW format
         # batch, 18 channels, 19 x 19
-        x_planes = tf.reshape(planes, [-1, 19, 19, 18])
+        if self.cpuonly:
+            x_planes = tf.reshape(planes, [-1, 19, 19, 18])
+        else:
+            x_planes = tf.reshape(planes, [-1, 18, 19, 19])
 
         # Input convolution
         flow = self.conv_block(x_planes, filter_size=3,
