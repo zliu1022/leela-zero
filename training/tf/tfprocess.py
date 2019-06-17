@@ -194,7 +194,7 @@ class TFProcess:
         # You need to change the learning rate here if you are training
         # from a self-play training set, for example start with 0.005 instead.
         opt = tf.train.MomentumOptimizer(
-            learning_rate=0.0005, momentum=0.9, use_nesterov=True)
+            learning_rate=0.03, momentum=0.9, use_nesterov=True)
 
         opt = LossScalingOptimizer(opt, scale=self.loss_scale)
 
@@ -454,7 +454,7 @@ class TFProcess:
 
                 time.sleep(90)
 
-            if (steps == 1) or (steps % 2000 == 0):
+            if steps % 2000 == 0:
                 test_stats = Stats()
                 test_batches = 200 # reduce sample mean variance by ~28x
                 for _ in range(0, test_batches):
@@ -586,7 +586,7 @@ class TFProcess:
         self.add_weights(W_conv)
 
         net = inputs
-        net = conv2d(net, W_conv)
+        net = conv2d(net, W_conv, self.cpuonly)
         net = self.batch_norm(net, trainable)
         net = tf.nn.relu(net)
         return net
@@ -600,7 +600,7 @@ class TFProcess:
                                    self.model_dtype, trainable)
         self.add_weights(W_conv_1)
 
-        net = conv2d(net, W_conv_1)
+        net = conv2d(net, W_conv_1, self.cpuonly)
         net = self.batch_norm(net, trainable)
         net = tf.nn.relu(net)
 
@@ -609,7 +609,7 @@ class TFProcess:
                                    self.model_dtype, trainable)
         self.add_weights(W_conv_2)
 
-        net = conv2d(net, W_conv_2)
+        net = conv2d(net, W_conv_2, self.cpuonly)
         net = self.batch_norm(net, trainable)
         net = tf.add(net, orig)
         net = tf.nn.relu(net)
