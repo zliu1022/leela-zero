@@ -120,6 +120,7 @@ def main():
         help="Log file prefix (for tensorboard)")
     parser.add_argument("--sample", default=DOWN_SAMPLE, type=int,
         help="Rate of data down-sampling to use")
+    parser.add_argument("--cpuonly", help="CPU only mode", action="store_true")
     args = parser.parse_args()
 
     train_data_prefix = args.train or args.trainpref
@@ -150,7 +151,7 @@ def main():
                               sample=args.sample,
                               batch_size=RAM_BATCH_SIZE).parse()
 
-    tfprocess = TFProcess()
+    tfprocess = TFProcess(args.cpuonly)
     tfprocess.init(RAM_BATCH_SIZE,
                    logbase=args.logbase,
                    macrobatch=BATCH_SIZE // RAM_BATCH_SIZE)
