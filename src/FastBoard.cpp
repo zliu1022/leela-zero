@@ -603,3 +603,35 @@ std::string FastBoard::get_stone_list() const {
 
     return result;
 }
+
+int FastBoard::count_liberties(const int i, const int k) const {
+    if (k==4) {
+        return m_libs[i];
+    } else if (k==5) {
+        return m_libs[m_parent[i]];
+    } else {
+        int ai = i + m_dirs[k];
+        return m_libs[m_parent[ai]];
+    }
+}
+
+int FastBoard::get_ladder_escape(int i, int color) const {
+    for (auto k = 0; k < 4; k++) {
+        auto ai = i + m_dirs[k];
+        auto libs = m_libs[m_parent[ai]];
+        auto c = get_state(ai);
+        myprintf("dir_%d %d: %s %d\n", k, ai, c==WHITE?"W":c==BLACK?"B":c==EMPTY?"EMPTY":"INVAL", libs);
+        if ((c==color)&&(libs==1)) {
+            for (auto j = 0; j < 4; j++) {
+                auto _ai = ai + m_dirs[j];
+                auto _libs = m_libs[m_parent[_ai]];
+                auto _c = get_state(_ai);
+                myprintf("    dir_%d %d: %s %d\n", j, _ai, _c==WHITE?"W":_c==BLACK?"B":_c==EMPTY?"EMPTY":"INVAL", _libs);
+                if (_c==EMPTY) {
+                    return _ai;
+                }
+            }
+        }
+    }
+    return NO_VERTEX;
+}

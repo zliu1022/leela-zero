@@ -287,6 +287,7 @@ size_t AnalyzeTags::post_move_count() const {
 }
 
 bool AnalyzeTags::is_to_avoid(int color, int vertex, size_t movenum) const {
+    //myprintf("is_to_avoid: %d %d %d\n", color, vertex, movenum);
     for (auto& move : m_moves_to_avoid) {
         if (color == move.color && vertex == move.vertex && movenum <= move.until_move) {
             return true;
@@ -462,13 +463,27 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
 
     if (live) {
         for (int i = 0; i < board.get_boardsize(); i++) {
+            myprintf("no %d\n", i+1);
             for (int j = 0; j < board.get_boardsize(); j++) {
                 int vertex = board.get_vertex(i, j);
 
                 if (board.get_state(vertex) != FastBoard::EMPTY) {
                     stringlist.push_back(board.get_string(vertex));
+                    myprintf("%d,%d %s %d  %d %d %d %d   %d %d %s\n", 
+                        i+1, j+1, 
+                        (board.get_state(vertex)==FastBoard::WHITE)?"W":"B", 
+                        board.count_pliberties(vertex),
+                        board.count_liberties(vertex,0),
+                        board.count_liberties(vertex,1),
+                        board.count_liberties(vertex,2),
+                        board.count_liberties(vertex,3),
+                        board.count_liberties(vertex,4),
+                        board.count_liberties(vertex,5),
+                        board.get_string(vertex).c_str()
+                    );
                 }
             }
+            myprintf("\n");
         }
     }
 
@@ -834,7 +849,8 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     } else if (command.find("final_status_list") == 0) {
         if (command.find("alive") != std::string::npos) {
             std::string livelist = get_life_list(game, true);
-            gtp_printf(id, livelist.c_str());
+            gtp_printf(id, "");
+            //gtp_printf(id, livelist.c_str());
         } else if (command.find("dead") != std::string::npos) {
             std::string deadlist = get_life_list(game, false);
             gtp_printf(id, deadlist.c_str());
@@ -901,7 +917,41 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         } while (game.get_passes() < 2 && !game.has_resigned());
 
         return;
-    } else if (command.find("go") == 0 && command.size() < 6) {
+    //} else if (command.find("go") == 0 && command.size() < 6) {
+    } else if (command.find("go") == 0) {
+        int movenum = game.get_movenum();
+        myprintf("move_num: %d\n", movenum);
+
+        auto last_move = game.get_last_move();
+        int m = FastBoard::NO_VERTEX;
+        if (last_move != FastBoard::NO_VERTEX) {
+            auto coordinate = game.move_to_text(last_move);
+            auto color = game.get_to_move() == FastBoard::WHITE ? "B" : "W";
+            myprintf("last_move: %s %s(%d)\n", color, coordinate.c_str(), last_move);
+            m = game.board.get_ladder_escape(last_move, game.get_to_move());
+            myprintf("get_ladder_escape: %d\n", m);
+        }
+
+        if (m != FastBoard::NO_VERTEX) {
+            //const auto m = game.board.text_to_move("Q15");
+            cfg_analyze_tags.add_move_to_avoid(FastBoard::WHITE, m, movenum+1);
+
+            myprintf("move: %d color: %d\n", m, FastBoard::WHITE);
+            myprintf("is_to_avoid: %d\n",cfg_analyze_tags.is_to_avoid(FastBoard::WHITE, m, 1));
+            myprintf("legal: %d\n", game.is_move_legal(FastBoard::WHITE, m));
+        }
+        /*
+        std::istringstream cmdstream(command);
+        std::string tmp;
+        cmdstream >> tmp; // eat go
+        AnalyzeTags tags{cmdstream, game};
+        if (tags.invalid()) {
+            gtp_fail_printf(id, "cannot parse analyze tags");
+            return;
+        }    
+        cfg_analyze_tags = tags;
+        */
+
         int move = search->think(game.get_to_move());
         game.play_move(move);
 

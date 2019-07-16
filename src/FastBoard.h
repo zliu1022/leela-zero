@@ -85,6 +85,9 @@ public:
     int count_pliberties(const int i) const;
     bool is_eye(const int color, const int vtx) const;
 
+    int count_liberties(const int i, const int k) const;
+    int get_ladder_escape(int i, int color) const;
+
     float area_score(float komi) const;
 
     int get_prisoners(int side) const;
