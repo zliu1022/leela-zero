@@ -627,30 +627,37 @@ int FastBoard::get_ladder_escape(int i, int color) const {
         myprintf("dir_%d %s(%d): %s %d\n", k, v.c_str(),ai, c==WHITE?"W":c==BLACK?"B":c==EMPTY?"EMPTY":"INVAL", libs);
         if ((c==color)&&(libs==1)) {
             myprintf("    only 1 liberty, find escape direction\n");
-            for (auto j = 0; j < 4; j++) {
-                auto _ai = ai + m_dirs[j];
-                auto _libs = m_libs[m_parent[_ai]];
-                auto _c = get_state(_ai);
-                std::string v = move_to_text(_ai);
-                myprintf("    dir_%d %s(%d): %s %d\n", j, v.c_str(),_ai, _c==WHITE?"W":_c==BLACK?"B":_c==EMPTY?"EMPTY":"INVAL", _libs);
-                if (_c==EMPTY) {
-                    escape = _ai;
-                    myprintf("        escape direction, find ladder shape\n");
-                    myprintf("        check direction: %s\n", (j==0||j==2)?"1,3":"0,2");
-                    for (auto k = 0; k < 4; k++) {
-                        auto __ai = _ai + m_dirs[k];
-                        auto __libs = m_libs[m_parent[__ai]];
-                        auto __c = get_state(__ai);
-                        std::string v = move_to_text(__ai);
-                        myprintf("        dir_%d %s(%d): %s %d\n", k, v.c_str(),__ai, __c==WHITE?"W":__c==BLACK?"B":__c==EMPTY?"EMPTY":"INVAL", __libs);
-                        if ((__c==opp_color) && 
-                            ( ((j==0||j==2)&&(k==1||k==3)) || ((j==1||j==3)&&(k==0||k==2))) ) {
-                            myprintf("        <-- ladder found\n");
+
+            int start = ai;
+            int newpos = start;
+            do {
+                for (auto j = 0; j < 4; j++) {
+                    auto _ai = newpos + m_dirs[j];
+                    auto _libs = m_libs[m_parent[_ai]];
+                    auto _c = get_state(_ai);
+                    std::string v = move_to_text(_ai);
+                    myprintf("    dir_%d %s(%d): %s %d\n", j, v.c_str(),_ai, _c==WHITE?"W":_c==BLACK?"B":_c==EMPTY?"EMPTY":"INVAL", _libs);
+                    if (_c==EMPTY) {
+                        escape = _ai;
+                        myprintf("        escape direction, find ladder shape\n");
+                        myprintf("        check direction: %s\n", (j==0||j==2)?"1,3":"0,2");
+                        for (auto k = 0; k < 4; k++) {
+                            auto __ai = _ai + m_dirs[k];
+                            auto __libs = m_libs[m_parent[__ai]];
+                            auto __c = get_state(__ai);
+                            std::string v = move_to_text(__ai);
+                            myprintf("        dir_%d %s(%d): %s %d\n", k, v.c_str(),__ai, __c==WHITE?"W":__c==BLACK?"B":__c==EMPTY?"EMPTY":"INVAL", __libs);
+                            if ((__c==opp_color) && 
+                                ( ((j==0||j==2)&&(k==1||k==3)) || ((j==1||j==3)&&(k==0||k==2))) ) {
+                                myprintf("        <-- ladder found\n");
+                                return escape;
+                            }
                         }
                     }
                 }
-            }
+                newpos = m_next[newpos];
+            } while (newpos != start);
         }
     }
-    return escape;
+    return NO_VERTEX;
 }
