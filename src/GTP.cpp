@@ -920,37 +920,22 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     //} else if (command.find("go") == 0 && command.size() < 6) {
     } else if (command.find("go") == 0) {
         int movenum = game.get_movenum();
-        myprintf("move_num: %d\n", movenum);
 
         auto last_move = game.get_last_move();
         int m = FastBoard::NO_VERTEX;
         if (last_move != FastBoard::NO_VERTEX) {
             auto coordinate = game.move_to_text(last_move);
             auto color = game.get_to_move() == FastBoard::WHITE ? "B" : "W";
-            myprintf("last_move: %s %s(%d)\n", color, coordinate.c_str(), last_move);
+            myprintf("last_move: %s %s(%d) No.%d\n", color, coordinate.c_str(), last_move, movenum);
             m = game.board.get_ladder_escape(last_move, game.get_to_move());
-            myprintf("get_ladder_escape: %d\n", m);
-        }
+            auto movestr = game.move_to_text(m);
+            myprintf("get_ladder_escape: %s(%d)\n", movestr.c_str(), m);
 
-        if (m != FastBoard::NO_VERTEX) {
-            //const auto m = game.board.text_to_move("Q15");
-            cfg_analyze_tags.add_move_to_avoid(FastBoard::WHITE, m, movenum+1);
-
-            myprintf("move: %d color: %d\n", m, FastBoard::WHITE);
-            myprintf("is_to_avoid: %d\n",cfg_analyze_tags.is_to_avoid(FastBoard::WHITE, m, 1));
-            myprintf("legal: %d\n", game.is_move_legal(FastBoard::WHITE, m));
+            if (m != FastBoard::NO_VERTEX) {
+                //const auto m = game.board.text_to_move("Q15");
+                cfg_analyze_tags.add_move_to_avoid(FastBoard::WHITE, m, movenum+1);
+            }
         }
-        /*
-        std::istringstream cmdstream(command);
-        std::string tmp;
-        cmdstream >> tmp; // eat go
-        AnalyzeTags tags{cmdstream, game};
-        if (tags.invalid()) {
-            gtp_fail_printf(id, "cannot parse analyze tags");
-            return;
-        }    
-        cfg_analyze_tags = tags;
-        */
 
         int move = search->think(game.get_to_move());
         game.play_move(move);
