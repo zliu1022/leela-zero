@@ -933,7 +933,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
             if (m != FastBoard::NO_VERTEX) {
                 //const auto m = game.board.text_to_move("Q15");
-                cfg_analyze_tags.add_move_to_avoid(FastBoard::WHITE, m, movenum+1);
+                cfg_analyze_tags.add_move_to_avoid(game.get_to_move(), m, movenum+1);
             }
         }
 
