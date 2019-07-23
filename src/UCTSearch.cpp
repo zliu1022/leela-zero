@@ -181,49 +181,15 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
         printf("!node->has_children()\n");
 #endif
         if (cfg_pacman) {
-            if ( currstate.get_passes() >= 1 || 
-                currstate.board.get_prisoners(FastBoard::BLACK) >=1 ||
-                currstate.board.get_prisoners(FastBoard::WHITE) >=1 ) {
-
-                int m = m_rootstate.board.get_to_move();
-                if (currstate.get_passes() == 1) {
-                    if (m == FastBoard::WHITE) {
-                        if (color == FastBoard::WHITE) {
-                            result = SearchResult::from_score(-1.0f);
-                        }
-                        else {
-                            result = SearchResult::from_score(1.0f);
-                        }
-                    }
-                    else {
-                        if (color == FastBoard::WHITE) {
-                            result = SearchResult::from_score(-1.0f);
-                        }
-                        else {
-                            result = SearchResult::from_score(1.0f);
-                        }
-                    }
-                } else if (currstate.get_passes() > 1) {
-                    if (color == FastBoard::WHITE) {
-                        result = SearchResult::from_score(0.0f);
-                    }
-                    else {
-                        result = SearchResult::from_score(1.0f);
-                    }
-                }else if (m == FastBoard::WHITE) {
-                    if (currstate.board.get_prisoners(FastBoard::BLACK) >= 1) {
-                        result = SearchResult::from_score(1.0f);
-                    }
-                    else if (currstate.board.get_prisoners(FastBoard::WHITE) >= 1) {
-                        result = SearchResult::from_score(-1.0f);
-                    }
+            if ( currstate.board.get_prisoners(FastBoard::BLACK) >0 ||
+                currstate.board.get_prisoners(FastBoard::WHITE) >0 ) {
+                if (currstate.board.get_prisoners(FastBoard::BLACK)>0) {
+                    result = SearchResult::from_score(1.0f);
+                }
+                else if (currstate.board.get_prisoners(FastBoard::WHITE)>0) {
+                    result = SearchResult::from_score(-1.0f);
                 } else {
-                    if (currstate.board.get_prisoners(FastBoard::BLACK) >= 1) {
-                        result = SearchResult::from_score(1.0f);
-                    }
-                    else if (currstate.board.get_prisoners(FastBoard::WHITE) >= 1) {
-                        result = SearchResult::from_score(-1.0f);
-                    }
+                    result = SearchResult::from_score(0.0f);
                 }
             } else if (m_nodes < MAX_TREE_SIZE) {
                 auto mem_full_pct = m_nodes / static_cast<float>(MAX_TREE_SIZE);
