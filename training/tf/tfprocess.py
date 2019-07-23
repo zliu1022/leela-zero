@@ -117,8 +117,8 @@ class Timer:
 class TFProcess:
     def __init__(self, cpuonly=False):
         # Network structure
-        self.RESIDUAL_FILTERS = 128
-        self.RESIDUAL_BLOCKS = 6
+        self.RESIDUAL_FILTERS = 32
+        self.RESIDUAL_BLOCKS = 4
 
         # model type: full precision (fp32) or mixed precision (fp16)
         self.model_dtype = tf.float32
@@ -191,10 +191,11 @@ class TFProcess:
         self.batch_norm_count = 0
         self.reuse_var = None
 
+        self.learning_rate = 0.1
         # You need to change the learning rate here if you are training
         # from a self-play training set, for example start with 0.005 instead.
         opt = tf.train.MomentumOptimizer(
-            learning_rate=0.03, momentum=0.9, use_nesterov=True)
+            learning_rate=self.learning_rate, momentum=0.9, use_nesterov=True)
 
         opt = LossScalingOptimizer(opt, scale=self.loss_scale)
 
@@ -305,7 +306,7 @@ class TFProcess:
                          self.logbase + "/train"), self.session.graph)
 
         # Build checkpoint saver
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=0)
 
         # Initialize all variables
         self.session.run(tf.global_variables_initializer())
@@ -352,8 +353,8 @@ class TFProcess:
 
         # For training from a (smaller) dataset of strong players, you will
         # want to reduce the factor in front of self.mse_loss here.
-        #loss = 1.0 * policy_loss + 1.0 * mse_loss + reg_term
-        loss = 1.0 * mse_loss + reg_term
+        loss = 1.0 * policy_loss + 1.0 * mse_loss + reg_term
+        #loss = 1.0 * mse_loss + reg_term
 
         return loss, policy_loss, mse_loss, reg_term, y_conv
 
@@ -443,8 +444,9 @@ class TFProcess:
 
             if steps % info_steps == 0:
                 speed = info_steps * self.batch_size / timer.elapsed()
-                print("step {}, policy={:g} mse={:g} reg={:g} total={:g} ({:g} pos/s)".format(
-                    steps, stats.mean('policy'), stats.mean('mse'), stats.mean('reg'),
+                print("{} {}, step {}, policy={:g} mse={:g} reg={:g} total={:g} ({:g} pos/s)".format(
+                    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                    self.learning_rate, steps, stats.mean('policy'), stats.mean('mse'), stats.mean('reg'),
                     stats.mean('total'), speed))
                 summaries = stats.summaries({'Policy Loss': 'policy',
                                              'MSE Loss': 'mse'})
@@ -452,7 +454,7 @@ class TFProcess:
                     tf.Summary(value=summaries), steps)
                 stats.clear()
 
-                time.sleep(90)
+                time.sleep(120)
 
             if steps % 2000 == 0:
                 test_stats = Stats()
@@ -472,8 +474,7 @@ class TFProcess:
 
                 # Write out current model and checkpoint
                 path = os.path.join(os.getcwd(), "leelaz-model")
-                save_path = self.saver.save(self.session, path,
-                                            global_step=steps)
+                save_path = self.saver.save(self.session, path, global_step=steps)
                 print("Model saved in file: {}".format(save_path))
                 leela_path = path + "-" + str(steps) + ".txt"
                 self.save_leelaz_weights(leela_path)
@@ -484,11 +485,13 @@ class TFProcess:
                 if self.swa_enabled:
                     self.save_swa_network(steps, path, leela_path, train_data)
 
-                save_path = self.saver.save(self.session, path,
-                                            global_step=steps)
-                print("Model saved in file: {}".format(save_path))
+                #save_path = self.saver.save(self.session, path, global_step=steps)
+                #print("Model saved in file: {}".format(save_path))
+                if os.path.exists("stop_train"):
+                    os._exit(0)
 
-                time.sleep(90)
+            if steps == -1:
+                os._exit(0)
 
     def save_leelaz_weights(self, filename):
         with open(filename, "w") as file:
@@ -628,21 +631,21 @@ class TFProcess:
         flow = self.conv_block(x_planes, filter_size=3,
                                input_channels=18,
                                output_channels=self.RESIDUAL_FILTERS,
-                               name="first_conv", trainable=False)
+                               name="first_conv", trainable=True)
         # Residual tower
         for i in range(0, self.RESIDUAL_BLOCKS):
             block_name = "res_" + str(i)
             flow = self.residual_block(flow, self.RESIDUAL_FILTERS,
-                                       name=block_name, trainable=False)
+                                       name=block_name, trainable=True)
 
         # Policy head
         conv_pol = self.conv_block(flow, filter_size=1,
                                    input_channels=self.RESIDUAL_FILTERS,
                                    output_channels=2,
-                                   name="policy_head", trainable=False)
+                                   name="policy_head", trainable=True)
         h_conv_pol_flat = tf.reshape(conv_pol, [-1, 2 * 19 * 19])
-        W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype, trainable=False)
-        b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype, trainable=False)
+        W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype, trainable=True)
+        b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype, trainable=True)
         self.add_weights(W_fc1)
         self.add_weights(b_fc1)
         h_fc1 = tf.add(tf.matmul(h_conv_pol_flat, W_fc1), b_fc1)

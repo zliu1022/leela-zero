@@ -91,7 +91,7 @@ static constexpr auto KOMI = 7.5f;
  * faster if you have a recent GPU. Don't use it on CPUs even if they have
  * OpenCL drivers - the BLAS version is much faster for those.
  */
-//#define USE_CPU_ONLY
+#define USE_CPU_ONLY
 #ifndef USE_CPU_ONLY
 #define USE_OPENCL
 
