@@ -191,7 +191,7 @@ class TFProcess:
         self.batch_norm_count = 0
         self.reuse_var = None
 
-        self.learning_rate = 0.1
+        self.learning_rate = 0.03
         # You need to change the learning rate here if you are training
         # from a self-play training set, for example start with 0.005 instead.
         opt = tf.train.MomentumOptimizer(
