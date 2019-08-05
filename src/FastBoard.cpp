@@ -645,12 +645,23 @@ int FastBoard::get_ladder_escape(int i, int color) const {
                             auto __ai = _ai + m_dirs[k];
                             auto __libs = m_libs[m_parent[__ai]];
                             auto __c = get_state(__ai);
+                            int __carr[4];
+                            __carr[k] = __c;
                             std::string v = move_to_text(__ai);
                             myprintf("        dir_%d %s(%d): %s %d\n", k, v.c_str(),__ai, __c==WHITE?"W":__c==BLACK?"B":__c==EMPTY?"EMPTY":"INVAL", __libs);
                             if ((__c==opp_color) && 
                                 ( ((j==0||j==2)&&(k==1||k==3)) || ((j==1||j==3)&&(k==0||k==2))) ) {
-                                myprintf("        <-- ladder found\n");
+                                myprintf("        <-- ladder type1 found\n");
                                 return escape;
+                            }
+                            if (k==3) {
+                                if ((__carr[0]==color && __carr[1]==color && __carr[2]==EMPTY && __carr[3]==EMPTY ) ||
+                                    (__carr[1]==color && __carr[2]==color && __carr[3]==EMPTY && __carr[0]==EMPTY ) ||
+                                    (__carr[2]==color && __carr[3]==color && __carr[0]==EMPTY && __carr[1]==EMPTY ) ||
+                                    (__carr[3]==color && __carr[0]==color && __carr[1]==EMPTY && __carr[2]==EMPTY ) ) {
+                                    myprintf("        <-- ladder type2 found\n");
+                                    return escape;
+                                }
                             }
                         }
                     }
