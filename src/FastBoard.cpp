@@ -605,14 +605,102 @@ std::string FastBoard::get_stone_list() const {
 }
 
 int FastBoard::count_liberties(const int i, const int k) const {
-    if (k==4) {
+    if (k==8) {
         return m_libs[i];
-    } else if (k==5) {
+    } else if (k==9) {
         return m_libs[m_parent[i]];
+    } else if ((k>=4) && (k<=7)){
+        int ai = i + m_dirs[k-4];
+        return m_libs[m_parent[ai]];
     } else {
         int ai = i + m_dirs[k];
-        return m_libs[m_parent[ai]];
+        return m_libs[ai];
     }
+}
+
+int FastBoard::get_parent_vertex(const int i) const {
+    return m_parent[i];
+}
+
+int FastBoard::get_stonelist_len(const int i) const {
+    int len = 0;
+    int start = m_parent[i];
+    int newpos = start;
+
+    do {
+        newpos = m_next[newpos];
+        len++;
+    } while (newpos != start);
+
+    return len;
+}
+
+int FastBoard::get_stonelist_liberties(const int i) const {
+    return m_libs[m_parent[i]];
+}
+
+bool StoneList::stonelist_include(const std::vector<StoneList>  & stonelist, const int vertex) {
+    for (size_t i = 0; i < stonelist.size(); i++) {
+        if (stonelist[i].vertex==vertex) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int FastBoard::find_stonelist_onelib(const int i) const {
+    int pos = i;
+
+    do {
+        if (count_pliberties(pos)==1){
+            return pos;
+        }
+        pos = m_next[pos];
+    } while (pos != i);
+
+    return NO_VERTEX;
+}
+
+// only one vertex with 2 libs and these 2 libs is neighbours, will return
+/* 2 libs string
+type1: 1 vertex with 2 libs and these 2 libs are neighbours
+type2: 1 vertex with 1 lib and another 1 vertex with 2 libs
+type3: 1 vertex with 2 libs and these 2 libs are face to face
+type4: 1 vertex with 1 lib and another 1 vertex with 1 lib
+
+type1 & 2 are ladder shaper
+type1 2 libs' pos: plib is 3 and 2 OR plib is 2 and 2
+type2 2 libs' pos: plib is 3 and 2
+ */
+
+int FastBoard::find_stonelist_twolibs(const int i) const {
+    int pos = i;
+
+    do {
+        if (count_pliberties(pos)==2){
+            auto c0 = get_state(pos + m_dirs[0]);
+            auto c1 = get_state(pos + m_dirs[1]);
+            auto c2 = get_state(pos + m_dirs[2]);
+            auto c3 = get_state(pos + m_dirs[3]);
+            if ( (c0==EMPTY && c2==EMPTY) || (c1==EMPTY && c3==EMPTY) ){
+                continue;
+            }
+            return pos;
+        }
+        pos = m_next[pos];
+    } while (pos != i);
+
+    return NO_VERTEX;
+}
+
+int FastBoard::find_plibs(const int i, const int libs) const {
+    for (auto k = 0; k < 4; k++) {
+        auto ai = i + m_dirs[k];
+        if (count_pliberties(ai)==libs) {
+            return ai;
+        }
+    }
+    return NO_VERTEX;
 }
 
 int FastBoard::get_ladder_escape(int i, int color) const {

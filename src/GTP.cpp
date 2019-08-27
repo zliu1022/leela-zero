@@ -461,16 +461,38 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
     std::string result;
     const auto& board = game.board;
 
+    std::vector<StoneList> stonelist_b;
+    std::vector<StoneList> stonelist_w;
+
     if (live) {
         for (int i = 0; i < board.get_boardsize(); i++) {
-            myprintf("no %d\n", i+1);
+            myprintf("col %d\n", i+1);
+            myprintf("vertex(x,y)  move plib lib[0,1,2,3] lib[parent[0, 1, 2, 3]] lib lib[par]\n");
             for (int j = 0; j < board.get_boardsize(); j++) {
                 int vertex = board.get_vertex(i, j);
+                auto coordinate = board.move_to_text(vertex);
 
                 if (board.get_state(vertex) != FastBoard::EMPTY) {
                     stringlist.push_back(board.get_string(vertex));
-                    myprintf("%d,%d %s %d  %d %d %d %d   %d %d %s\n", 
-                        i+1, j+1, 
+
+                    StoneList stonelist_tmp;
+                    stonelist_tmp.vertex = board.get_parent_vertex(vertex);
+
+                    if (board.get_state(vertex)==FastBoard::BLACK) {
+                        if (!stonelist_tmp.stonelist_include(stonelist_b, stonelist_tmp.vertex)){
+                            stonelist_tmp.lib = board.get_stonelist_liberties(vertex);
+                            stonelist_tmp.len = board.get_stonelist_len(vertex);
+                            stonelist_b.push_back(stonelist_tmp);
+                        }
+                    } else {
+                        if (!stonelist_tmp.stonelist_include(stonelist_w, stonelist_tmp.vertex)){
+                            stonelist_tmp.lib = board.get_stonelist_liberties(vertex);
+                            stonelist_tmp.len = board.get_stonelist_len(vertex);
+                            stonelist_w.push_back(stonelist_tmp);
+                        }
+                    }
+                    myprintf("%3d(%2d,%2d)  %3s %s   %2d  %2d %2d %2d %2d %5d %5d %5d %5d %2d %2d       %s %d\n", 
+                        vertex, i+1, j+1, coordinate.c_str(),
                         (board.get_state(vertex)==FastBoard::WHITE)?"W":"B", 
                         board.count_pliberties(vertex),
                         board.count_liberties(vertex,0),
@@ -479,7 +501,12 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
                         board.count_liberties(vertex,3),
                         board.count_liberties(vertex,4),
                         board.count_liberties(vertex,5),
-                        board.get_string(vertex).c_str()
+                        board.count_liberties(vertex,6),
+                        board.count_liberties(vertex,7),
+                        board.count_liberties(vertex,8),
+                        board.count_liberties(vertex,9),
+                        board.get_string(vertex).c_str(),
+                        stonelist_tmp.vertex
                     );
                 }
             }
@@ -492,6 +519,28 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
     std::sort(begin(stringlist), end(stringlist));
     stringlist.erase(std::unique(begin(stringlist), end(stringlist)),
                      end(stringlist));
+
+    myprintf("\nBlack string list:\n");
+    myprintf("vertex liberty length 1lib_pos 1lib_2lib 2lib_pos 2lib_3lib\n");
+    for (size_t i = 0; i < stonelist_b.size(); i++) {
+        if (stonelist_b[i].lib==1 || stonelist_b[i].lib==2){
+            myprintf("%6d %7d %6d %8d %8d %8d %8d %s\n", stonelist_b[i].vertex, stonelist_b[i].lib, stonelist_b[i].len, 
+                board.find_stonelist_onelib(stonelist_b[i].vertex), board.find_plibs(stonelist_b[i].vertex, 2),
+                board.find_stonelist_twolibs(stonelist_b[i].vertex), board.find_plibs(stonelist_b[i].vertex, 3),
+                board.get_string(stonelist_b[i].vertex).c_str());
+        }
+    }
+
+    myprintf("\nWhite string list:\n");
+    myprintf("vertex liberty length 1lib_pos 1lib_2lib 2lib_pos 2lib_3lib\n");
+    for (size_t i = 0; i < stonelist_w.size(); i++) {
+        if (stonelist_w[i].lib==1 || stonelist_w[i].lib==2){
+            myprintf("%6d %7d %6d %8d %8d %8d %8d %s\n", stonelist_w[i].vertex, stonelist_w[i].lib, stonelist_w[i].len, 
+            board.find_stonelist_onelib(stonelist_w[i].vertex), board.find_plibs(stonelist_w[i].vertex, 2),
+            board.find_stonelist_twolibs(stonelist_w[i].vertex), board.find_plibs(stonelist_w[i].vertex, 3),
+            board.get_string(stonelist_w[i].vertex).c_str());
+        }
+    }
 
     for (size_t i = 0; i < stringlist.size(); i++) {
         result += (i == 0 ? "" : "\n") + stringlist[i];
