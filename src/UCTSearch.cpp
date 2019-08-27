@@ -1074,7 +1074,7 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
     Training::record(m_network, m_rootstate, *m_root);
 
     Time elapsed;
-    int elapsed_centis = Time::timediff_centis(start, elapsed);
+    //int elapsed_centis = Time::timediff_centis(start, elapsed);
     /*
     myprintf("HP %d visits, %d nodes, %d playouts, %.0f n/s\n",
              m_root->get_visits(),
@@ -1120,15 +1120,15 @@ int UCTSearch::think_hp(int color, int max_playout, std::vector<Network::PolicyV
 
         auto first_child = m_root->get_first_child();
         //myprintf("firstchild: %d %f\n", first_child->get_move(), first_child->get_policy());
-        float tmp_komi = m_rootstate.get_komi();
+        //float tmp_komi = m_rootstate.get_komi();
         //int color = m_rootstate.board.get_to_move();
 
     auto movenum = int(m_rootstate.get_movenum());
     auto recov_num = 180; 
     auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
     if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
-    auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
-    auto act_rate = (1+std::tanh(tmp_rate))/2;
+    //auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
+    //auto act_rate = (1+std::tanh(tmp_rate))/2;
     /*
         myprintf("HP %s-(%s)%d(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n",
             PROGRAM_VERSION, s_aux.c_str(),cfg_auxmode,tmp_komi,act_rate*100.0f, 
