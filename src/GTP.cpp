@@ -461,56 +461,15 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
     std::string result;
     const auto& board = game.board;
 
-    std::vector<StoneList> stonelist_b;
-    std::vector<StoneList> stonelist_w;
-
     if (live) {
         for (int i = 0; i < board.get_boardsize(); i++) {
-            myprintf("col %d\n", i+1);
-            myprintf("vertex(x,y)  move plib lib[0,1,2,3] lib[parent[0, 1, 2, 3]] lib lib[par]\n");
             for (int j = 0; j < board.get_boardsize(); j++) {
                 int vertex = board.get_vertex(i, j);
-                auto coordinate = board.move_to_text(vertex);
 
                 if (board.get_state(vertex) != FastBoard::EMPTY) {
                     stringlist.push_back(board.get_string(vertex));
-
-                    StoneList stonelist_tmp;
-                    stonelist_tmp.vertex = board.get_parent_vertex(vertex);
-
-                    if (board.get_state(vertex)==FastBoard::BLACK) {
-                        if (!stonelist_tmp.stonelist_include(stonelist_b, stonelist_tmp.vertex)){
-                            stonelist_tmp.lib = board.get_stonelist_liberties(vertex);
-                            stonelist_tmp.len = board.get_stonelist_len(vertex);
-                            stonelist_b.push_back(stonelist_tmp);
-                        }
-                    } else {
-                        if (!stonelist_tmp.stonelist_include(stonelist_w, stonelist_tmp.vertex)){
-                            stonelist_tmp.lib = board.get_stonelist_liberties(vertex);
-                            stonelist_tmp.len = board.get_stonelist_len(vertex);
-                            stonelist_w.push_back(stonelist_tmp);
-                        }
-                    }
-                    myprintf("%3d(%2d,%2d)  %3s %s   %2d  %2d %2d %2d %2d %5d %5d %5d %5d %2d %2d       %s %d\n", 
-                        vertex, i+1, j+1, coordinate.c_str(),
-                        (board.get_state(vertex)==FastBoard::WHITE)?"W":"B", 
-                        board.count_pliberties(vertex),
-                        board.count_liberties(vertex,0),
-                        board.count_liberties(vertex,1),
-                        board.count_liberties(vertex,2),
-                        board.count_liberties(vertex,3),
-                        board.count_liberties(vertex,4),
-                        board.count_liberties(vertex,5),
-                        board.count_liberties(vertex,6),
-                        board.count_liberties(vertex,7),
-                        board.count_liberties(vertex,8),
-                        board.count_liberties(vertex,9),
-                        board.get_string(vertex).c_str(),
-                        stonelist_tmp.vertex
-                    );
                 }
             }
-            myprintf("\n");
         }
     }
 
@@ -520,34 +479,96 @@ std::string GTP::get_life_list(const GameState & game, bool live) {
     stringlist.erase(std::unique(begin(stringlist), end(stringlist)),
                      end(stringlist));
 
-    myprintf("\nBlack string list:\n");
-    myprintf("vertex liberty length 1lib_pos 1lib_2lib 2lib_pos 2lib_3lib\n");
-    for (size_t i = 0; i < stonelist_b.size(); i++) {
-        if (stonelist_b[i].lib==1 || stonelist_b[i].lib==2){
-            myprintf("%6d %7d %6d %8d %8d %8d %8d %s\n", stonelist_b[i].vertex, stonelist_b[i].lib, stonelist_b[i].len, 
-                board.find_stonelist_onelib(stonelist_b[i].vertex), board.find_plibs(stonelist_b[i].vertex, 2),
-                board.find_stonelist_twolibs(stonelist_b[i].vertex), board.find_plibs(stonelist_b[i].vertex, 3),
-                board.get_string(stonelist_b[i].vertex).c_str());
-        }
-    }
-
-    myprintf("\nWhite string list:\n");
-    myprintf("vertex liberty length 1lib_pos 1lib_2lib 2lib_pos 2lib_3lib\n");
-    for (size_t i = 0; i < stonelist_w.size(); i++) {
-        if (stonelist_w[i].lib==1 || stonelist_w[i].lib==2){
-            myprintf("%6d %7d %6d %8d %8d %8d %8d %s\n", stonelist_w[i].vertex, stonelist_w[i].lib, stonelist_w[i].len, 
-            board.find_stonelist_onelib(stonelist_w[i].vertex), board.find_plibs(stonelist_w[i].vertex, 2),
-            board.find_stonelist_twolibs(stonelist_w[i].vertex), board.find_plibs(stonelist_w[i].vertex, 3),
-            board.get_string(stonelist_w[i].vertex).c_str());
-        }
-    }
-
     for (size_t i = 0; i < stringlist.size(); i++) {
         result += (i == 0 ? "" : "\n") + stringlist[i];
     }
 
     return result;
 }
+
+void GTP::get_life_detail(const GameState & game) {
+    const auto& board = game.board;
+
+    std::vector<StoneList> stonelist_b;
+    std::vector<StoneList> stonelist_w;
+
+    myprintf("( x, y)  move ver-par st pl-l-lpar lib[0,1,2,3] lib[parent[0, 1, 2, 3]]\n");
+    for (int i = 0; i < board.get_boardsize(); i++) {
+        //myprintf("col %d\n", i+1);
+        for (int j = 0; j < board.get_boardsize(); j++) {
+            int vertex = board.get_vertex(i, j);
+            auto coordinate = board.move_to_text(vertex);
+
+            if (board.get_state(vertex) != FastBoard::EMPTY) {
+
+                StoneList stonelist_tmp;
+                stonelist_tmp.vertex = board.get_parent_vertex(vertex);
+
+                if (board.get_state(vertex)==FastBoard::BLACK) {
+                    if (!stonelist_tmp.stonelist_include(stonelist_b, stonelist_tmp.vertex)){
+                        stonelist_tmp.lib = board.get_stonelist_liberties(vertex);
+                        stonelist_tmp.len = board.get_stonelist_len(vertex);
+                        stonelist_b.push_back(stonelist_tmp);
+                    }
+                } else {
+                    if (!stonelist_tmp.stonelist_include(stonelist_w, stonelist_tmp.vertex)){
+                        stonelist_tmp.lib = board.get_stonelist_liberties(vertex);
+                        stonelist_tmp.len = board.get_stonelist_len(vertex);
+                        stonelist_w.push_back(stonelist_tmp);
+                    }
+                }
+                auto plib = board.count_pliberties(vertex);
+                auto lib = board.count_liberties(vertex,8);
+                auto stone = board.get_stone(vertex);
+                int isCheck = 0;
+                if (plib==lib) {
+                    //guess: not parent
+                    if (stonelist_tmp.vertex == vertex && stonelist_tmp.len!=1) {
+                        isCheck = 1;
+                    }
+                } else {
+                    //guess: it's parent
+                    if (stonelist_tmp.vertex != vertex) {
+                        isCheck = 2;
+                    }
+                }
+                if (stonelist_tmp.vertex==222) {
+                //if (1||isCheck) {
+                myprintf(" %2d, %2d %s %3s %3d-%3d %2d  %2d %2d %2d  %2d %2d %2d %2d %5d %5d %5d %5d %3s %s\n", 
+                    i+1, j+1, 
+                    (board.get_state(vertex)==FastBoard::WHITE)?"W":"B", coordinate.c_str(), 
+                    vertex, stonelist_tmp.vertex, 
+                    stone,
+                    board.count_pliberties(vertex),
+                    board.count_liberties(vertex,8),
+                    board.count_liberties(vertex,9),
+                    board.count_liberties(vertex,0),
+                    board.count_liberties(vertex,1),
+                    board.count_liberties(vertex,2),
+                    board.count_liberties(vertex,3),
+                    board.count_liberties(vertex,4),
+                    board.count_liberties(vertex,5),
+                    board.count_liberties(vertex,6),
+                    board.count_liberties(vertex,7),
+                    (isCheck==0)?"   ":(isCheck==1)?"ER1":"ER2",
+                    board.get_string(vertex).c_str()
+                );
+                }
+            }
+        }
+        //myprintf("\n");
+    }
+
+    /*
+    myprintf("\nBlack string list:\n");
+    board.print_stonelist(stonelist_b);
+    myprintf("\nWhite string list:\n");
+    board.print_stonelist(stonelist_w);
+    */
+
+    return;
+}
+
 
 void GTP::execute(GameState & game, const std::string& xinput) {
     std::string input;
@@ -899,10 +920,13 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         if (command.find("alive") != std::string::npos) {
             std::string livelist = get_life_list(game, true);
             gtp_printf(id, "");
-            //gtp_printf(id, livelist.c_str());
+            gtp_printf(id, livelist.c_str());
         } else if (command.find("dead") != std::string::npos) {
             std::string deadlist = get_life_list(game, false);
             gtp_printf(id, deadlist.c_str());
+        } else if (command.find("detail") != std::string::npos) {
+            get_life_detail(game);
+            gtp_printf(id, "");
         } else {
             gtp_printf(id, "");
         }

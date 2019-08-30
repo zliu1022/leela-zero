@@ -38,6 +38,14 @@
 #include <utility>
 #include <vector>
 
+class StoneList {
+public:
+    int vertex;
+    int lib;
+    int len;
+    bool stonelist_include(const std::vector<StoneList>  & stonelist, const int vertex);
+};
+
 class FastBoard {
     friend class FastState;
 public:
@@ -88,6 +96,7 @@ public:
     int count_liberties(const int i, const int k) const;
     int get_ladder_escape(int i, int color) const;
     int get_parent_vertex(const int i) const;
+    int get_stone(const int i) const;
     int get_stonelist_len(const int i) const;
     int get_stonelist_liberties(const int i) const;
     int find_stonelist_onelib(const int i) const ;
@@ -114,6 +123,7 @@ public:
     static bool starpoint(int size, int point);
     static bool starpoint(int size, int x, int y);
 
+    void print_stonelist(std::vector<StoneList> & stonelist) const;
 protected:
     /*
         bit masks to detect eyes on neighbors
@@ -146,14 +156,6 @@ protected:
     void add_neighbour(const int i, const int color);
     void remove_neighbour(const int i, const int color);
     void print_columns();
-};
-
-class StoneList {
-public:
-    int vertex;
-    int lib;
-    int len;
-    bool stonelist_include(const std::vector<StoneList>  & stonelist, const int vertex);
 };
 
 #endif

@@ -622,6 +622,10 @@ int FastBoard::get_parent_vertex(const int i) const {
     return m_parent[i];
 }
 
+int FastBoard::get_stone(const int i) const {
+    return m_stones[i];
+}
+
 int FastBoard::get_stonelist_len(const int i) const {
     int len = 0;
     int start = m_parent[i];
@@ -683,6 +687,7 @@ int FastBoard::find_stonelist_twolibs(const int i) const {
             auto c2 = get_state(pos + m_dirs[2]);
             auto c3 = get_state(pos + m_dirs[3]);
             if ( (c0==EMPTY && c2==EMPTY) || (c1==EMPTY && c3==EMPTY) ){
+                pos = m_next[pos];
                 continue;
             }
             return pos;
@@ -696,7 +701,8 @@ int FastBoard::find_stonelist_twolibs(const int i) const {
 int FastBoard::find_plibs(const int i, const int libs) const {
     for (auto k = 0; k < 4; k++) {
         auto ai = i + m_dirs[k];
-        if (count_pliberties(ai)==libs) {
+        auto c = get_state(ai);
+        if (c==EMPTY && count_pliberties(ai)==libs) {
             return ai;
         }
     }
@@ -759,4 +765,30 @@ int FastBoard::get_ladder_escape(int i, int color) const {
         }
     }
     return NO_VERTEX;
+}
+
+void FastBoard::print_stonelist(std::vector<StoneList> & stonelist) const {
+    myprintf("size: %d\n", stonelist.size());
+    myprintf("Note: stone with 1 liberty and 1 liberty who has two EMPTY neighbour\n");
+    myprintf("Note: stone with 2 liberty(neighbour) and 2 liberty who has three EMPTY neighbour\n");
+    myprintf("vertex   len  lib  1_stone _2lib  2_stone _3lib\n");
+    for (size_t i = 0; i < stonelist.size(); i++) {
+        auto vertex = stonelist[i].vertex;
+        auto coor = move_to_text(vertex);
+        auto ver_1lib = find_stonelist_onelib(vertex); 
+        auto cor_1lib = move_to_text(ver_1lib);
+        auto ver_2lib = find_stonelist_twolibs(vertex); 
+        auto cor_2lib = move_to_text(ver_2lib);
+        if (1 || stonelist[i].lib==1 || stonelist[i].lib==2){
+            myprintf("%3s(%3d) %3d %4d %3s(%3d) %5d %3s(%3d) %5d %s\n", 
+                coor.c_str(), stonelist[i].vertex, 
+                stonelist[i].len, 
+                stonelist[i].lib, 
+                cor_1lib.c_str(), ver_1lib, 
+                find_plibs(ver_1lib, 2),
+                cor_2lib.c_str(), ver_2lib, 
+                find_plibs(ver_2lib, 3),
+                get_string(stonelist[i].vertex).c_str());
+        }
+    }
 }
