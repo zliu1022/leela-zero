@@ -532,8 +532,8 @@ void GTP::get_life_detail(const GameState & game) {
                         isCheck = 2;
                     }
                 }
-                if (stonelist_tmp.vertex==222) {
-                //if (1||isCheck) {
+                //if (stonelist_tmp.vertex==222) {
+                if (isCheck) {
                 myprintf(" %2d, %2d %s %3s %3d-%3d %2d  %2d %2d %2d  %2d %2d %2d %2d %5d %5d %5d %5d %3s %s\n", 
                     i+1, j+1, 
                     (board.get_state(vertex)==FastBoard::WHITE)?"W":"B", coordinate.c_str(), 
