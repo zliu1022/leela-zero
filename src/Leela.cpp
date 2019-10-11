@@ -145,7 +145,7 @@ static void parse_commandline(int argc, char *argv[]) {
                      "Weaken engine by limiting the number of visits.")
         ("lagbuffer,b", po::value<int>()->default_value(cfg_lagbuffer_cs),
                         "Safety margin for time usage in centiseconds.")
-        ("resignpct,r", po::value<int>()->default_value(cfg_resignpct),
+        ("resignpct,r", po::value<float>()->default_value(cfg_resignpct),
                         "Resign when winrate is less than x%.\n"
                         "-1 uses 10% but scales for handicap.")
         ("weights,w", po::value<std::string>()->default_value(cfg_weightsfile), "File with network weights.")
@@ -223,6 +223,8 @@ static void parse_commandline(int argc, char *argv[]) {
         ("fpu_reduction", po::value<float>())
         ("ci_alpha", po::value<float>())
         ("ra", po::value<float>(), "winrate = (1+tanh(ra*rate)/2,        ex. ra=0.25 for 4 stones handicap game")
+        ("komi", po::value<float>(), "set komi manually, and open komi mode")
+        ("kmrate", po::value<float>(), "> kmrate, komi will decrease automatically.")
         ;
 #endif
     // These won't be shown, we use them to catch incorrect usage of the
@@ -308,6 +310,12 @@ static void parse_commandline(int argc, char *argv[]) {
     }
     if (vm.count("ra")) {
         cfg_ra = vm["ra"].as<float>();
+    }
+    if (vm.count("komi")) {
+        cfg_komi = vm["komi"].as<float>();
+    }
+    if (vm.count("kmrate")) {
+        cfg_kmrate = vm["kmrate"].as<float>();
     }
 #endif
 
@@ -467,7 +475,7 @@ static void parse_commandline(int argc, char *argv[]) {
     }
 
     if (vm.count("resignpct")) {
-        cfg_resignpct = vm["resignpct"].as<int>();
+        cfg_resignpct = vm["resignpct"].as<float>();
     }
 
     if (vm.count("randomcnt")) {
@@ -606,7 +614,7 @@ int main(int argc, char *argv[]) {
     auto maingame = std::make_unique<GameState>();
 
     /* set board limits */
-    maingame->init_game(BOARD_SIZE, KOMI);
+    maingame->init_game(BOARD_SIZE, cfg_komi==999.0f?KOMI:cfg_komi);
 
     if (cfg_benchmark) {
         cfg_quiet = false;
