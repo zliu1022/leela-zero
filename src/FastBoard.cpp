@@ -733,7 +733,7 @@ int FastBoard::get_ladder_escape(int i, int color) const {
                     myprintf("    dir_%d %s(%d): %s %d\n", j, v.c_str(),_ai, _c==WHITE?"W":_c==BLACK?"B":_c==EMPTY?"EMPTY":"INVAL", _libs);
                     if (_c==EMPTY) {
                         escape = _ai;
-                        myprintf("        escape direction, find ladder shape\n");
+                        myprintf("        escape direction, try to find ladder shape\n");
                         myprintf("        check direction: %s\n", (j==0||j==2)?"1,3":"0,2");
                         for (auto k = 0; k < 4; k++) {
                             auto __ai = _ai + m_dirs[k];
@@ -748,6 +748,7 @@ int FastBoard::get_ladder_escape(int i, int color) const {
                                 myprintf("        <-- ladder type1 found\n");
                                 return escape;
                             }
+                            /*
                             if (k==3) {
                                 if ((__carr[0]==color && __carr[1]==color && __carr[2]==EMPTY && __carr[3]==EMPTY ) ||
                                     (__carr[1]==color && __carr[2]==color && __carr[3]==EMPTY && __carr[0]==EMPTY ) ||
@@ -757,6 +758,7 @@ int FastBoard::get_ladder_escape(int i, int color) const {
                                     return escape;
                                 }
                             }
+                            */
                         }
                     }
                 }
