@@ -68,7 +68,7 @@ size_t cfg_max_tree_size;
 int cfg_max_cache_ratio_percent;
 TimeManagement::enabled_t cfg_timemanage;
 int cfg_lagbuffer_cs;
-int cfg_resignpct;
+float cfg_resignpct;
 int cfg_noise;
 int cfg_random_cnt;
 int cfg_random_min_visits;
@@ -92,6 +92,8 @@ float cfg_fpu_root_reduction;
 float cfg_ci_alpha;
 float cfg_lcb_min_visit_ratio;
 float cfg_ra;
+float cfg_komi;
+float cfg_kmrate;
 std::string cfg_weightsfile;
 std::string cfg_weightsfile_aux;
 AuxMode::enabled_t cfg_auxmode;
@@ -378,6 +380,8 @@ void GTP::setup_default_parameters() {
     cfg_ci_alpha = 1e-5f;
     cfg_lcb_min_visit_ratio = 1.0f;
     cfg_ra = 1.0f;
+    cfg_komi = 999.0f;
+    cfg_kmrate = 1.0f;
     cfg_random_cnt = 0;
     cfg_random_min_visits = 1;
     cfg_random_temp = 1.0f;
@@ -700,6 +704,9 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     } else if (command.find("clear_board") == 0) {
         Training::clear_training();
         game.reset_game();
+        if(cfg_komi!=999.0f){
+            game.set_komi(cfg_komi);
+        }
         s_network->nncache_clear();
         search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
         assert(UCTNodePointer::get_tree_size() == 0);
@@ -716,7 +723,9 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
         if (!cmdstream.fail()) {
             if (komi != old_komi) {
-                game.set_komi(komi);
+                if (cfg_komi==999.0f) {
+                    game.set_komi(komi);
+                }
             }
             gtp_printf(id, "");
         } else {
@@ -772,6 +781,25 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 gtp_fail_printf(id, "syntax error");
                 return;
             }
+
+            int movenum = game.get_movenum();
+            auto last_move = game.get_last_move();
+            int m = FastBoard::NO_VERTEX;
+            if (last_move != FastBoard::NO_VERTEX) {
+                auto coordinate = game.move_to_text(last_move);
+                auto color = who ? "B" : "W";
+                myprintf("last_move: %s %s(%d) No.%d\n", color, coordinate.c_str(), last_move, movenum);
+                m = game.board.get_ladder_escape(last_move, game.get_to_move());
+                auto movestr = game.move_to_text(m);
+                myprintf("get_ladder_escape: %s(%d)\n", movestr.c_str(), m);
+
+                if (m != FastBoard::NO_VERTEX && movenum<=50) {
+                    cfg_analyze_tags = AnalyzeTags{};
+                    //const auto m = game.board.text_to_move("Q15");
+                    cfg_analyze_tags.add_move_to_avoid(who, m, movenum+1);
+                }
+            }
+
         }
 
         if (analysis_output) {
@@ -993,7 +1021,6 @@ void GTP::execute(GameState & game, const std::string& xinput) {
     //} else if (command.find("go") == 0 && command.size() < 6) {
     } else if (command.find("go") == 0) {
         int movenum = game.get_movenum();
-
         auto last_move = game.get_last_move();
         int m = FastBoard::NO_VERTEX;
         if (last_move != FastBoard::NO_VERTEX) {
@@ -1680,7 +1707,7 @@ void GTP::execute_setoption(UCTSearch & search,
         gtp_printf(id, "");
     } else if (name == "resign percentage") {
         std::istringstream valuestream(value);
-        int resignpct;
+        float resignpct;
         valuestream >> resignpct;
         cfg_resignpct = resignpct;
         gtp_printf(id, "");
