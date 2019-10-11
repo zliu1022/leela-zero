@@ -467,7 +467,7 @@ bool UCTSearch::should_resign(passflag_t passflag, float besteval) {
     const auto movenum = m_rootstate.get_movenum();
     if (movenum <= move_threshold) {
         // too early in game to resign
-        return false;
+        //return false;
     }
 
     const auto color = m_rootstate.board.get_to_move();
@@ -946,6 +946,15 @@ int UCTSearch::think(int color, passflag_t passflag) {
             first_child->get_visits(),
             first_child->get_eval(color)*100.0f,
             first_child->get_policy()*100.0f);
+
+    if (cfg_komi!=999.0f && act_rate>=cfg_kmrate && tmp_komi>0) {
+        if (tmp_komi<=10.0) {
+            m_rootstate.set_komi(tmp_komi-1);
+        } else {
+            m_rootstate.set_komi(tmp_komi-5);
+        }
+        myprintf("komi -5\n");
+    }
     int bestmove = get_best_move(passflag);
     if (cfg_have_aux==false) {
         //myprintf("AuxMode already closed\n");
