@@ -206,7 +206,7 @@ void UCTNode::inflate_all_children() {
 void UCTNode::prepare_root_node(Network & network, Network & network_aux, int color,
                                 std::atomic<int>& nodes,
                                 GameState& root_state) {
-    //printf("prepare_root_node: %d\n", color);
+    //printf("prepare_root_node: %d %d %d\n", color, has_children(), expandable());
     float root_eval;
     const auto had_children = has_children();
     if (expandable()) {
