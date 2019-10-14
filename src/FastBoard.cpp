@@ -665,6 +665,21 @@ int FastBoard::find_stonelist_onelib(const int i) const {
     return NO_VERTEX;
 }
 
+int FastBoard::find_1lib_num(const int i) const {
+    int pos = i;
+    int count = 0;
+
+    do {
+        if (count_pliberties(pos)==1){
+            count++;
+        }
+        pos = m_next[pos];
+    } while (pos != i);
+
+    return count;
+}
+
+
 // only one vertex with 2 libs and these 2 libs is neighbours, will return
 /* 2 libs string
 type1: 1 vertex with 2 libs and these 2 libs are neighbours
@@ -773,6 +788,7 @@ void FastBoard::print_stonelist(std::vector<StoneList> & stonelist) const {
     myprintf("size: %d\n", stonelist.size());
     myprintf("Note: stone with 1 liberty and 1 liberty who has two EMPTY neighbour\n");
     myprintf("Note: stone with 2 liberty(neighbour) and 2 liberty who has three EMPTY neighbour\n");
+    myprintf("\n");
     myprintf("vertex   len  lib  1_stone _2lib  2_stone _3lib\n");
     for (size_t i = 0; i < stonelist.size(); i++) {
         auto vertex = stonelist[i].vertex;
@@ -793,4 +809,73 @@ void FastBoard::print_stonelist(std::vector<StoneList> & stonelist) const {
                 get_string(stonelist[i].vertex).c_str());
         }
     }
+}
+
+void FastBoard::print_ladder(std::vector<StoneList> & stonelist) const {
+    myprintf("size: %d\n", stonelist.size());
+    myprintf("now it will only print 1 lib stonelist, which will be 2 type: 1stone with 1lib or 2stone both has 1lib\n");
+    myprintf("\n");
+    myprintf("vertex   len    lib ver(1lib_stone) ver(1lib)\n");
+    for (size_t i = 0; i < stonelist.size(); i++) {
+        auto vertex = stonelist[i].vertex;
+        auto coor = move_to_text(vertex);
+        auto num_1lib = find_1lib_num(vertex);
+        auto ver_1lib = find_stonelist_onelib(vertex); 
+        auto cor_1lib = move_to_text(ver_1lib);
+
+        auto ver_1libpos = NO_VERTEX;
+        for (auto j = 0; j < 4; j++) {
+            auto _ai = ver_1lib + m_dirs[j];
+            if (get_state(_ai)==EMPTY){
+                ver_1libpos = _ai;
+            }
+        }
+        auto cor_1libpos = move_to_text(ver_1libpos);
+
+        if (stonelist[i].lib==1) {
+            myprintf("%3s(%3d) %3d %3d(%d)        %3s(%3d)  %3s(%3d) %d %s\n", 
+                coor.c_str(), stonelist[i].vertex, 
+                stonelist[i].len, 
+                stonelist[i].lib, num_1lib,
+                cor_1lib.c_str(), ver_1lib, 
+                cor_1libpos.c_str(), ver_1libpos, 
+                is_ladder_escape(ver_1lib, ver_1libpos),
+                get_string(stonelist[i].vertex).c_str());
+        }
+    }
+}
+int FastBoard::is_ladder_escape(int ver_st1lib, int ver_1lib) const {
+    auto color = get_state(ver_st1lib);
+    int opp_color = color==BLACK?WHITE:BLACK;
+    auto i = 0;
+    for (i = 0; i < 4; i++) {
+        auto ai = ver_st1lib + m_dirs[i];
+        if (ai==ver_1lib){
+            break;
+        }
+    }
+
+    for (auto j = 0; j < 4; j++) {
+        auto ai = ver_1lib + m_dirs[j];
+        if (get_state(ai)==opp_color){
+            if ( ((j==0||j==2)&&(i==1||i==3)) || ((j==1||j==3)&&(i==0||i==2))) {
+                //myprintf("        <-- ladder type1 found\n");
+                return ver_1lib;
+            }
+        }
+    }
+    return NO_VERTEX;
+}
+int FastBoard::is_ladder(int vertex) const {
+    auto num_1lib = find_1lib_num(vertex);
+    auto ver_1lib = find_stonelist_onelib(vertex); 
+    auto ver_1libpos = NO_VERTEX;
+
+    for (auto j = 0; j < 4; j++) {
+        auto _ai = ver_1lib + m_dirs[j];
+        if (get_state(_ai)==EMPTY){
+            ver_1libpos = _ai;
+        }
+    }
+    return is_ladder_escape(ver_1lib, ver_1libpos);
 }

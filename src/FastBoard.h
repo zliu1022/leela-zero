@@ -103,6 +103,10 @@ public:
     int find_stonelist_twolibs(const int i) const ;
     int find_plibs(const int i, const int libs) const ;
 
+    int find_1lib_num(const int i) const ;
+    int is_ladder_escape(int ver_st1lib, int ver_1lib) const ;
+    int is_ladder(int vertex) const ;
+
     float area_score(float komi) const;
 
     int get_prisoners(int side) const;
@@ -124,6 +128,7 @@ public:
     static bool starpoint(int size, int x, int y);
 
     void print_stonelist(std::vector<StoneList> & stonelist) const;
+    void print_ladder(std::vector<StoneList> & stonelist) const;
 protected:
     /*
         bit masks to detect eyes on neighbors

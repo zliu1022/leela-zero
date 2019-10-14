@@ -154,6 +154,8 @@ private:
 
     static std::string get_life_list(const GameState & game, bool live);
     static void get_life_detail(const GameState & game);
+    static void get_ladder_detail(const GameState & game, int color);
+    static int set_ladder_avoid(GameState & game, int color, int movenum) ;
 
     static const std::string s_commands[];
     static const std::string s_options[];
