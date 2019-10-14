@@ -119,6 +119,7 @@ extern float cfg_lcb_min_visit_ratio;
 extern float cfg_ra;
 extern float cfg_komi;
 extern float cfg_kmrate;
+extern float cfg_kmstep;
 extern std::string cfg_logfile;
 extern std::string cfg_weightsfile;
 extern std::string cfg_weightsfile_aux;

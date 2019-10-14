@@ -359,6 +359,7 @@ float UCTSearch::dump_stats_kr(FastState & state, UCTNode & parent) {
         return node->get_raw_eval(color);
     }
     tree_stats(parent);
+    return 0.0f;
 }
 
 void UCTSearch::output_analysis(FastState & state, UCTNode & parent) {
@@ -948,12 +949,17 @@ int UCTSearch::think(int color, passflag_t passflag) {
             first_child->get_policy()*100.0f);
 
     if (cfg_komi!=999.0f && act_rate>=cfg_kmrate && tmp_komi>0) {
-        if (tmp_komi<=10.0) {
-            m_rootstate.set_komi(tmp_komi-1);
+        if (tmp_komi<=(cfg_komi/8)) {
+            tmp_komi = tmp_komi-cfg_kmstep/8;
+        } else if (tmp_komi<=(cfg_komi/4)) {
+            tmp_komi = tmp_komi-cfg_kmstep/4;
+        } else if (tmp_komi<=(cfg_komi/2)) {
+            tmp_komi = tmp_komi-cfg_kmstep/2;
         } else {
-            m_rootstate.set_komi(tmp_komi-5);
+            tmp_komi = tmp_komi-cfg_kmstep;
         }
-        myprintf("komi -5\n");
+        myprintf("newkomi %.2f\n", tmp_komi);
+        m_rootstate.set_komi(tmp_komi);
     }
     int bestmove = get_best_move(passflag);
     if (cfg_have_aux==false) {

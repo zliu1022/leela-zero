@@ -94,6 +94,7 @@ float cfg_lcb_min_visit_ratio;
 float cfg_ra;
 float cfg_komi;
 float cfg_kmrate;
+float cfg_kmstep;
 std::string cfg_weightsfile;
 std::string cfg_weightsfile_aux;
 AuxMode::enabled_t cfg_auxmode;
@@ -289,9 +290,14 @@ size_t AnalyzeTags::post_move_count() const {
 }
 
 bool AnalyzeTags::is_to_avoid(int color, int vertex, size_t movenum) const {
-    //myprintf("is_to_avoid: %d %d %d\n", color, vertex, movenum);
+    /*
+    if(vertex==184){
+    myprintf("is_to_avoid: %d %d %d\n", color, vertex, movenum);
+    }
+    */
     for (auto& move : m_moves_to_avoid) {
         if (color == move.color && vertex == move.vertex && movenum <= move.until_move) {
+            //myprintf("is_to_avoid true 1: %d %d %d\n", color, vertex, movenum);
             return true;
         }
     }
@@ -301,14 +307,17 @@ bool AnalyzeTags::is_to_avoid(int color, int vertex, size_t movenum) const {
             if (color == move.color && movenum <= move.until_move) {
                 active_allow = true;
                 if (vertex == move.vertex) {
+                    //myprintf("is_to_avoid false 1: %d %d %d\n", color, vertex, movenum);
                     return false;
                 }
             }
         }
         if (active_allow) {
+            //myprintf("is_to_avoid true 2: %d %d %d\n", color, vertex, movenum);
             return true;
         }
     }
+    //myprintf("is_to_avoid false 2: %d %d %d\n", color, vertex, movenum);
     return false;
 }
 
@@ -382,6 +391,7 @@ void GTP::setup_default_parameters() {
     cfg_ra = 1.0f;
     cfg_komi = 999.0f;
     cfg_kmrate = 1.0f;
+    cfg_kmstep = 5.0f;
     cfg_random_cnt = 0;
     cfg_random_min_visits = 1;
     cfg_random_temp = 1.0f;
@@ -762,6 +772,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
         int who;
         AnalyzeTags tags;
+        int movenum = game.get_movenum();
 
         if (analysis_output) {
             tags = AnalyzeTags{cmdstream, game};
@@ -782,20 +793,21 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 return;
             }
 
-            int movenum = game.get_movenum();
             auto last_move = game.get_last_move();
             int m = FastBoard::NO_VERTEX;
-            if (last_move != FastBoard::NO_VERTEX) {
+            if (movenum<=50 && last_move != FastBoard::NO_VERTEX) {
                 auto coordinate = game.move_to_text(last_move);
                 auto color = who ? "B" : "W";
                 myprintf("last_move: %s %s(%d) No.%d\n", color, coordinate.c_str(), last_move, movenum);
                 m = game.board.get_ladder_escape(last_move, game.get_to_move());
                 auto movestr = game.move_to_text(m);
-                myprintf("get_ladder_escape: %s(%d)\n", movestr.c_str(), m);
 
-                if (m != FastBoard::NO_VERTEX && movenum<=50) {
-                    cfg_analyze_tags = AnalyzeTags{};
+                if (m != FastBoard::NO_VERTEX) {
+                    myprintf("avoid_ladder_escape: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, who);
+                    //cfg_analyze_tags = AnalyzeTags{};
                     //const auto m = game.board.text_to_move("Q15");
+                    //s_network->nncache_clear();
+                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
                     cfg_analyze_tags.add_move_to_avoid(who, m, movenum+1);
                 }
             }
@@ -908,6 +920,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         game.display_state();
         return;
     } else if (command.find("final_score") == 0) {
+        /*
         float old_komi = game.get_komi();
         auto who = game.get_to_move();
         float delta = 1.0f;
@@ -933,8 +946,10 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             }
         }
         game.set_komi(old_komi);
+        */
+
         float ftmp = game.final_score();
-        ftmp = last_komi;
+        //ftmp = last_komi;
         /* white wins */
         if (ftmp < -0.1) {
             gtp_printf(id, "W+%3.1f", float(fabs(ftmp)));

@@ -224,7 +224,8 @@ static void parse_commandline(int argc, char *argv[]) {
         ("ci_alpha", po::value<float>())
         ("ra", po::value<float>(), "winrate = (1+tanh(ra*rate)/2,        ex. ra=0.25 for 4 stones handicap game")
         ("komi", po::value<float>(), "set komi manually, and open komi mode")
-        ("kmrate", po::value<float>(), "> kmrate, komi will decrease automatically.")
+        ("kmrate", po::value<float>(), "> kmrate, when hit kmrate the komi will descend.")
+        ("kmstep", po::value<float>(), "> kmstep, komi will descend as kmstep at first step.")
         ;
 #endif
     // These won't be shown, we use them to catch incorrect usage of the
@@ -316,6 +317,9 @@ static void parse_commandline(int argc, char *argv[]) {
     }
     if (vm.count("kmrate")) {
         cfg_kmrate = vm["kmrate"].as<float>();
+    }
+    if (vm.count("kmstep")) {
+        cfg_kmstep = vm["kmstep"].as<float>();
     }
 #endif
 
