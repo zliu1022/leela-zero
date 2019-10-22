@@ -114,6 +114,7 @@ void OpenCLScheduler<net_t>::initialize(const int channels) {
     // Launch the worker threads.  Minimum 1 worker per GPU, but use enough threads
     // so that we can at least concurrently schedule something to the GPU.
     auto num_worker_threads = cfg_num_threads / cfg_batch_size / (m_opencl.size() + 1) + 1;
+    myprintf("m_opencl.size() %d, num_worker_threads %d\n", m_opencl.size(), num_worker_threads);
     auto gnum = 0;
     for (auto & opencl : m_opencl) {
         opencl->initialize(channels, cfg_batch_size);
@@ -124,6 +125,7 @@ void OpenCLScheduler<net_t>::initialize(const int channels) {
         }
         gnum++;
     }
+    myprintf("gnum %d\n", gnum);
 
     // Exit immediately after tuning.  We should exit here because we skipped
     // initializing rest of the kernels due to some NVIDIA drivers crashing.

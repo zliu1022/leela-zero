@@ -125,7 +125,7 @@ static void calculate_thread_count_gpu(boost::program_options::variables_map & v
         exit(EXIT_FAILURE);
     }
 
-
+    myprintf("threads %d, gpu_count %d, batchsize %d\n", cfg_num_threads, gpu_count, cfg_batch_size);
 }
 #endif
 
