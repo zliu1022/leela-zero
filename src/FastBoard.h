@@ -93,13 +93,13 @@ public:
     int count_pliberties(const int i) const;
     bool is_eye(const int color, const int vtx) const;
 
-    int count_liberties(const int i, const int k) const;
-    int get_ladder_escape(int i, int color) const;
     int get_parent_vertex(const int i) const;
+    int count_liberties(const int i, const int k) const; // only for print different type of lib
+    int get_lib(const int i) const;
+
+    // two same function
     int get_stone(const int i) const;
     int get_stonelist_len(const int i) const;
-    int get_stonelist_liberties(const int i) const;
-    int get_lib(const int i) const;
 
     int find_1libst(const int i) const ;
     int find_1lib(const int ver_st1lib) const ;
@@ -113,7 +113,6 @@ public:
     int is_ladder_escape(int ver_st1lib, int ver_1lib) const ;
     int is_ladder(int vertex) const ;
     int find_capture(int escape) const ;
-    int find_escape_libpos(int escape, int num) const ;
     int check_ladder_capture(int vertex) const ;
 
     float area_score(float komi) const;
@@ -137,7 +136,6 @@ public:
     static bool starpoint(int size, int x, int y);
 
     void print_stonelist(std::vector<StoneList> & stonelist) const;
-    void print_ladder(std::vector<StoneList> & stonelist) const;
 protected:
     /*
         bit masks to detect eyes on neighbors
