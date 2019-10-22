@@ -643,6 +643,10 @@ int FastBoard::get_stonelist_liberties(const int i) const {
     return m_libs[m_parent[i]];
 }
 
+int FastBoard::get_lib(const int i) const {
+    return m_libs[m_parent[i]];
+}
+
 bool StoneList::stonelist_include(const std::vector<StoneList>  & stonelist, const int vertex) {
     for (size_t i = 0; i < stonelist.size(); i++) {
         if (stonelist[i].vertex==vertex) {
@@ -652,7 +656,7 @@ bool StoneList::stonelist_include(const std::vector<StoneList>  & stonelist, con
     return false;
 }
 
-int FastBoard::find_stonelist_onelib(const int i) const {
+int FastBoard::find_1libst(const int i) const {
     int pos = i;
 
     do {
@@ -679,6 +683,23 @@ int FastBoard::find_1lib_num(const int i) const {
     return count;
 }
 
+
+int FastBoard::find_1lib(const int ver_st1lib) const {
+    int pos = ver_st1lib;
+    do {
+        if (count_pliberties(pos)==1){
+            for (auto j = 0; j < 4; j++) {
+                auto _ai = pos + m_dirs[j];
+                if (get_state(_ai)==EMPTY){
+                    return _ai;
+                }
+            }
+            return NO_VERTEX;
+        }
+        pos = m_next[pos];
+    } while (pos != ver_st1lib);
+    return NO_VERTEX;
+}
 
 // only one vertex with 2 libs and these 2 libs is neighbours, will return
 /* 2 libs string
@@ -722,6 +743,57 @@ int FastBoard::find_plibs(const int i, const int libs) const {
         }
     }
     return NO_VERTEX;
+}
+
+int FastBoard::find_2libst_num(const int vertex, int lib) const {
+    int pos = vertex;
+    int count = 0;
+    do {
+        if (count_pliberties(pos)==lib){
+            count++;
+        }
+        pos = m_next[pos];
+    } while (pos != vertex);
+    return count;
+}
+
+int FastBoard::find_2lib_libpos(int vertex, int num) const {
+    int pos = vertex;
+    int libpos1 = NO_VERTEX;
+    int libpos2 = NO_VERTEX;
+    do {
+        for (auto i = 0; i < 4; i++) {
+            auto ai = pos + m_dirs[i];
+            if (get_state(ai)==EMPTY) {
+                if (libpos1 == NO_VERTEX) {
+                    libpos1 = ai;
+                } else if (libpos1 != ai) {
+                    if (libpos2 == NO_VERTEX) {
+                        libpos2 = ai;
+                    } else if (libpos2 != ai) {
+                        myprintf("2lib string find more than 2 lib\n");
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+        }
+        pos = m_next[pos];
+    } while (pos != vertex);
+
+    if (libpos1>libpos2) {
+        auto libpos = NO_VERTEX;
+        libpos = libpos1;
+        libpos1 = libpos2;
+        libpos2 = libpos;
+    }
+    if (num==1) {
+        return libpos1;
+    } else {
+        return libpos2;
+    }
 }
 
 int FastBoard::get_ladder_escape(int i, int color) const {
@@ -793,7 +865,7 @@ void FastBoard::print_stonelist(std::vector<StoneList> & stonelist) const {
     for (size_t i = 0; i < stonelist.size(); i++) {
         auto vertex = stonelist[i].vertex;
         auto coor = move_to_text(vertex);
-        auto ver_1lib = find_stonelist_onelib(vertex); 
+        auto ver_1lib = find_1libst(vertex); 
         auto cor_1lib = move_to_text(ver_1lib);
         auto ver_2lib = find_stonelist_twolibs(vertex); 
         auto cor_2lib = move_to_text(ver_2lib);
@@ -820,7 +892,7 @@ void FastBoard::print_ladder(std::vector<StoneList> & stonelist) const {
         auto vertex = stonelist[i].vertex;
         auto coor = move_to_text(vertex);
         auto num_1lib = find_1lib_num(vertex);
-        auto ver_1lib = find_stonelist_onelib(vertex); 
+        auto ver_1lib = find_1libst(vertex); 
         auto cor_1lib = move_to_text(ver_1lib);
 
         auto ver_1libpos = NO_VERTEX;
@@ -833,20 +905,24 @@ void FastBoard::print_ladder(std::vector<StoneList> & stonelist) const {
         auto cor_1libpos = move_to_text(ver_1libpos);
 
         if (stonelist[i].lib==1) {
-            myprintf("%3s(%3d) %3d %3d(%d)        %3s(%3d)  %3s(%3d) %d %s\n", 
+            //auto m = is_ladder_escape(ver_1lib, ver_1libpos);
+            myprintf("%3s(%3d) %3d %3d(%d)        %3s(%3d)  %3s(%3d) %6s %s\n", 
                 coor.c_str(), stonelist[i].vertex, 
                 stonelist[i].len, 
                 stonelist[i].lib, num_1lib,
                 cor_1lib.c_str(), ver_1lib, 
                 cor_1libpos.c_str(), ver_1libpos, 
-                is_ladder_escape(ver_1lib, ver_1libpos),
+                "ladder",
                 get_string(stonelist[i].vertex).c_str());
         }
     }
 }
+
 int FastBoard::is_ladder_escape(int ver_st1lib, int ver_1lib) const {
     auto color = get_state(ver_st1lib);
     int opp_color = color==BLACK?WHITE:BLACK;
+
+    // around 1lib stone, find 1lib's direction
     auto i = 0;
     for (i = 0; i < 4; i++) {
         auto ai = ver_st1lib + m_dirs[i];
@@ -855,6 +931,7 @@ int FastBoard::is_ladder_escape(int ver_st1lib, int ver_1lib) const {
         }
     }
 
+    // around 1lib, find opp_color, then judge ladder type1 shape
     for (auto j = 0; j < 4; j++) {
         auto ai = ver_1lib + m_dirs[j];
         if (get_state(ai)==opp_color){
@@ -866,16 +943,80 @@ int FastBoard::is_ladder_escape(int ver_st1lib, int ver_1lib) const {
     }
     return NO_VERTEX;
 }
-int FastBoard::is_ladder(int vertex) const {
-    auto num_1lib = find_1lib_num(vertex);
-    auto ver_1lib = find_stonelist_onelib(vertex); 
-    auto ver_1libpos = NO_VERTEX;
 
+int FastBoard::is_ladder(int vertex) const {
+    //auto color = get_state(vertex);
+    //auto opp_color = color==WHITE?BLACK:WHITE;
+
+    //now only judge ladder when there is one 1libs stone
+    //auto num_1lib = find_1lib_num(vertex);
+
+    auto ver_1lib = find_1libst(vertex); 
+
+    auto ver_1libpos = NO_VERTEX;
+    auto dir_1lib = -1;
     for (auto j = 0; j < 4; j++) {
         auto _ai = ver_1lib + m_dirs[j];
         if (get_state(_ai)==EMPTY){
             ver_1libpos = _ai;
+            dir_1lib = j;
+            break;
         }
     }
     return is_ladder_escape(ver_1lib, ver_1libpos);
 }
+
+int FastBoard::find_capture(int escape) const {
+    for (auto j = 0; j < 4; j++) {
+        auto ai = escape + m_dirs[j];
+        if (get_state(ai)==EMPTY && count_pliberties(ai)==3) {
+            return ai;
+        }
+    }
+    return NO_VERTEX;
+}
+
+int FastBoard::check_ladder_capture(int vertex) const {
+    auto color = get_state(vertex);
+    auto opp_color = color==WHITE?BLACK:WHITE;
+
+    //check capture's lib after play escape move, capture's lib must >=2
+    int count=0;
+    int pos = vertex;
+    //myprintf("\n");
+    do {
+        std::string v = move_to_text(pos); 
+        //myprintf("%s(%d) opp libs: ", v.c_str(), pos);
+        for (auto j = 0; j < 4; j++) {
+            auto _ai = pos + m_dirs[j];
+            if (get_state(_ai)==opp_color){
+                auto opplib = get_lib(_ai);
+                if (opplib<2) {
+                    auto cor_ai = move_to_text(_ai); 
+                    myprintf("%s(%d)-%d\n", cor_ai.c_str(), _ai, opplib);
+                    count++;
+                }
+            }
+        }
+        pos = m_next[pos];
+    } while (pos != vertex);
+    //myprintf("\n");
+    return count;
+}
+
+// escape is already play on the board
+int FastBoard::find_escape_libpos(int escape, int num) const {
+    //assert num==1 or num==2
+    int count=0;
+    for (auto i = 0; i < 4; i++) {
+        auto ai = escape + m_dirs[i];
+        if (get_state(ai)==EMPTY) {
+            count++;
+            if (count==num) {
+                return ai;
+            }
+        }
+    }
+    return NO_VERTEX;
+}
+

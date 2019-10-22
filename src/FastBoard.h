@@ -99,13 +99,22 @@ public:
     int get_stone(const int i) const;
     int get_stonelist_len(const int i) const;
     int get_stonelist_liberties(const int i) const;
-    int find_stonelist_onelib(const int i) const ;
+    int get_lib(const int i) const;
+
+    int find_1libst(const int i) const ;
+    int find_1lib(const int ver_st1lib) const ;
+    int find_1lib_num(const int i) const ;
     int find_stonelist_twolibs(const int i) const ;
     int find_plibs(const int i, const int libs) const ;
 
-    int find_1lib_num(const int i) const ;
+    int find_2libst_num(const int vertex, int lib) const ;
+    int find_2lib_libpos(int vertex, int num) const ;
+
     int is_ladder_escape(int ver_st1lib, int ver_1lib) const ;
     int is_ladder(int vertex) const ;
+    int find_capture(int escape) const ;
+    int find_escape_libpos(int escape, int num) const ;
+    int check_ladder_capture(int vertex) const ;
 
     float area_score(float komi) const;
 
