@@ -156,7 +156,8 @@ private:
     static void get_life_detail(const GameState & game);
     static void get_ladder_detail(const GameState & game, int color);
     static int set_ladder_avoid(GameState & game, int color, int movenum) ;
-    static void play_ladder_capture(const GameState & game, int ver_st2lib, int exp) ;
+    static int play_ladder_capture(const GameState & game, int vertex) ;
+    static int play_ladder_escape(const GameState & game, int vertex) ;
 
     static const std::string s_commands[];
     static const std::string s_options[];
