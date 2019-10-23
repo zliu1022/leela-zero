@@ -948,19 +948,28 @@ int UCTSearch::think(int color, passflag_t passflag) {
             first_child->get_eval(color)*100.0f,
             first_child->get_policy()*100.0f);
 
-    if (cfg_komi!=999.0f && act_rate>=cfg_kmrate && tmp_komi>0) {
-        if (tmp_komi<=(cfg_komi/8)) {
-            tmp_komi = tmp_komi-cfg_kmstep/8;
-        } else if (tmp_komi<=(cfg_komi/4)) {
-            tmp_komi = tmp_komi-cfg_kmstep/4;
-        } else if (tmp_komi<=(cfg_komi/2)) {
-            tmp_komi = tmp_komi-cfg_kmstep/2;
-        } else {
-            tmp_komi = tmp_komi-cfg_kmstep;
+    if (color == FastBoard::WHITE) {
+        if (cfg_komi!=999.0f && act_rate>=cfg_kmrate && tmp_komi>0) {
+            if (tmp_komi<=(cfg_komi/8)) {
+                tmp_komi = tmp_komi-cfg_kmstep/8;
+            } else if (tmp_komi<=(cfg_komi/4)) {
+                tmp_komi = tmp_komi-cfg_kmstep/4;
+            } else if (tmp_komi<=(cfg_komi/2)) {
+                tmp_komi = tmp_komi-cfg_kmstep/2;
+            } else {
+                tmp_komi = tmp_komi-cfg_kmstep;
+            }
+            myprintf("-komi -> %.2f\n", tmp_komi);
+            m_rootstate.set_komi(tmp_komi);
         }
-        myprintf("newkomi %.2f\n", tmp_komi);
-        m_rootstate.set_komi(tmp_komi);
+    } else {
+        if (cfg_komi!=999.0f && act_rate>=cfg_kmrate ) {
+            tmp_komi = tmp_komi+cfg_kmstep;
+            myprintf("+komi -> %.2f\n", tmp_komi);
+            m_rootstate.set_komi(tmp_komi);
+        }
     }
+
     int bestmove = get_best_move(passflag);
     if (cfg_have_aux==false) {
         //myprintf("AuxMode already closed\n");
