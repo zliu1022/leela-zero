@@ -624,7 +624,7 @@ void GTP::get_ladder_detail(const GameState & game, int color, int debug) {
             ladder_dep = 0;
             auto succ = play_ladder_escape_v1(*g, vertex, 0);
             if (debug==1) { cfg_quiet = false; }
-            myprintf(" escape %s(%d) %d\n", succ==0?"FAIL":"SUCC", succ, ladder_dep);
+            myprintf(" escape %s %d\n", succ==0?"FAIL":"SUCC", ladder_dep);
         }
     }
     myprintf("\n");
@@ -659,7 +659,7 @@ void GTP::get_ladder_detail(const GameState & game, int color, int debug) {
             ladder_dep = 0;
             auto succ = play_ladder_capture_v1(*g, vertex, 0);
             if (debug==1) { cfg_quiet = false; }
-            myprintf(" capture %s(%d) %d\n", succ==0?"FAIL":"SUCC", succ, ladder_dep);
+            myprintf(" capture %s %d\n", succ==0?"FAIL":"SUCC", ladder_dep);
         }
     }
 
@@ -804,13 +804,9 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
     auto color = board.get_state(vertex);
     std::vector<int> ret;
 
+    if( ladder_dep<level ) { ladder_dep = level; }
     auto num_1lib = board.count_capture_1lib(vertex);
-    if(num_1lib>1) {
-        myprintf("%d capture stones has 1lib\n", num_1lib);
-    }
-
     for(auto i=0; i<=num_1lib; i++) {
-        //myprintf("\n");
         for(auto k=0; k<=level; k++) {
             myprintf("  ");
         }
@@ -829,10 +825,10 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
         auto g = std::make_unique<GameState>(game);
         const auto& brd = g->board;
         g->play_move(ver_escape);
-        myprintf("%s->\n", cor_e.c_str());
+        myprintf("%s-> ", cor_e.c_str());
         if(brd.get_lib(vertex)!=2){
             if(brd.get_lib(vertex)==1){
-                myprintf("escape fail, escape string has 1 lib");
+                myprintf("escape fail, escape string has 1 lib\n");
             } else {
                 myprintf("escape success %d libs\n", brd.get_lib(vertex));
                 ret.push_back(1);
@@ -841,8 +837,13 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
             if(!cfg_quiet){ g->display_state(); }
             continue;
         }
+        myprintf("\n");
         auto result = !play_ladder_capture_v1(*g, vertex, level+1);
         ret.push_back(result);
+        for(auto k=0; k<=level; k++) {
+            myprintf("  ");
+        }
+        myprintf("escape %s\n", result==0?"FAIL":"SUCC");
     }
     for (size_t i = 0; i < ret.size(); i++) {
         if (ret[i]!=0) {
@@ -857,7 +858,8 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
     auto color = board.get_state(vertex);
     int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
     int ret[2] = {0, 0};
-    ladder_dep = level;
+
+    if( ladder_dep<level ) { ladder_dep = level; }
     for(auto i=0; i<2; i++) {
         //myprintf("\n");
         for(auto k=0; k<=level; k++) {
@@ -877,14 +879,19 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
         auto g = std::make_unique<GameState>(game);
         const auto& brd = g->board;
         g->play_move(ver_capture);
-        myprintf(" %s\n", cor_c.c_str());
+        myprintf(" %s ", cor_c.c_str());
         if(brd.get_lib(vertex)>1){
             myprintf("escape success, after capture, escape lib !=1 %d\n", brd.get_lib(vertex));
             print_ladder_move(*g);
             if(!cfg_quiet){ g->display_state(); }
             continue;
         }
+        myprintf("\n");
         ret[i] = !play_ladder_escape_v1(*g, vertex, level+1);
+        for(auto k=0; k<=level; k++) {
+            myprintf("  ");
+        }
+        myprintf("escape %s (capture)\n", ret[i]==1?"FAIL":"SUCC");
     }
 //    if (ret[0]==0 && ret[1]==0) {
 //        return 0;
