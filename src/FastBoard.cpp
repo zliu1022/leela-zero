@@ -894,3 +894,121 @@ int FastBoard::check_ladder_capture(int vertex) const {
     return count;
 }
 
+int FastBoard::capture_pos(int vertex, int num) const {
+    int pos = vertex;
+    int libpos1 = NO_VERTEX;
+    int libpos2 = NO_VERTEX;
+    do {
+        for (auto i = 0; i < 4; i++) {
+            auto ai = pos + m_dirs[i];
+            if (get_state(ai)==EMPTY) {
+                if (libpos1 == NO_VERTEX) {
+                    libpos1 = ai;
+                } else if (libpos1 != ai) {
+                    if (libpos2 == NO_VERTEX) {
+                        libpos2 = ai;
+                    } else if (libpos2 != ai) {
+                        myprintf("2lib string find more than 2 lib\n");
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+        }
+        pos = m_next[pos];
+    } while (pos != vertex);
+
+    if (libpos1>libpos2) {
+        auto libpos = NO_VERTEX;
+        libpos = libpos1;
+        libpos1 = libpos2;
+        libpos2 = libpos;
+    }
+    if (num==1) {
+        return libpos1;
+    } else {
+        return libpos2;
+    }
+}
+
+int FastBoard::escape_pos(int vertex, int num) const {
+    std::vector<int> st;
+    if (num==0) {
+        // no.1, return 1lib pos
+        int pos = vertex;
+        do {
+            if (count_pliberties(pos)==1){
+                for (auto j = 0; j < 4; j++) {
+                    auto ai = pos + m_dirs[j];
+                    if (get_state(ai)==EMPTY){
+                        return ai;
+                    }
+                }
+                return NO_VERTEX;
+            }
+            pos = m_next[pos];
+        } while (pos != vertex);
+        return NO_VERTEX;
+    } else {
+        // no.2, return capture stone's 1lib pos
+        auto color = get_state(vertex);
+        auto opp_color = color==WHITE?BLACK:WHITE;
+        std::vector<int> st;
+        int pos = vertex;
+        do {
+            for (auto j = 0; j < 4; j++) {
+                auto ai = pos + m_dirs[j];
+                if (get_state(ai)==opp_color){
+                    auto opplib = get_lib(ai);
+                    if (opplib==1) {
+                        auto ver_1lib = find_1lib(ai);
+                        st.push_back(ver_1lib);
+                    }
+                }
+            }
+            pos = m_next[pos];
+        } while (pos != vertex);
+        std::sort(begin(st), end(st));
+        st.erase(std::unique(begin(st), end(st)), end(st));
+        return st[num-1];
+    }
+}
+
+int FastBoard::count_capture_1lib(int vertex) const {
+    auto color = get_state(vertex);
+    auto opp_color = color==WHITE?BLACK:WHITE;
+    std::vector<int> st;
+
+    auto v = move_to_text(vertex); 
+    //myprintf("\ncount_capture_1lib-%s ", v.c_str());
+    int pos = vertex;
+    do {
+        for (auto j = 0; j < 4; j++) {
+            auto ai = pos + m_dirs[j];
+            if (get_state(ai)==opp_color){
+                auto opplib = get_lib(ai);
+                if (opplib==1) {
+                    auto v = move_to_text(ai); 
+                    //myprintf("%s ", v.c_str());
+                    auto ver_1lib = find_1lib(ai);
+                    st.push_back(ver_1lib);
+                }
+            }
+        }
+        pos = m_next[pos];
+    } while (pos != vertex);
+
+    std::sort(begin(st), end(st));
+    st.erase(std::unique(begin(st), end(st)), end(st));
+    if(st.size()>0) {
+        for (size_t i = 0; i < st.size(); i++) {
+            auto cor_ai = move_to_text(st[i]); 
+            //myprintf("%s(%d) ", cor_ai.c_str(), st[i]);
+        }
+    }
+    //myprintf("\n");
+    return st.size();
+}
+

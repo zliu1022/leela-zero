@@ -110,10 +110,15 @@ public:
     int find_2libst_num(const int vertex, int lib) const ;
     int find_2lib_libpos(int vertex, int num) const ;
 
+    int capture_pos(int vertex, int num) const ;
+    int escape_pos(int vertex, int num) const ;
+
     int is_ladder_escape(int ver_st1lib, int ver_1lib) const ;
     int is_ladder(int vertex) const ;
     int find_capture(int escape) const ;
+
     int check_ladder_capture(int vertex) const ;
+    int count_capture_1lib(int vertex) const ;
 
     float area_score(float komi) const;
 
