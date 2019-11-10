@@ -431,6 +431,73 @@ void UCTNode::accumulate_eval(float eval) {
     atomic_add(m_blackevals, double(eval));
 }
 
+UCTNode* UCTNode::ladder_select_child(int color, bool is_root, bool is_hp, int m) {
+    wait_expanded();
+
+    // Count parentvisits manually to avoid issues with transpositions.
+    auto total_visited_policy = 0.0f;
+    auto parentvisits = size_t{0};
+    for (const auto& child : m_children) {
+        if (child.valid()) {
+            parentvisits += child.get_visits();
+            if (child.get_visits() > 0) {
+                total_visited_policy += child.get_policy();
+            }
+        }
+    }
+
+    const auto numerator = std::sqrt(double(parentvisits) *
+            std::log(cfg_logpuct * double(parentvisits) + cfg_logconst));
+    const auto fpu_reduction = (is_root ? cfg_fpu_root_reduction : cfg_fpu_reduction) * std::sqrt(total_visited_policy);
+    // Estimated eval for unknown nodes = original parent NN eval - reduction
+    const auto fpu_eval = get_net_eval(color) - fpu_reduction;
+
+    auto best = static_cast<UCTNodePointer*>(nullptr);
+    auto best_value = std::numeric_limits<double>::lowest();
+
+    for (auto& child : m_children) {
+        if (child.get_move() == m) {
+            best = &child;
+            break;
+        }
+
+        if (!child.active()) {
+            continue;
+        }
+
+        auto winrate = fpu_eval;
+        if (child.is_inflated() && child->m_expand_state.load() == ExpandState::EXPANDING) {
+            // Someone else is expanding this node, never select it
+            // if we can avoid so, because we'd block on it.
+            winrate = -1.0f - fpu_reduction;
+        } else if (child.get_visits() > 0) {
+            winrate = child.get_eval(color);
+        }
+        const auto psa = child.get_policy();
+        const auto denom = 1.0 + child.get_visits();
+        auto puct = cfg_puct * psa * (numerator / denom);
+
+        //zliu: auxmode HP
+        auto cfg_auxhp_rate = 1.0; 
+        if( is_hp && cfg_have_aux && (cfg_auxmode==AuxMode::HP) && (color==FastBoard::BLACK)) {
+            cfg_auxhp_rate = 0.0; 
+            puct = cfg_puct * psa;
+        }
+        const auto value = cfg_auxhp_rate * winrate + puct;
+        assert(value > std::numeric_limits<double>::lowest());
+
+        if (value > best_value) {
+            best_value = value;
+            best = &child;
+        }
+    }
+
+    assert(best != nullptr);
+    best->inflate();
+    return best->get();
+}
+
+
 UCTNode* UCTNode::uct_select_child(int color, bool is_root, bool is_hp) {
     wait_expanded();
 

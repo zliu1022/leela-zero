@@ -794,6 +794,122 @@ void UCTSearch::increment_playouts() {
     m_playouts++;
 }
 
+int UCTSearch::think_ladder(GameState & game, int color) {
+    Time start;
+    std::vector<int> move;
+    update_root();
+    m_rootstate.board.set_to_move(color);
+    auto rootnum = m_rootstate.get_movenum();
+    myprintf("rootstate movenum %d\n", rootnum);
+    m_root->prepare_root_node(m_network, m_network_aux, color, m_nodes, m_rootstate);
+
+    //m_run = true;
+    auto game_history = game.get_game_history();
+    for (const auto &state : game_history) {
+        auto num = state->get_movenum();
+        if (num<=rootnum) { continue; }
+        auto m = state->get_last_move();
+        move.push_back(m);
+    }
+
+    std::vector<UCTNode*> n;
+    UCTNode* node = m_root.get();
+    auto currstate = std::make_unique<GameState>(m_rootstate);
+    for (size_t i = 0; i < move.size(); i++) {
+        currstate = std::make_unique<GameState>(m_rootstate);
+        node = m_root.get();
+        n.clear();
+        n.push_back(node);
+        auto result = SearchResult{};
+        for (size_t j = 0; j <= i; j++) {
+            //myprintf("%d ", j);
+            const auto color = currstate->get_to_move();
+            if (node->has_children() && !result.valid()) {
+                UCTNode* next;
+                next = node->ladder_select_child(color, node, true, move[j]);
+                auto move = next->get_move();
+                auto cor = currstate->move_to_text(move);
+                //myprintf("uct_select_child %s %s\n", color==FastBoard::BLACK?"B":"W", cor.c_str());
+                currstate->play_move(move);
+                n.push_back(next);
+                node = next;
+            }
+        }
+        node = n.back();
+        if (node->expandable()) {
+            //myprintf("create_children\n");
+            float eval;
+            const auto had_children = node->has_children();
+            const auto success =
+                node->create_children(m_network, m_network_aux, m_nodes, *currstate, eval, get_min_psa_ratio());
+            if (!had_children && success) {
+                result = SearchResult::from_eval(eval);
+            }
+            if (result.valid()) {
+                //node->update(result.eval());
+                node->update(1.0);
+                myprintf("update final %f %d\n", result.eval(), m_root->get_visits());
+                dump_stats(m_rootstate, *m_root);
+            }
+            n.pop_back();
+            while(!n.empty()) {
+                node = n.back();
+                if (result.valid()) {
+                    //node->update(result.eval());
+                    node->update(1.0);
+                    myprintf("update %f %d\n", result.eval(), m_root->get_visits());
+                    dump_stats(m_rootstate, *m_root);
+                }
+                n.pop_back();
+            }
+        }
+        if (result.valid()) {
+            //myprintf("po ++\n");
+            increment_playouts();
+        }
+        //dump_stats(m_rootstate, *m_root);
+        //myprintf("\n");
+    }
+    //m_run = false;
+
+    for (const auto& node : m_root->get_children()) {
+        node->set_active(true);
+    }
+
+    dump_stats(m_rootstate, *m_root);
+
+    Time elapsed;
+    int elapsed_centis = Time::timediff_centis(start, elapsed);
+    myprintf("%d visits, %d nodes, %d playouts\n\n",
+             m_root->get_visits(),
+             m_nodes.load(),
+             m_playouts.load(),
+             (m_playouts * 100.0) / (elapsed_centis+1));
+
+    auto first_child = m_root->get_first_child();
+    float tmp_komi = m_rootstate.get_komi();
+    auto movenum = int(m_rootstate.get_movenum());
+    auto recov_num = 180; 
+    auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
+    if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
+    auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
+    auto act_rate = (1+std::tanh(tmp_rate))/2;
+
+    myprintf("%s-()(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
+        PROGRAM_VERSION, tmp_komi,act_rate*100.0f, 
+        (color == FastBoard::BLACK) ? "B" : "W",
+        int(m_rootstate.get_movenum()) + 1,
+        (elapsed_centis + 1) / 100.0f,
+        m_rootstate.move_to_text(first_child->get_move()).c_str(),
+        first_child->get_visits(),
+        first_child->get_eval(color)*100.0f,
+        first_child->get_policy()*100.0f);
+
+    m_last_rootstate = std::make_unique<GameState>(m_rootstate);
+    return 0;
+}
+
+
 int UCTSearch::think(int color, passflag_t passflag) {
     // Start counting time for us
     m_rootstate.start_clock(color);

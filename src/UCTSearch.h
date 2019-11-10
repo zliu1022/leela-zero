@@ -114,6 +114,7 @@ public:
         std::numeric_limits<int>::max() / 2;
 
     UCTSearch(GameState& g, Network & network, Network & network_aux);
+    int think_ladder(GameState & game, int color);
     int think(int color, passflag_t passflag = NORMAL);
     int think_hp(int color, int max_playout, std::vector<Network::PolicyVertexPair> *nodelist, passflag_t passflag=NORMAL);
     float think_kr(int color, passflag_t passflag = NORMAL);

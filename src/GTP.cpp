@@ -110,6 +110,8 @@ bool cfg_cpu_only;
 bool cfg_senet;
 AnalyzeTags cfg_analyze_tags;
 int ladder_dep;
+int ladder_leaf;
+int ladder_who;
 
 #define KR_BEGIN -150.0
 #define KR_END 150.0
@@ -410,6 +412,7 @@ void GTP::setup_default_parameters() {
     cfg_analyze_tags = AnalyzeTags{};
 
     ladder_dep = 0;
+    ladder_leaf = 0;
 
     // C++11 doesn't guarantee *anything* about how random this is,
     // and in MinGW it isn't random at all. But we can mix it in, which
@@ -566,7 +569,7 @@ void GTP::get_life_detail(const GameState & game) {
     return;
 }
 
-void GTP::get_ladder_detail(const GameState & game, int color, int debug) {
+void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & search, int debug) {
     myprintf("%s No.%d\n", color==FastBoard::WHITE?"White":"Black", game.get_movenum());
     const auto& board = game.board;
     std::vector<StoneList> stonelist;
@@ -622,9 +625,10 @@ void GTP::get_ladder_detail(const GameState & game, int color, int debug) {
             auto g = std::make_unique<GameState>(game);
             if (debug==1) { cfg_quiet = true; } else { myprintf("\n"); }
             ladder_dep = 0;
-            auto succ = play_ladder_escape_v1(*g, vertex, 1);
+            ladder_leaf = 0;
+            auto succ = play_ladder_escape_v1(*g, vertex, search, 1);
             if (debug==1) { cfg_quiet = false; }
-            myprintf(" escape %s %d\n", succ==0?"FAIL":"SUCC", ladder_dep);
+            myprintf(" escape %s dep:%d leaf:%d\n", succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf);
         }
     }
     myprintf("\n");
@@ -657,9 +661,10 @@ void GTP::get_ladder_detail(const GameState & game, int color, int debug) {
             auto g = std::make_unique<GameState>(game);
             if (debug==1) { cfg_quiet = true; } else { myprintf("\n"); }
             ladder_dep = 0;
-            auto succ = play_ladder_capture_v1(*g, vertex, 1);
+            ladder_leaf = 0;
+            auto succ = play_ladder_capture_v1(*g, vertex, search, 1);
             if (debug==1) { cfg_quiet = false; }
-            myprintf(" capture %s %d\n", succ==0?"FAIL":"SUCC", ladder_dep);
+            myprintf(" capture %s dep:%d leaf:%d\n", succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf);
         }
     }
 
@@ -799,7 +804,7 @@ int GTP::play_ladder_capture(const GameState & game, int ver_st2lib, int level) 
     return succ;
 }
 
-int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
+int GTP::play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & ladder_search, int level) {
     const auto& board = game.board;
     auto color = board.get_state(vertex);
     std::vector<int> ret;
@@ -825,23 +830,27 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
         auto g = std::make_unique<GameState>(game);
         const auto& brd = g->board;
         g->play_move(ver_escape);
+        ladder_leaf++;
         myprintf("%s-> ", cor_e.c_str());
         if(brd.get_lib(vertex)!=2){
             if(brd.get_lib(vertex)==1){
                 myprintf("escape fail, escape string has 1 lib l:%d\n", level);
+                g->play_move(brd.find_1lib(vertex));
                 print_ladder_move(*g);
                 //if(!cfg_quiet){ g->display_state(); }
+                ladder_search.think_ladder(*g, ladder_who);
                 continue;
             } else {
                 ret.push_back(1);
                 myprintf("escape success %d libs l:%d\n", brd.get_lib(vertex), level);
                 print_ladder_move(*g);
                 //if(!cfg_quiet){ g->display_state(); }
+                //ladder_search.think_ladder(*g, ladder_who);
                 break;
             }
         }
         myprintf("\n");
-        auto result = !play_ladder_capture_v1(*g, vertex, level+1);
+        auto result = !play_ladder_capture_v1(*g, vertex, ladder_search, level+1);
         ret.push_back(result);
         for(auto k=0; k<=level; k++) {
             myprintf("  ");
@@ -856,7 +865,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
     return 0;
 }
 
-int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
+int GTP::play_ladder_capture_v1(const GameState & game, int vertex, UCTSearch & ladder_search, int level) {
     const auto& board = game.board;
     auto color = board.get_state(vertex);
     int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
@@ -882,15 +891,17 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
         auto g = std::make_unique<GameState>(game);
         const auto& brd = g->board;
         g->play_move(ver_capture);
+        ladder_leaf++;
         myprintf(" %s ", cor_c.c_str());
         if(brd.get_lib(vertex)>1){
             myprintf("escape success, after capture, escape lib >1 %d l:%d\n", brd.get_lib(vertex), level);
             print_ladder_move(*g);
             //if(!cfg_quiet){ g->display_state(); }
+            //ladder_search.think_ladder(*g, ladder_who);
             continue;
         }
         myprintf("\n");
-        ret[i] = !play_ladder_escape_v1(*g, vertex, level+1);
+        ret[i] = !play_ladder_escape_v1(*g, vertex, ladder_search, level+1);
         for(auto k=0; k<=level; k++) {
             myprintf("  ");
         }
@@ -1164,6 +1175,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 return;
             }
 
+            /*
             if (movenum<=50) {
                 //cfg_analyze_tags = AnalyzeTags{};
                 auto avoid_num = set_ladder_avoid(game, who, movenum);
@@ -1172,18 +1184,21 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                     search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
                 }
             }
+            */
 
         }
 
         if (analysis_output) {
             // Start of multi-line response
             cfg_analyze_tags = tags;
+            /*
             if (movenum<=50) {
                 auto avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
                     search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
                 }
             }
+            */
             if (id != -1) gtp_printf_raw("=%d\n", id);
             else gtp_printf_raw("=\n");
         }
@@ -1339,10 +1354,11 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             gtp_printf(id, "");
         } else if (command.find("ladder") != std::string::npos) {
             auto who = game.get_to_move();
+            ladder_who = who;
             if (command.find("debug") != std::string::npos) {
-                get_ladder_detail(game, who, 0);
+                get_ladder_detail(game, who, *search.get(), 0);
             } else {
-                get_ladder_detail(game, who, 1);
+                get_ladder_detail(game, who, *search.get(), 1);
             }
             gtp_printf(id, "");
         } else {
