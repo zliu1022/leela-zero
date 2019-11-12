@@ -626,7 +626,7 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
             if (debug==1) { cfg_quiet = true; } else { myprintf("\n"); }
             ladder_dep = 0;
             ladder_leaf = 0;
-            auto succ = play_ladder_escape_v1(*g, vertex, search, 1);
+            auto succ = play_ladder_escape_v1(*g, vertex, search, true, 1);
             if (debug==1) { cfg_quiet = false; }
             myprintf(" escape %s dep:%d leaf:%d\n", succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf);
         }
@@ -662,7 +662,7 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
             if (debug==1) { cfg_quiet = true; } else { myprintf("\n"); }
             ladder_dep = 0;
             ladder_leaf = 0;
-            auto succ = play_ladder_capture_v1(*g, vertex, search, 1);
+            auto succ = play_ladder_capture_v1(*g, vertex, search, false, 1);
             if (debug==1) { cfg_quiet = false; }
             myprintf(" capture %s dep:%d leaf:%d\n", succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf);
         }
@@ -804,7 +804,7 @@ int GTP::play_ladder_capture(const GameState & game, int ver_st2lib, int level) 
     return succ;
 }
 
-int GTP::play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & ladder_search, int level) {
+int GTP::play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & ladder_search, bool think, int level) {
     const auto& board = game.board;
     auto color = board.get_state(vertex);
     std::vector<int> ret;
@@ -838,19 +838,19 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & l
                 g->play_move(brd.find_1lib(vertex));
                 print_ladder_move(*g);
                 //if(!cfg_quiet){ g->display_state(); }
-                ladder_search.think_ladder(*g, ladder_who);
+                if (think) { ladder_search.think_ladder(*g, ladder_who); }
                 continue;
             } else {
                 ret.push_back(1);
                 myprintf("escape success %d libs l:%d\n", brd.get_lib(vertex), level);
                 print_ladder_move(*g);
                 //if(!cfg_quiet){ g->display_state(); }
-                //ladder_search.think_ladder(*g, ladder_who);
+                //if (think) { ladder_search.think_ladder(*g, ladder_who); }
                 break;
             }
         }
         myprintf("\n");
-        auto result = !play_ladder_capture_v1(*g, vertex, ladder_search, level+1);
+        auto result = !play_ladder_capture_v1(*g, vertex, ladder_search, think, level+1);
         ret.push_back(result);
         for(auto k=0; k<=level; k++) {
             myprintf("  ");
@@ -865,7 +865,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & l
     return 0;
 }
 
-int GTP::play_ladder_capture_v1(const GameState & game, int vertex, UCTSearch & ladder_search, int level) {
+int GTP::play_ladder_capture_v1(const GameState & game, int vertex, UCTSearch & ladder_search, bool think, int level) {
     const auto& board = game.board;
     auto color = board.get_state(vertex);
     int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
@@ -897,11 +897,11 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, UCTSearch & 
             myprintf("escape success, after capture, escape lib >1 %d l:%d\n", brd.get_lib(vertex), level);
             print_ladder_move(*g);
             //if(!cfg_quiet){ g->display_state(); }
-            //ladder_search.think_ladder(*g, ladder_who);
+            //if (think) { ladder_search.think_ladder(*g, ladder_who); }
             continue;
         }
         myprintf("\n");
-        ret[i] = !play_ladder_escape_v1(*g, vertex, ladder_search, level+1);
+        ret[i] = !play_ladder_escape_v1(*g, vertex, ladder_search, think, level+1);
         for(auto k=0; k<=level; k++) {
             myprintf("  ");
         }

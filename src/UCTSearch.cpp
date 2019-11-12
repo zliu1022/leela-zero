@@ -803,7 +803,6 @@ int UCTSearch::think_ladder(GameState & game, int color) {
     myprintf("rootstate movenum %d\n", rootnum);
     m_root->prepare_root_node(m_network, m_network_aux, color, m_nodes, m_rootstate);
 
-    //m_run = true;
     auto game_history = game.get_game_history();
     for (const auto &state : game_history) {
         auto num = state->get_movenum();
@@ -816,6 +815,9 @@ int UCTSearch::think_ladder(GameState & game, int color) {
     UCTNode* node = m_root.get();
     auto currstate = std::make_unique<GameState>(m_rootstate);
     for (size_t i = 0; i < move.size(); i++) {
+        const auto color_i = currstate->get_to_move();
+        auto cor_i = currstate->move_to_text(move[i]);
+        myprintf("learn %d %s %s\n", i, color_i==FastBoard::BLACK?"B":"W", cor_i.c_str());
         currstate = std::make_unique<GameState>(m_rootstate);
         node = m_root.get();
         n.clear();
@@ -829,7 +831,7 @@ int UCTSearch::think_ladder(GameState & game, int color) {
                 next = node->ladder_select_child(color, node, true, move[j]);
                 auto move = next->get_move();
                 auto cor = currstate->move_to_text(move);
-                //myprintf("uct_select_child %s %s\n", color==FastBoard::BLACK?"B":"W", cor.c_str());
+                //myprintf("ladder_select %s %s\n", color==FastBoard::BLACK?"B":"W", cor.c_str());
                 currstate->play_move(move);
                 n.push_back(next);
                 node = next;
@@ -837,7 +839,7 @@ int UCTSearch::think_ladder(GameState & game, int color) {
         }
         node = n.back();
         if (node->expandable()) {
-            //myprintf("create_children\n");
+            myprintf("create_children\n");
             float eval;
             const auto had_children = node->has_children();
             const auto success =
@@ -848,17 +850,15 @@ int UCTSearch::think_ladder(GameState & game, int color) {
             if (result.valid()) {
                 //node->update(result.eval());
                 node->update(1.0);
-                myprintf("update final %f %d\n", result.eval(), m_root->get_visits());
-                dump_stats(m_rootstate, *m_root);
+                myprintf("update %f v:%d (final)\n", result.eval(), m_root->get_visits());
             }
             n.pop_back();
             while(!n.empty()) {
                 node = n.back();
                 if (result.valid()) {
                     //node->update(result.eval());
-                    node->update(1.0);
-                    myprintf("update %f %d\n", result.eval(), m_root->get_visits());
-                    dump_stats(m_rootstate, *m_root);
+                    node->update(1.1);
+                    //myprintf("update %f v:%d\n", result.eval(), m_root->get_visits());
                 }
                 n.pop_back();
             }
@@ -868,9 +868,8 @@ int UCTSearch::think_ladder(GameState & game, int color) {
             increment_playouts();
         }
         //dump_stats(m_rootstate, *m_root);
-        //myprintf("\n");
     }
-    //m_run = false;
+    myprintf("--------------------\n");
 
     for (const auto& node : m_root->get_children()) {
         node->set_active(true);
@@ -886,17 +885,32 @@ int UCTSearch::think_ladder(GameState & game, int color) {
              m_playouts.load(),
              (m_playouts * 100.0) / (elapsed_centis+1));
 
+#ifdef _WIN32
+    int pos = cfg_weightsfile.find_last_of('\\');
+#else
+    int pos = cfg_weightsfile.find_last_of('/');
+#endif
+    int pos1 = cfg_weightsfile.find(".gz");
+    std::string s = "";
+    if (pos1 > pos) {
+        s = cfg_weightsfile.substr(pos + 1, ((pos1 - pos - 1)>8)?8:(pos1-pos-1));
+    }
+    else {
+        s = cfg_weightsfile.substr(pos + 1, 8);
+    }
+
     auto first_child = m_root->get_first_child();
     float tmp_komi = m_rootstate.get_komi();
-    auto movenum = int(m_rootstate.get_movenum());
-    auto recov_num = 180; 
-    auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
-    if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
-    auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
-    auto act_rate = (1+std::tanh(tmp_rate))/2;
+    //auto movenum = int(m_rootstate.get_movenum());
+    //auto recov_num = 180; 
+    //auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
+    //if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
+    //auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
+    //auto act_rate = (1+std::tanh(tmp_rate))/2;
+    auto act_rate = first_child->get_eval(color);
 
-    myprintf("%s-()(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
-        PROGRAM_VERSION, tmp_komi,act_rate*100.0f, 
+    myprintf("%s-%s()(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
+        PROGRAM_VERSION, s.c_str(), tmp_komi, act_rate*100.0f,
         (color == FastBoard::BLACK) ? "B" : "W",
         int(m_rootstate.get_movenum()) + 1,
         (elapsed_centis + 1) / 100.0f,

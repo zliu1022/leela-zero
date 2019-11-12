@@ -160,8 +160,8 @@ private:
     static int play_ladder_escape(const GameState & game, int vertex) ;
     static void print_ladder_move(GameState & game);
 
-    static int play_ladder_capture_v1(const GameState & game, int vertex, UCTSearch & search, int level) ;
-    static int play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & search, int level) ;
+    static int play_ladder_capture_v1(const GameState & game, int vertex, UCTSearch & search, bool think, int level) ;
+    static int play_ladder_escape_v1(const GameState & game, int vertex, UCTSearch & search, bool think, int level) ;
 
     static const std::string s_commands[];
     static const std::string s_options[];

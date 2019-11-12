@@ -934,45 +934,43 @@ int FastBoard::capture_pos(int vertex, int num) const {
 }
 
 int FastBoard::escape_pos(int vertex, int num) const {
-    std::vector<int> st;
-    if (num==0) {
-        // no.1, return 1lib pos
-        int pos = vertex;
-        do {
-            if (count_pliberties(pos)==1){
-                for (auto j = 0; j < 4; j++) {
-                    auto ai = pos + m_dirs[j];
-                    if (get_state(ai)==EMPTY){
-                        return ai;
-                    }
-                }
-                return NO_VERTEX;
-            }
-            pos = m_next[pos];
-        } while (pos != vertex);
-        return NO_VERTEX;
-    } else {
-        // no.2, return capture stone's 1lib pos
-        auto color = get_state(vertex);
-        auto opp_color = color==WHITE?BLACK:WHITE;
-        std::vector<int> st;
-        int pos = vertex;
-        do {
+    int ai_1lib = NO_VERTEX; // 1lib pos
+    std::vector<int> st; // capture stone's 1lib pos
+    auto color = get_state(vertex);
+    auto opp_color = color==WHITE?BLACK:WHITE;
+    int pos = vertex;
+    do {
+        // get 1lib pos
+        if (count_pliberties(pos)==1){
             for (auto j = 0; j < 4; j++) {
                 auto ai = pos + m_dirs[j];
-                if (get_state(ai)==opp_color){
-                    auto opplib = get_lib(ai);
-                    if (opplib==1) {
-                        auto ver_1lib = find_1lib(ai);
-                        st.push_back(ver_1lib);
-                    }
+                if (get_state(ai)==EMPTY){
+                    ai_1lib = ai;
                 }
             }
-            pos = m_next[pos];
-        } while (pos != vertex);
-        std::sort(begin(st), end(st));
-        st.erase(std::unique(begin(st), end(st)), end(st));
-        return st[num-1];
+        }
+
+        // collect capture stone's 1lib pos
+        for (auto j = 0; j < 4; j++) {
+            auto ai = pos + m_dirs[j];
+            if (get_state(ai)==opp_color){
+                auto opplib = get_lib(ai);
+                if (opplib==1) {
+                    auto ver_1lib = find_1lib(ai);
+                    st.push_back(ver_1lib);
+                }
+            }
+        }
+
+        pos = m_next[pos];
+    } while (pos != vertex);
+    std::sort(begin(st), end(st));
+    st.erase(std::unique(begin(st), end(st)), end(st));
+
+    if (st.empty() || num==st.size()) {
+        return ai_1lib;
+    } else {
+        return st[num];
     }
 }
 
