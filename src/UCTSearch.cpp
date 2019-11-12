@@ -901,12 +901,6 @@ int UCTSearch::think_ladder(GameState & game, int color) {
 
     auto first_child = m_root->get_first_child();
     float tmp_komi = m_rootstate.get_komi();
-    //auto movenum = int(m_rootstate.get_movenum());
-    //auto recov_num = 180; 
-    //auto new_ra = (cfg_ra*recov_num-8+(1-cfg_ra)*movenum)/(recov_num-8);
-    //if (cfg_ra==1.0f||new_ra>1.0) new_ra = 1.0f;
-    //auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
-    //auto act_rate = (1+std::tanh(tmp_rate))/2;
     auto act_rate = first_child->get_eval(color);
 
     myprintf("%s-%s()(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
