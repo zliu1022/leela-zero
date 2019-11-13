@@ -652,6 +652,7 @@ bool StoneList::stonelist_include(const std::vector<StoneList>  & stonelist, con
     return false;
 }
 
+
 int FastBoard::find_1libst(const int i) const {
     int pos = i;
 
@@ -935,7 +936,7 @@ int FastBoard::capture_pos(int vertex, int num) const {
 
 int FastBoard::escape_pos(int vertex, int num) const {
     int ai_1lib = NO_VERTEX; // 1lib pos
-    std::vector<int> st; // capture stone's 1lib pos
+    std::vector<StoneList> st;// capture stone's 1lib pos
     auto color = get_state(vertex);
     auto opp_color = color==WHITE?BLACK:WHITE;
     int pos = vertex;
@@ -949,28 +950,36 @@ int FastBoard::escape_pos(int vertex, int num) const {
                 }
             }
         }
-
         // collect capture stone's 1lib pos
         for (auto j = 0; j < 4; j++) {
             auto ai = pos + m_dirs[j];
             if (get_state(ai)==opp_color){
-                auto opplib = get_lib(ai);
-                if (opplib==1) {
-                    auto ver_1lib = find_1lib(ai);
-                    st.push_back(ver_1lib);
+                if (get_lib(ai)==1) {
+                    StoneList tmp;
+                    tmp.len = get_stonelist_len(ai);
+                    tmp.vertex = find_1lib(ai);
+                    st.push_back(tmp);
                 }
             }
         }
 
         pos = m_next[pos];
     } while (pos != vertex);
-    std::sort(begin(st), end(st));
+    sort(st.begin(), st.end(), std::greater<StoneList>());
     st.erase(std::unique(begin(st), end(st)), end(st));
+    sort(st.begin(), st.end(), StoneList::greater_len);
+    if (st.size()>=1) {
+        myprintf("sort ");
+        for(auto i=0; i<st.size(); i++) {
+            myprintf("%d(%d) ", st[i].vertex, st[i].len);
+        }
+        myprintf("\n");
+    }
 
     if (st.empty() || num==st.size()) {
         return ai_1lib;
     } else {
-        return st[num];
+        return st[num].vertex;
     }
 }
 

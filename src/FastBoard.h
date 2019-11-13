@@ -44,6 +44,15 @@ public:
     int lib;
     int len;
     bool stonelist_include(const std::vector<StoneList>  & stonelist, const int vertex);
+    bool operator >(const StoneList& st) const {
+        return vertex > st.vertex;
+    }
+    bool operator==(const StoneList& other) const {
+        return vertex== other.vertex;
+    }
+    static bool greater_len(const StoneList& st1, const StoneList& st2) {
+        return st1.len > st2.len;
+    }
 };
 
 class FastBoard {
