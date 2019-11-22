@@ -968,7 +968,7 @@ int FastBoard::escape_pos(int vertex, int num) const {
     sort(st.begin(), st.end(), std::greater<StoneList>());
     st.erase(std::unique(begin(st), end(st)), end(st));
     sort(st.begin(), st.end(), StoneList::greater_len);
-    if (st.size()>=1) {
+    if (0 && st.size()>=1) {
         myprintf("sort ");
         for(auto i=0; i<st.size(); i++) {
             myprintf("%d(%d) ", st[i].vertex, st[i].len);

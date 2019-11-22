@@ -849,7 +849,7 @@ int UCTSearch::think_ladder(GameState & game, int color) {
             }
             if (result.valid()) {
                 //node->update(result.eval());
-                node->update(1.0);
+                node->update(1.1);
                 myprintf("update %f v:%d (final)\n", result.eval(), m_root->get_visits());
             }
             n.pop_back();
@@ -903,7 +903,7 @@ int UCTSearch::think_ladder(GameState & game, int color) {
     float tmp_komi = m_rootstate.get_komi();
     auto act_rate = first_child->get_eval(color);
 
-    myprintf("%s-%s()(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
+    myprintf("%s-%s()(%.1f %.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
         PROGRAM_VERSION, s.c_str(), tmp_komi, act_rate*100.0f,
         (color == FastBoard::BLACK) ? "B" : "W",
         int(m_rootstate.get_movenum()) + 1,
@@ -1062,7 +1062,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
     auto tmp_rate = std::atanh(first_child->get_eval(color)*2-1)/new_ra;
     auto act_rate = (1+std::tanh(tmp_rate))/2;
 
-        myprintf("%s-%s(%s)%d(%.1f-%.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
+        myprintf("%s-%s(%s)%d(%.1f %.2f%%) %s No. %3d %3.1fs %3s %5d %3.4f%% %3.2f%%\n\n",
             PROGRAM_VERSION, s.c_str(),s_aux.c_str(),cfg_auxmode,tmp_komi,act_rate*100.0f, 
             (color == FastBoard::BLACK) ? "B" : "W",
             int(m_rootstate.get_movenum()) + 1,
@@ -1073,7 +1073,7 @@ int UCTSearch::think(int color, passflag_t passflag) {
             first_child->get_policy()*100.0f);
 
     if (color == FastBoard::WHITE) {
-        if (cfg_komi!=999.0f && act_rate>=cfg_kmrate && tmp_komi>0) {
+        if (cfg_komi!=999.0f && act_rate>=cfg_kmrate) {
             if (tmp_komi<=(cfg_komi/8)) {
                 tmp_komi = tmp_komi-cfg_kmstep/8;
             } else if (tmp_komi<=(cfg_komi/4)) {
