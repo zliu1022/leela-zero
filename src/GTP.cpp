@@ -578,7 +578,6 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
     std::vector<StoneList> stonelist_opp;
     int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
 
-
     // collect stone string with color
     for (int i = 0; i < board.get_boardsize(); i++) {
         for (int j = 0; j < board.get_boardsize(); j++) {
@@ -604,7 +603,7 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
         }
     }
 
-    myprintf("my stonelist size: %d\n", stonelist.size());
+    myprintf("my 1lib stone size: %d\n", stonelist.size());
     myprintf("vertex   len    lib ver(1lib_stone) ver(1lib)\n");
     for (size_t i = 0; i < stonelist.size(); i++) {
         auto vertex = stonelist[i].vertex;
@@ -632,16 +631,19 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
             auto succ = play_ladder_escape_v1(*g, vertex, 1);
             if (debug==1) { cfg_quiet = false; }
             myprintf(" escape %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
-            if (succ==0) {
+            if (debug==1) { cfg_quiet = true; }
+            if (succ==0 && ladder_dep>10) {
                 myprintf("\n");
                 for(size_t i=0; i<ladder_fail.size(); i++){
                     myprintf("Answer ladder_fail %d\n", i);
                     auto sgf_text = SGFTree::state_to_string(ladder_fail[i], 0);
                     myprintf("%s\n", sgf_text.c_str());
-                    search.think_ladder(ladder_fail[i], ladder_who);
+                    //search.think_ladder(ladder_fail[i], ladder_who, -1.0);
+                    search.think_ladder(ladder_fail[i], ladder_who, ladder_who==FastBoard::BLACK?0.0:1.0);
                 }
                 myprintf("\n");
             }
+            if (debug==1) { cfg_quiet = false; }
             ladder_fail.clear(); ladder_succ.clear();
         }
     }
@@ -680,16 +682,19 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
             auto succ = play_ladder_capture_v1(*g, vertex, 1);
             if (debug==1) { cfg_quiet = false; }
             myprintf(" capture %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
-            if (succ==0) {
+            if (debug==1) { cfg_quiet = true; }
+            if (succ==0 && ladder_dep>10) {
                 myprintf("\n");
                 for(size_t i=0; i<ladder_succ.size(); i++){
                     myprintf("Answer ladder_succ %d\n", i);
                     auto sgf_text = SGFTree::state_to_string(ladder_succ[i], 0);
                     myprintf("%s\n", sgf_text.c_str());
-                    //search.think_ladder(ladder_succ[i], ladder_who);
+                    //search.think_ladder(ladder_succ[i], ladder_who, -1.0);
+                    search.think_ladder(ladder_succ[i], ladder_who, ladder_who==FastBoard::BLACK?0.0:1.0);
                 }
                 myprintf("\n");
             }
+            if (debug==1) { cfg_quiet = false; }
             ladder_fail.clear(); ladder_succ.clear();
         }
     }
