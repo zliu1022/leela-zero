@@ -794,13 +794,13 @@ void UCTSearch::increment_playouts() {
     m_playouts++;
 }
 
-int UCTSearch::think_ladder(GameState & game, int color) {
+int UCTSearch::think_ladder(GameState & game, int color, float think_eval) {
     Time start;
     std::vector<int> move;
     update_root();
     m_rootstate.board.set_to_move(color);
     auto rootnum = m_rootstate.get_movenum();
-    myprintf("rootstate movenum %d\n", rootnum);
+    myprintf("begin movenum %d\n", rootnum);
     m_root->prepare_root_node(m_network, m_network_aux, color, m_nodes, m_rootstate);
 
     auto game_history = game.get_game_history();
@@ -810,6 +810,7 @@ int UCTSearch::think_ladder(GameState & game, int color) {
         auto m = state->get_last_move();
         move.push_back(m);
     }
+    myprintf("end movenum %d\n", rootnum + move.size());
 
     std::vector<UCTNode*> n;
     UCTNode* node = m_root.get();
@@ -838,8 +839,9 @@ int UCTSearch::think_ladder(GameState & game, int color) {
             }
         }
         node = n.back();
-        if (node->expandable()) {
-            myprintf("create_children\n");
+        if (1||node->expandable()) {
+            auto num = currstate->get_movenum();
+            myprintf("create_children No.%d\n", num);
             float eval;
             const auto had_children = node->has_children();
             const auto success =
@@ -847,18 +849,36 @@ int UCTSearch::think_ladder(GameState & game, int color) {
             if (!had_children && success) {
                 result = SearchResult::from_eval(eval);
             }
+            myprintf("had_children %d success %d result.valid %d\n", had_children, success, result.valid());
             if (result.valid()) {
-                //node->update(result.eval());
-                node->update(1.1);
+                if (think_eval==-1.0) {
+                    node->update(result.eval());
+                } else {
+                    node->update(think_eval);
+                }
                 myprintf("update %f v:%d (final)\n", result.eval(), m_root->get_visits());
+            } else {
+                if (think_eval!=-1.0) {
+                    node->update(think_eval);
+                    myprintf("update think_eval %f v:%d (final)\n", think_eval, m_root->get_visits());
+                }
             }
+
             n.pop_back();
             while(!n.empty()) {
                 node = n.back();
                 if (result.valid()) {
-                    //node->update(result.eval());
-                    node->update(1.1);
+                    if (think_eval==-1.0) {
+                        node->update(result.eval());
+                    } else {
+                        node->update(think_eval);
+                    }
                     //myprintf("update %f v:%d\n", result.eval(), m_root->get_visits());
+                } else {
+                    if (think_eval!=-1.0) {
+                        node->update(think_eval);
+                        myprintf("update think_eval %f v:%d (final)\n", think_eval, m_root->get_visits());
+                    }
                 }
                 n.pop_back();
             }
