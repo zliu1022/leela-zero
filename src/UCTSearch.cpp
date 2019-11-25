@@ -243,7 +243,7 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
             if (pri_b) {
                 result = SearchResult::from_score(1.0f);
             } else {
-                result = SearchResult::from_score(0.0f);
+                result = SearchResult::from_score(-1.0f);
             }
         } else
         if (currstate.get_passes() >= 2) {

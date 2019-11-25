@@ -293,6 +293,7 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("capgo")) {
         cfg_pacman = true;
+        cfg_resignpct = 0;
     }
 
 #ifdef USE_TUNER
