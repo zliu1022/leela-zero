@@ -218,6 +218,10 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         }
     }
 
+    if(cfg_pacman) {
+        allow_pass = false;
+    }
+
     if (allow_pass) {
         if (cfg_have_aux && to_move == FastBoard::BLACK) {
             if (cfg_auxmode==AuxMode::AVG) {

@@ -179,6 +179,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("noponder", "Disable thinking on opponent's time.")
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
+        ("capgo",    "first-Capture go, https://www.usgo.org/capture-game-teaching-method")
 #ifndef USE_CPU_ONLY
         ("cpu-only", "Use CPU-only implementation and do not use OpenCL device(s).")
 #endif
@@ -288,6 +289,10 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("benchmark")) {
         cfg_quiet = true;  // Set this early to avoid unnecessary output.
+    }
+
+    if (vm.count("capgo")) {
+        cfg_pacman = true;
     }
 
 #ifdef USE_TUNER

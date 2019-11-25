@@ -192,8 +192,14 @@ int FullBoard::update_board(const int color, const int i) {
 
     /* check whether we still live (i.e. detect suicide) */
     if (m_libs[m_parent[i]] == 0) {
+        auto len = m_stones[m_parent[i]];
         assert(captured_stones == 0);
         remove_string(i);
+
+        /* capture go, suicide means opponent's prisoners */
+        m_hash ^= Zobrist::zobrist_pris[!color][m_prisoners[!color]];
+        m_prisoners[!color] += len;
+        m_hash ^= Zobrist::zobrist_pris[!color][m_prisoners[!color]];
     }
 
     /* check for possible simple ko */

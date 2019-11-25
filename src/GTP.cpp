@@ -63,6 +63,7 @@ unsigned int cfg_num_threads;
 unsigned int cfg_batch_size;
 int cfg_max_playouts;
 int cfg_max_visits;
+bool cfg_pacman;
 size_t cfg_max_memory;
 size_t cfg_max_tree_size;
 int cfg_max_cache_ratio_percent;
@@ -373,6 +374,7 @@ void GTP::setup_default_parameters() {
     cfg_auxmode = AuxMode::HP;
     cfg_aux_recover_rate = 100.0f;
     cfg_aux_maxplayout = 1;
+    cfg_pacman = false;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
@@ -1211,7 +1213,6 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
         int who;
         AnalyzeTags tags;
-        int movenum = game.get_movenum();
 
         if (analysis_output) {
             tags = AnalyzeTags{cmdstream, game};
@@ -1233,6 +1234,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             }
 
             /*
+            int movenum = game.get_movenum();
             if (movenum<=50) {
                 //cfg_analyze_tags = AnalyzeTags{};
                 auto avoid_num = set_ladder_avoid(game, who, movenum);
@@ -1249,6 +1251,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             // Start of multi-line response
             cfg_analyze_tags = tags;
             /*
+            int movenum = game.get_movenum();
             if (movenum<=50) {
                 auto avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
@@ -1473,12 +1476,26 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         }
         return;
     } else if (command.find("auto") == 0) {
+        int pri_b = 0;
+        int pri_w = 0;
         do {
-            int move = search->think(game.get_to_move(), UCTSearch::NORMAL);
+            int move = FastBoard::NO_VERTEX;
+            if(!cfg_pacman) {
+                move = search->think(game.get_to_move(), UCTSearch::NORMAL);
+            } else {
+                move = search->think(game.get_to_move(), UCTSearch::NOPASS);
+            }
             game.play_move(move);
             game.display_state();
 
-        } while (game.get_passes() < 2 && !game.has_resigned());
+            pri_b = game.board.get_prisoners(FastBoard::BLACK);
+            pri_w = game.board.get_prisoners(FastBoard::WHITE);
+
+        } while (game.get_passes() < 2 && !game.has_resigned() && (!cfg_pacman || (pri_b==0 && pri_w==0)));
+
+        if (cfg_pacman && (pri_b!=0 || pri_w!=0)) {
+            game.play_move(FastBoard::RESIGN);
+        }
 
         return;
     //} else if (command.find("go") == 0 && command.size() < 6) {

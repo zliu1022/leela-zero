@@ -236,6 +236,16 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
     node->virtual_loss();
 
     if (node->expandable()) {
+        // capgo
+        auto pri_b = currstate.board.get_prisoners(FastBoard::BLACK);
+        auto pri_w = currstate.board.get_prisoners(FastBoard::WHITE);
+        if ( cfg_pacman && (pri_b || pri_w) ){
+            if (pri_b) {
+                result = SearchResult::from_score(1.0f);
+            } else {
+                result = SearchResult::from_score(0.0f);
+            }
+        } else
         if (currstate.get_passes() >= 2) {
             auto score = currstate.final_score();
             result = SearchResult::from_score(score);
@@ -260,7 +270,6 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
         }
         auto move = next->get_move();
         auto move_str = currstate.move_to_text(move);
-        //myprintf("%s %s\n", color==FastBoard::BLACK?"B":"W", move_str.c_str());
 
         currstate.play_move(move);
         if (move != FastBoard::PASS && currstate.superko()) {
@@ -550,6 +559,7 @@ int UCTSearch::get_best_move(passflag_t passflag) {
     } else if (!cfg_dumbpass) {
         const auto relative_score =
             (color == FastBoard::BLACK ? 1 : -1) * m_rootstate.final_score();
+        myprintf("relative_score %f\n", relative_score);
         if (bestmove == FastBoard::PASS) {
             // Either by forcing or coincidence passing is
             // on top...check whether passing loses instantly
@@ -1073,7 +1083,6 @@ int UCTSearch::think(int color, passflag_t passflag) {
 
         auto first_child = m_root->get_first_child();
         float tmp_komi = m_rootstate.get_komi();
-        //int color = m_rootstate.board.get_to_move();
 
     auto movenum = int(m_rootstate.get_movenum());
     auto recov_num = 180; 
