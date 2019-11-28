@@ -1262,6 +1262,9 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             if (id != -1) gtp_printf_raw("=%d\n", id);
             else gtp_printf_raw("=\n");
         }
+        if (cfg_pacman) {
+            game.board.clear_prisoners();
+        }
         // start thinking
         {
             game.set_to_move(who);
