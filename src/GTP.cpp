@@ -1001,7 +1001,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
         for (int j = 0; j < board.get_boardsize(); j++) {
 
             int vertex = board.get_vertex(i, j);
-            auto coordinate = board.move_to_text(vertex);
+            auto cor = board.move_to_text(vertex);
 
             if ( board.get_state(vertex)==color) { 
                 StoneList stonelist_tmp;
@@ -1011,13 +1011,21 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
 
                 if (!stonelist_tmp.stonelist_include(stonelist, stonelist_tmp.vertex) && stonelist_tmp.lib==1 ){ 
                     stonelist.push_back(stonelist_tmp);
-                    auto m = board.is_ladder(vertex);
-                    auto movestr = game.move_to_text(m);
-                    if (m!=FastBoard::NO_VERTEX) {
-                        myprintf("avoid_ladder: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
-                        cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
-                        count++;
+                    auto g = std::make_unique<GameState>(game);
+                    if (1) { cfg_quiet = true; } else { myprintf("\n"); }
+                    auto succ = play_ladder_escape_v1(*g, vertex, 1);
+                    if (1) { cfg_quiet = false; }
+                    myprintf("%s escape %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", cor.c_str(), succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
+                    if (succ==0 && ladder_dep>10) {
+                        auto m = board.find_1lib(vertex);
+                        auto movestr = game.move_to_text(m);
+                        if (m!=FastBoard::NO_VERTEX) {
+                            myprintf("avoid_ladder: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
+                            cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
+                            count++;
+                        }
                     }
+                    ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
                 }
             }
         }
@@ -1213,6 +1221,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
         int who;
         AnalyzeTags tags;
+        int movenum = game.get_movenum();
 
         if (analysis_output) {
             tags = AnalyzeTags{cmdstream, game};
@@ -1233,32 +1242,24 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 return;
             }
 
-            /*
-            int movenum = game.get_movenum();
-            if (movenum<=50) {
-                //cfg_analyze_tags = AnalyzeTags{};
-                auto avoid_num = set_ladder_avoid(game, who, movenum);
-
-                if (avoid_num) {
-                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
-                }
+            //avoid ladder
+            //cfg_analyze_tags = AnalyzeTags{};
+            auto avoid_num = set_ladder_avoid(game, who, movenum);
+            if (avoid_num) {
+                search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
             }
-            */
-
         }
 
         if (analysis_output) {
             // Start of multi-line response
             cfg_analyze_tags = tags;
-            /*
-            int movenum = game.get_movenum();
-            if (movenum<=50) {
-                auto avoid_num = set_ladder_avoid(game, who, movenum);
-                if (avoid_num) {
-                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
-                }
+
+            //avoid ladder
+            auto avoid_num = set_ladder_avoid(game, who, movenum);
+            if (avoid_num) {
+                search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
             }
-            */
+
             if (id != -1) gtp_printf_raw("=%d\n", id);
             else gtp_printf_raw("=\n");
         }
