@@ -549,6 +549,11 @@ int FastBoard::get_prisoners(int side)  const {
     return m_prisoners[side];
 }
 
+void FastBoard::clear_prisoners(){
+    m_prisoners[BLACK] = 0;
+    m_prisoners[WHITE] = 0;
+}
+
 int FastBoard::get_to_move() const {
     return m_tomove;
 }

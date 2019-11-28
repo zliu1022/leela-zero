@@ -132,6 +132,7 @@ public:
     float area_score(float komi) const;
 
     int get_prisoners(int side) const;
+    void clear_prisoners(); // capgo
     bool black_to_move() const;
     bool white_to_move() const;
     int get_to_move() const;

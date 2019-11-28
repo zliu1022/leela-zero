@@ -83,6 +83,7 @@ bool FastState::is_move_legal(int color, int vertex) const {
                       !board.is_suicide(vertex, color)));
     } else {
         return !cfg_analyze_tags.is_to_avoid(color, vertex, m_movenum) && (
+                 vertex == FastBoard::RESIGN ||
                      (vertex != m_komove &&
                           board.get_state(vertex) == FastBoard::EMPTY ));
     }
