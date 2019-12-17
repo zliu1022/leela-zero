@@ -55,6 +55,7 @@ public:
     void set_to_move(int tomove);
     void set_passes(int val);
     void increment_passes();
+    void increment_pass_w();//capgo
 
     float final_score() const;
     std::uint64_t get_symmetry_hash(int symmetry) const;
@@ -73,6 +74,8 @@ public:
     size_t m_movenum;
     int m_lastmove;
 
+    int m_pass_w;//capgo
+    int get_capgo_pass() const;
 protected:
     void play_move(int color, int vertex);
 };

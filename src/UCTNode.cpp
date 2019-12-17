@@ -156,6 +156,7 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
     std::vector<Network::PolicyVertexPair> nodelist;
 
     auto legal_sum = 0.0f;
+    auto policy_max = 0.0f; //capgo, when allow pass, force pass's policy=policy_max
     for (auto i = 0; i < NUM_INTERSECTIONS; i++) {
         const auto x = i % BOARD_SIZE;
         const auto y = i / BOARD_SIZE;
@@ -195,6 +196,9 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                     //myprintf("!cfg_have_aux\n");
                     nodelist.emplace_back(raw_netlist.policy[i], vertex);
                     legal_sum += raw_netlist.policy[i];
+                    if (raw_netlist.policy[i] > policy_max) {
+                        policy_max = raw_netlist.policy[i];
+                    }
                 }
             }
         }
@@ -218,8 +222,11 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         }
     }
 
-    if(cfg_pacman) {
+    if (cfg_pacman){
         allow_pass = false;
+    }
+    if (cfg_pacman && to_move==FastBoard::WHITE && state.get_capgo_pass()<cfg_capgo_pass){
+        allow_pass = true;
     }
 
     if (allow_pass) {
@@ -246,8 +253,14 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                     legal_sum += raw_netlist.policy_pass;
                 }
             } else {
+                if (to_move == FastBoard::WHITE) {
+                //capgo, when allow pass force pass'policy=policy_max
+                nodelist.emplace_back(policy_max, FastBoard::PASS);
+                legal_sum += policy_max;
+                } else {
                 nodelist.emplace_back(raw_netlist.policy_pass, FastBoard::PASS);
                 legal_sum += raw_netlist.policy_pass;
+                }
             }
         }
     }

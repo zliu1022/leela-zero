@@ -51,6 +51,7 @@ void FastState::init_game(int size, float komi) {
     m_komi = komi;
     m_handicap = 0;
     m_passes = 0;
+    m_pass_w = 0;
 
     return;
 }
@@ -67,6 +68,7 @@ void FastState::reset_game() {
     m_handicap = 0;
     m_komove = FastBoard::NO_VERTEX;
     m_lastmove = FastBoard::NO_VERTEX;
+    m_pass_w = 0;
 }
 
 void FastState::reset_board() {
@@ -83,6 +85,7 @@ bool FastState::is_move_legal(int color, int vertex) const {
                       !board.is_suicide(vertex, color)));
     } else {
         return !cfg_analyze_tags.is_to_avoid(color, vertex, m_movenum) && (
+                (color==FastBoard::WHITE && vertex==FastBoard::PASS && m_pass_w<cfg_capgo_pass) ||
                  vertex == FastBoard::RESIGN ||
                      (vertex != m_komove &&
                           board.get_state(vertex) == FastBoard::EMPTY ));
@@ -114,6 +117,9 @@ void FastState::play_move(int color, int vertex) {
     board.m_hash ^= Zobrist::zobrist_pass[get_passes()];
     if (vertex == FastBoard::PASS) {
         increment_passes();
+        if (color == FastBoard::WHITE) {
+            increment_pass_w();
+        }
     } else {
         set_passes(0);
     }
@@ -132,6 +138,10 @@ int FastState::get_passes() const {
     return m_passes;
 }
 
+int FastState::get_capgo_pass() const {
+    return m_pass_w;
+}
+
 void FastState::set_passes(int val) {
     m_passes = val;
 }
@@ -139,6 +149,10 @@ void FastState::set_passes(int val) {
 void FastState::increment_passes() {
     m_passes++;
     if (m_passes > 4) m_passes = 4;
+}
+
+void FastState::increment_pass_w() {
+    m_pass_w++;
 }
 
 int FastState::get_to_move() const {

@@ -557,9 +557,13 @@ int UCTSearch::get_best_move(passflag_t passflag) {
             }
         }
     } else if (!cfg_dumbpass) {
-        const auto relative_score =
+        auto relative_score =
             (color == FastBoard::BLACK ? 1 : -1) * m_rootstate.final_score();
         myprintf("relative_score %f\n", relative_score);
+        if(cfg_pacman) {
+            //capgo, close smart pass
+            relative_score = 1.0;
+        }
         if (bestmove == FastBoard::PASS) {
             // Either by forcing or coincidence passing is
             // on top...check whether passing loses instantly

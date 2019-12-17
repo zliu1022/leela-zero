@@ -64,6 +64,7 @@ unsigned int cfg_batch_size;
 int cfg_max_playouts;
 int cfg_max_visits;
 bool cfg_pacman;
+int cfg_capgo_pass;
 size_t cfg_max_memory;
 size_t cfg_max_tree_size;
 int cfg_max_cache_ratio_percent;
@@ -375,6 +376,7 @@ void GTP::setup_default_parameters() {
     cfg_aux_recover_rate = 100.0f;
     cfg_aux_maxplayout = 1;
     cfg_pacman = false;
+    cfg_capgo_pass = 0;//capgo, default: not allow pass
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
@@ -1181,12 +1183,17 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         cmdstream >> komi;
 
         if (!cmdstream.fail()) {
+            myprintf("%.1f(%.1f) -> %.1f\n", old_komi, cfg_komi, komi);
             if (komi != old_komi) {
                 if (cfg_komi==999.0f) {
                     game.set_komi(komi);
+                    gtp_printf(id, "");
+                } else {
+                    gtp_printf(id, "Already set by --komi, can't be changed");
                 }
+            } else {
+                gtp_printf(id, "");
             }
-            gtp_printf(id, "");
         } else {
             gtp_fail_printf(id, "syntax not understood");
         }
@@ -1487,7 +1494,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             if(!cfg_pacman) {
                 move = search->think(game.get_to_move(), UCTSearch::NORMAL);
             } else {
-                move = search->think(game.get_to_move(), UCTSearch::NOPASS);
+                move = search->think(game.get_to_move(), UCTSearch::NORMAL);
             }
             game.play_move(move);
             game.display_state();

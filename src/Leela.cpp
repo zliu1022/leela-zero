@@ -180,6 +180,7 @@ static void parse_commandline(int argc, char *argv[]) {
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
         ("capgo",    "first-Capture go, https://www.usgo.org/capture-game-teaching-method")
+        ("capgo-pass", po::value<int>(), "Max pass number of white color to balance the first move advantage.")
 #ifndef USE_CPU_ONLY
         ("cpu-only", "Use CPU-only implementation and do not use OpenCL device(s).")
 #endif
@@ -296,6 +297,10 @@ static void parse_commandline(int argc, char *argv[]) {
         if (cfg_resignpct == -1) {
             cfg_resignpct = 0;
         }
+    }
+
+    if (vm.count("capgo-pass")) {
+        cfg_capgo_pass = vm["capgo-pass"].as<int>();
     }
 
 #ifdef USE_TUNER
