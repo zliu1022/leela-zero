@@ -65,6 +65,7 @@ int cfg_max_playouts;
 int cfg_max_visits;
 bool cfg_pacman;
 int cfg_capgo_pass;
+int cfg_ladder_mode;
 size_t cfg_max_memory;
 size_t cfg_max_tree_size;
 int cfg_max_cache_ratio_percent;
@@ -377,6 +378,7 @@ void GTP::setup_default_parameters() {
     cfg_aux_maxplayout = 1;
     cfg_pacman = false;
     cfg_capgo_pass = 0;//capgo, default: not allow pass
+    cfg_ladder_mode = 0;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
@@ -576,7 +578,9 @@ void GTP::get_life_detail(const GameState & game) {
 }
 
 void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & search, int debug) {
-    myprintf("%s No.%d\n", color==FastBoard::WHITE?"White":"Black", game.get_movenum());
+    ladder_who = color;
+    if (debug==0) { cfg_quiet = true; }
+    myprintf("%s No.%d (%d)\n", color==FastBoard::WHITE?"White":"Black", game.get_movenum(), debug);
     const auto& board = game.board;
     std::vector<StoneList> stonelist;
     std::vector<StoneList> stonelist_opp;
@@ -703,6 +707,7 @@ void GTP::get_ladder_detail(const GameState & game, int color, UCTSearch & searc
         }
     }
 
+    if (debug==0) { cfg_quiet = false; }
     return;
 }
 
@@ -1251,9 +1256,13 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
             //avoid ladder
             //cfg_analyze_tags = AnalyzeTags{};
-            auto avoid_num = set_ladder_avoid(game, who, movenum);
-            if (avoid_num) {
-                search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+            if (cfg_ladder_mode == 1) {
+                auto avoid_num = set_ladder_avoid(game, who, movenum);
+                if (avoid_num) {
+                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                }
+            } else if (cfg_ladder_mode == 2) {
+                get_ladder_detail(game, who, *search.get(), 1);
             }
         }
 
@@ -1262,9 +1271,13 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             cfg_analyze_tags = tags;
 
             //avoid ladder
-            auto avoid_num = set_ladder_avoid(game, who, movenum);
-            if (avoid_num) {
-                search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+            if (cfg_ladder_mode == 1) {
+                auto avoid_num = set_ladder_avoid(game, who, movenum);
+                if (avoid_num) {
+                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                }
+            } else if (cfg_ladder_mode == 2) {
+                get_ladder_detail(game, who, *search.get(), 1);
             }
 
             if (id != -1) gtp_printf_raw("=%d\n", id);
@@ -1425,11 +1438,14 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             gtp_printf(id, "");
         } else if (command.find("ladder") != std::string::npos) {
             auto who = game.get_to_move();
-            ladder_who = who;
-            if (command.find("debug") != std::string::npos) {
+            if (command.find("2") != std::string::npos) {
+                get_ladder_detail(game, who, *search.get(), 2);
+            } else if (command.find("1") != std::string::npos) {
+                get_ladder_detail(game, who, *search.get(), 1);
+            } else if (command.find("0") != std::string::npos) {
                 get_ladder_detail(game, who, *search.get(), 0);
             } else {
-                get_ladder_detail(game, who, *search.get(), 1);
+                get_ladder_detail(game, who, *search.get(), 0);
             }
             gtp_printf(id, "");
         } else {

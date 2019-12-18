@@ -181,6 +181,12 @@ static void parse_commandline(int argc, char *argv[]) {
                       "-m0 -t1 -s1.")
         ("capgo",    "first-Capture go, https://www.usgo.org/capture-game-teaching-method")
         ("capgo-pass", po::value<int>(), "Max pass number of white color to balance the first move advantage.")
+        ("ladder", po::value<int>(),
+                    "ladder detection:\n"
+                    "0: close (default)\n"
+                    "1: get ladder result and set avoid\n"
+                    "2: set tree winrate before genmove\n"
+                    "3: set tree winrate during MCTS (under developing)\n")
 #ifndef USE_CPU_ONLY
         ("cpu-only", "Use CPU-only implementation and do not use OpenCL device(s).")
 #endif
@@ -301,6 +307,10 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("capgo-pass")) {
         cfg_capgo_pass = vm["capgo-pass"].as<int>();
+    }
+
+    if (vm.count("ladder")) {
+        cfg_ladder_mode = vm["ladder"].as<int>();
     }
 
 #ifdef USE_TUNER
