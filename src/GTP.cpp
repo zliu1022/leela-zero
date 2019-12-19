@@ -1002,6 +1002,8 @@ void GTP::print_ladder_move(GameState & game){
 int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
     const auto& board = game.board;
     std::vector<StoneList> stonelist;
+    std::vector<StoneList> stonelist_opp;
+    int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
     auto count = 0;
 
     for (int i = 0; i < board.get_boardsize(); i++) {
@@ -1009,14 +1011,13 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
 
             int vertex = board.get_vertex(i, j);
             auto cor = board.move_to_text(vertex);
+            StoneList stonelist_tmp;
+            stonelist_tmp.vertex = board.get_parent_vertex(vertex);
+            stonelist_tmp.lib = board.get_lib(vertex);
+            stonelist_tmp.len = board.get_stonelist_len(vertex);
 
-            if ( board.get_state(vertex)==color) { 
-                StoneList stonelist_tmp;
-                stonelist_tmp.vertex = board.get_parent_vertex(vertex);
-                stonelist_tmp.lib = board.get_lib(vertex);
-                stonelist_tmp.len = board.get_stonelist_len(vertex);
-
-                if (!stonelist_tmp.stonelist_include(stonelist, stonelist_tmp.vertex) && stonelist_tmp.lib==1 ){ 
+            if ( board.get_state(vertex)==color) {
+                if (!stonelist_tmp.stonelist_include(stonelist, stonelist_tmp.vertex) && stonelist_tmp.lib==1 ){
                     stonelist.push_back(stonelist_tmp);
                     auto g = std::make_unique<GameState>(game);
                     if (1) { cfg_quiet = true; } else { myprintf("\n"); }
@@ -1033,6 +1034,44 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                         }
                     }
                     ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
+                }
+            }
+
+            if ( board.get_state(vertex)==opp_color) {
+                if (!stonelist_tmp.stonelist_include(stonelist_opp, stonelist_tmp.vertex) && stonelist_tmp.lib==2 ){
+                    stonelist_opp.push_back(stonelist_tmp);
+                    auto g = std::make_unique<GameState>(game);
+                    if (1) { cfg_quiet = true; } else { myprintf("\n"); }
+                    auto succ = play_ladder_capture_v1(*g, vertex, 1);
+                    if (1) { cfg_quiet = false; }
+                    myprintf("%s capture %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", cor.c_str(), succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
+
+                    if (succ==0 && ladder_dep>10) {
+                        int maxdep = 0;
+                        int maxdep_index = 0;
+                        for(size_t i=0; i<ladder_succ.size(); i++){
+                            auto dep = ladder_succ[i].get_game_history().size();
+                            if (dep>maxdep) {
+                                maxdep = dep;
+                                maxdep_index = i;
+                            }
+                        }
+                        auto game_history = ladder_succ[maxdep_index].get_game_history();
+                        int rootnum = game.get_movenum();
+                        for (const auto &state : game_history) {
+                            auto num = state->get_movenum();
+                            if (num<=rootnum) { continue; }
+                            auto m = state->get_last_move();
+                            auto movestr = game.move_to_text(m);
+                            if (m!=FastBoard::NO_VERTEX) {
+                                myprintf("avoid_ladder: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
+                                cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
+                                count++;
+                            }
+                            break;
+                        }
+                        ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
+                    }
                 }
             }
         }
