@@ -1020,6 +1020,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                 if (!stonelist_tmp.stonelist_include(stonelist, stonelist_tmp.vertex) && stonelist_tmp.lib==1 ){
                     stonelist.push_back(stonelist_tmp);
                     auto g = std::make_unique<GameState>(game);
+                    ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
                     if (1) { cfg_quiet = true; } else { myprintf("\n"); }
                     auto succ = play_ladder_escape_v1(*g, vertex, 1);
                     if (1) { cfg_quiet = false; }
@@ -1041,6 +1042,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                 if (!stonelist_tmp.stonelist_include(stonelist_opp, stonelist_tmp.vertex) && stonelist_tmp.lib==2 ){
                     stonelist_opp.push_back(stonelist_tmp);
                     auto g = std::make_unique<GameState>(game);
+                    ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
                     if (1) { cfg_quiet = true; } else { myprintf("\n"); }
                     auto succ = play_ladder_capture_v1(*g, vertex, 1);
                     if (1) { cfg_quiet = false; }
@@ -1070,8 +1072,8 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                             }
                             break;
                         }
-                        ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
                     }
+                    ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
                 }
             }
         }
@@ -1546,11 +1548,20 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         int pri_w = 0;
         do {
             int move = FastBoard::NO_VERTEX;
-            if(!cfg_pacman) {
-                move = search->think(game.get_to_move(), UCTSearch::NORMAL);
-            } else {
-                move = search->think(game.get_to_move(), UCTSearch::NORMAL);
+
+            int movenum = game.get_movenum();
+            int who = game.get_to_move();
+            if (cfg_ladder_mode == 1) {
+                auto avoid_num = set_ladder_avoid(game, who, movenum);
+                if (avoid_num) {
+                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                }
+            } else if (cfg_ladder_mode == 2) {
+                get_ladder_detail(game, who, *search.get(), 1);
             }
+
+            move = search->think(game.get_to_move(), UCTSearch::NORMAL);
+
             game.play_move(move);
             game.display_state();
 
