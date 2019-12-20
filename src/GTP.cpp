@@ -1030,7 +1030,6 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                     if (succ==0 && ladder_dep>10) {
                         std::vector<int> avoid_moves;
                         int rootnum = game.get_movenum();
-                        myprintf("ladder_fail.size() %d\n", ladder_fail.size());
                         for(size_t i=0; i<ladder_fail.size(); i++){
                             auto game_history = ladder_fail[i].get_game_history();
                             auto dep = game_history.size();
@@ -1041,7 +1040,6 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                                     auto m = state->get_last_move();
                                     auto movestr = game.move_to_text(m);
                                     avoid_moves.push_back(m);
-                                    myprintf("%s %d\n", movestr.c_str(), dep);
                                     break;
                                 }
                             }
@@ -1075,7 +1073,6 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                     if (succ==0 && ladder_dep>10) {
                         std::vector<int> avoid_moves;
                         int rootnum = game.get_movenum();
-                        myprintf("ladder_succ.size() %d\n", ladder_succ.size());
                         for(size_t i=0; i<ladder_succ.size(); i++){
                             auto game_history = ladder_succ[i].get_game_history();
                             auto dep = game_history.size();
@@ -1086,7 +1083,6 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                                     auto m = state->get_last_move();
                                     auto movestr = game.move_to_text(m);
                                     avoid_moves.push_back(m);
-                                    myprintf("%s %d\n", movestr.c_str(), dep);
                                     break;
                                 }
                             }
