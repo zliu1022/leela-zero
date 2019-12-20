@@ -863,6 +863,8 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
 
         auto ver_escape = board.escape_pos(vertex, i);
         auto cor_e = board.move_to_text(ver_escape);
+        auto g = std::make_unique<GameState>(game);
+        const auto& brd = g->board;
         if(ver_escape==FastBoard::NO_VERTEX){
             myprintf("Can't find %d lib of escape string\n", i);
             continue;
@@ -870,10 +872,10 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
         if(!game.is_move_legal(color, ver_escape)) {
             ret.push_back(0);
             myprintf("%s illegal, escape fail\n", cor_e.c_str());
+            ladder_fail.push_back(*g);
+            myprintf("ladder_fail++ %d l:%d\n", ladder_fail.size(), level);
             continue;
         }
-        auto g = std::make_unique<GameState>(game);
-        const auto& brd = g->board;
         g->play_move(ver_escape);
         ladder_leaf++;
         myprintf("%s-> ", cor_e.c_str());
@@ -916,7 +918,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
         }
     }
     if (count>0) {
-        myprintf("succ\n");
+        myprintf("succ %d\n", ladder_fail.size());
         for (size_t j = 0; j <(ret.size()-1); j++) {
             ladder_fail.pop_back();
             myprintf("ladder_fail-- %d l:%d\n", ladder_fail.size(), level);
@@ -1029,7 +1031,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                         auto m = board.find_1lib(vertex);
                         auto movestr = game.move_to_text(m);
                         if (m!=FastBoard::NO_VERTEX) {
-                            myprintf("avoid_ladder: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
+                            myprintf("avoid_ladder_escape: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
                             cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
                             count++;
                         }
@@ -1066,7 +1068,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                             auto m = state->get_last_move();
                             auto movestr = game.move_to_text(m);
                             if (m!=FastBoard::NO_VERTEX) {
-                                myprintf("avoid_ladder: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
+                                myprintf("avoid_ladder_capture: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
                                 cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
                                 count++;
                             }
