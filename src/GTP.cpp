@@ -1028,12 +1028,34 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                     if (1) { cfg_quiet = false; }
                     myprintf("%s escape %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", cor.c_str(), succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
                     if (succ==0 && ladder_dep>10) {
-                        auto m = board.find_1lib(vertex);
-                        auto movestr = game.move_to_text(m);
-                        if (m!=FastBoard::NO_VERTEX) {
-                            myprintf("avoid_ladder_escape: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
-                            cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
-                            count++;
+                        std::vector<int> avoid_moves;
+                        int rootnum = game.get_movenum();
+                        myprintf("ladder_fail.size() %d\n", ladder_fail.size());
+                        for(size_t i=0; i<ladder_fail.size(); i++){
+                            auto game_history = ladder_fail[i].get_game_history();
+                            auto dep = game_history.size();
+                            if (dep>10) {
+                                for (const auto &state : game_history) {
+                                    auto num = state->get_movenum();
+                                    if (num<=rootnum) { continue; }
+                                    auto m = state->get_last_move();
+                                    auto movestr = game.move_to_text(m);
+                                    avoid_moves.push_back(m);
+                                    myprintf("%s %d\n", movestr.c_str(), dep);
+                                    break;
+                                }
+                            }
+                        }
+                        std::sort(begin(avoid_moves), end(avoid_moves));
+                        avoid_moves.erase(std::unique(begin(avoid_moves), end(avoid_moves)), end(avoid_moves));
+                        for (size_t i = 0; i < avoid_moves.size(); i++) {
+                            auto m = avoid_moves[i];
+                            auto movestr = game.move_to_text(m);
+                            if (m!=FastBoard::NO_VERTEX) {
+                                myprintf("avoid_ladder_escape: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
+                                cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
+                                count++;
+                            }
                         }
                     }
                     ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
@@ -1051,28 +1073,34 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                     myprintf("%s capture %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", cor.c_str(), succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
 
                     if (succ==0 && ladder_dep>10) {
-                        int maxdep = 0;
-                        int maxdep_index = 0;
+                        std::vector<int> avoid_moves;
+                        int rootnum = game.get_movenum();
+                        myprintf("ladder_succ.size() %d\n", ladder_succ.size());
                         for(size_t i=0; i<ladder_succ.size(); i++){
-                            auto dep = ladder_succ[i].get_game_history().size();
-                            if (dep>maxdep) {
-                                maxdep = dep;
-                                maxdep_index = i;
+                            auto game_history = ladder_succ[i].get_game_history();
+                            auto dep = game_history.size();
+                            if (dep>10) {
+                                for (const auto &state : game_history) {
+                                    auto num = state->get_movenum();
+                                    if (num<=rootnum) { continue; }
+                                    auto m = state->get_last_move();
+                                    auto movestr = game.move_to_text(m);
+                                    avoid_moves.push_back(m);
+                                    myprintf("%s %d\n", movestr.c_str(), dep);
+                                    break;
+                                }
                             }
                         }
-                        auto game_history = ladder_succ[maxdep_index].get_game_history();
-                        int rootnum = game.get_movenum();
-                        for (const auto &state : game_history) {
-                            auto num = state->get_movenum();
-                            if (num<=rootnum) { continue; }
-                            auto m = state->get_last_move();
+                        std::sort(begin(avoid_moves), end(avoid_moves));
+                        avoid_moves.erase(std::unique(begin(avoid_moves), end(avoid_moves)), end(avoid_moves));
+                        for (size_t i = 0; i < avoid_moves.size(); i++) {
+                            auto m = avoid_moves[i];
                             auto movestr = game.move_to_text(m);
                             if (m!=FastBoard::NO_VERTEX) {
                                 myprintf("avoid_ladder_capture: %s(%d), move:%d, color: %d\n", movestr.c_str(), m, movenum+1, color);
                                 cfg_analyze_tags.add_move_to_avoid(color, m, movenum+1);
                                 count++;
                             }
-                            break;
                         }
                     }
                     ladder_dep = 0; ladder_leaf = 0; ladder_fail.clear(); ladder_succ.clear();
