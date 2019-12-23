@@ -118,9 +118,9 @@ int ladder_who;
 std::vector<GameState> ladder_succ;
 std::vector<GameState> ladder_fail;
 
-#define KR_BEGIN -150.0
-#define KR_END 150.0
-#define KR_STEP 0.5
+#define KR_BEGIN -40.0
+#define KR_END 40.0
+#define KR_STEP 1.0
 #define KR_SIZE (((KR_END)-(KR_BEGIN))/KR_STEP+1)
 float kr_begin=1.0*KR_BEGIN;
 float kr_end=1.0*KR_END;
@@ -1008,6 +1008,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
     int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
     auto count = 0;
 
+    Time start;
     for (int i = 0; i < board.get_boardsize(); i++) {
         for (int j = 0; j < board.get_boardsize(); j++) {
 
@@ -1027,18 +1028,20 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                     auto succ = play_ladder_escape_v1(*g, vertex, 1);
                     if (1) { cfg_quiet = false; }
                     myprintf("%s escape %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", cor.c_str(), succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
-                    if (succ==0 && ladder_dep>10) {
+                    if (succ==0) {
                         std::vector<int> avoid_moves;
                         int rootnum = game.get_movenum();
                         for(size_t i=0; i<ladder_fail.size(); i++){
                             auto game_history = ladder_fail[i].get_game_history();
                             auto dep = game_history.size();
-                            if (dep>10) {
+                            if ((dep-rootnum)>=10) {
+                                myprintf("dep %d", dep-rootnum);
                                 for (const auto &state : game_history) {
                                     auto num = state->get_movenum();
                                     if (num<=rootnum) { continue; }
                                     auto m = state->get_last_move();
                                     auto movestr = game.move_to_text(m);
+                                    myprintf(" %s\n", movestr.c_str());
                                     avoid_moves.push_back(m);
                                     break;
                                 }
@@ -1070,18 +1073,20 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                     if (1) { cfg_quiet = false; }
                     myprintf("%s capture %s dep:%d leaf:%d ans_fail:%d ans_succ:%d\n", cor.c_str(), succ==0?"FAIL":"SUCC", ladder_dep, ladder_leaf, ladder_fail.size(), ladder_succ.size());
 
-                    if (succ==0 && ladder_dep>10) {
+                    if (succ==0) {
                         std::vector<int> avoid_moves;
                         int rootnum = game.get_movenum();
                         for(size_t i=0; i<ladder_succ.size(); i++){
                             auto game_history = ladder_succ[i].get_game_history();
                             auto dep = game_history.size();
-                            if (dep>10) {
+                            if ((dep-rootnum)>=15) {
+                                myprintf("dep %d", dep-rootnum);
                                 for (const auto &state : game_history) {
                                     auto num = state->get_movenum();
                                     if (num<=rootnum) { continue; }
                                     auto m = state->get_last_move();
                                     auto movestr = game.move_to_text(m);
+                                    myprintf(" %s\n", movestr.c_str());
                                     avoid_moves.push_back(m);
                                     break;
                                 }
@@ -1104,6 +1109,9 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
             }
         }
     }
+    Time elapsed;
+    int elapsed_centis = Time::timediff_centis(start, elapsed);
+    myprintf("set_ladder_avoid %.3fs\n", (elapsed_centis+1)/100.0f);
     return count;
 }
 
@@ -1326,7 +1334,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             if (cfg_ladder_mode == 1) {
                 auto avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
-                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                    //search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
                 }
             } else if (cfg_ladder_mode == 2) {
                 get_ladder_detail(game, who, *search.get(), 1);
@@ -1341,7 +1349,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             if (cfg_ladder_mode == 1) {
                 auto avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
-                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                    //search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
                 }
             } else if (cfg_ladder_mode == 2) {
                 get_ladder_detail(game, who, *search.get(), 1);
@@ -1453,36 +1461,46 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         game.display_state();
         return;
     } else if (command.find("final_score") == 0) {
-        /*
-        float old_komi = game.get_komi();
-        auto who = game.get_to_move();
-        float delta = 1.0f;
-        float last_rate = 0.5f;
-        float last_komi = 0.0f;
-        for (auto t_komi = -150.0; t_komi <= 150.0; t_komi+=1.0) {
-            Network::Netresult vec;
-            game.set_komi(t_komi);
-            float rate = 0.0f;
-            if (0) {
-                rate = search->think_kr(who);
-            } else {
-                vec = s_network->get_output(
-                    &game, Network::Ensemble::DIRECT,
-                    Network::IDENTITY_SYMMETRY, false, false);
-                rate = vec.winrate;
-            }
-            if (std::abs(rate-0.5) < delta ) {
-                //myprintf("%.1f(%f%%) -> %.1f(%f%%)\n", last_komi,last_rate, t_komi,rate);
-                last_rate = rate;
-                last_komi = t_komi;
-                delta = std::abs(rate-0.5);
-            }
-        }
-        game.set_komi(old_komi);
-        */
+        std::istringstream cmdstream(command);
+        std::string tmp;
+        std::string type;
+        cmdstream >> tmp;   // eat final_score
+        cmdstream >> type;
 
-        float ftmp = game.final_score();
-        //ftmp = last_komi;
+        float ftmp = -999.0;
+        if (cmdstream.fail()) {
+            ftmp = game.final_score(); 
+        } else if (type == "rate") {
+            float old_komi = game.get_komi();
+            auto who = game.get_to_move();
+            float delta = 1.0f;
+            float last_rate = 0.5f;
+            float last_komi = 0.0f;
+            for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
+                Network::Netresult vec;
+                game.set_komi(t_komi);
+                float rate = 0.0f;
+                if (0) {
+                    rate = search->think_kr(who);
+                } else {
+                    vec = s_network->get_output(
+                        &game, Network::Ensemble::DIRECT,
+                        Network::IDENTITY_SYMMETRY, false, false);
+                    rate = vec.winrate;
+                }
+                if (std::abs(rate-0.5) < delta ) {
+                    //myprintf("%.1f(%f%%) -> %.1f(%f%%)\n", last_komi,last_rate, t_komi,rate);
+                    last_rate = rate;
+                    last_komi = t_komi;
+                    delta = std::abs(rate-0.5);
+                }
+            }
+            game.set_komi(old_komi);
+            ftmp = last_komi;
+        } else {
+            ftmp = game.final_score(); 
+        }
+
         /* white wins */
         if (ftmp < -0.1) {
             gtp_printf(id, "W+%3.1f", float(fabs(ftmp)));
