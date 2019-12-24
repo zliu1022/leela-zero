@@ -1471,6 +1471,20 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         if (cmdstream.fail()) {
             ftmp = game.final_score(); 
         } else if (type == "rate") {
+            cmdstream >> tmp;
+            if (!cmdstream.fail()) {
+                try {
+                    cfg_max_playouts = std::stoi(tmp);
+                } catch(...) {
+                    gtp_fail_printf(id, "syntax should be: final_score rate [playouts]");
+                    return;
+                }
+            } else {
+                cfg_max_playouts = 0;
+            }
+            search->set_playout_limit(cfg_max_playouts);
+
+            Time start;
             float old_komi = game.get_komi();
             auto who = game.get_to_move();
             float delta = 1.0f;
@@ -1479,15 +1493,13 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             for (auto t_komi = kr_begin; t_komi <= kr_end; t_komi+=kr_step) {
                 Network::Netresult vec;
                 game.set_komi(t_komi);
+                s_network->nncache_clear();
                 float rate = 0.0f;
-                if (0) {
-                    rate = search->think_kr(who);
-                } else {
-                    vec = s_network->get_output(
-                        &game, Network::Ensemble::DIRECT,
-                        Network::IDENTITY_SYMMETRY, false, false);
-                    rate = vec.winrate;
-                }
+                /*vec = s_network->get_output(
+                    &game, Network::Ensemble::DIRECT,
+                    Network::IDENTITY_SYMMETRY, false, false);
+                rate = vec.winrate;*/
+                rate = search->think_kr(who);
                 if (std::abs(rate-0.5) < delta ) {
                     //myprintf("%.1f(%f%%) -> %.1f(%f%%)\n", last_komi,last_rate, t_komi,rate);
                     last_rate = rate;
@@ -1495,8 +1507,12 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                     delta = std::abs(rate-0.5);
                 }
             }
+            s_network->nncache_clear();
             game.set_komi(old_komi);
             ftmp = last_komi;
+            Time elapsed;
+            int elapsed_centis = Time::timediff_centis(start, elapsed);
+            myprintf("final_score rate %.3fs\n", (elapsed_centis+1)/100.0f);
         } else {
             ftmp = game.final_score(); 
         }
