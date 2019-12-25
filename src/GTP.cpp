@@ -1309,6 +1309,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         int who;
         AnalyzeTags tags;
         int movenum = game.get_movenum();
+        int avoid_num = 0;
 
         if (analysis_output) {
             tags = AnalyzeTags{cmdstream, game};
@@ -1332,9 +1333,10 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             //avoid ladder
             //cfg_analyze_tags = AnalyzeTags{};
             if (cfg_ladder_mode == 1) {
-                auto avoid_num = set_ladder_avoid(game, who, movenum);
+                avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
-                    //search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                    cfg_max_playouts = 2*cfg_max_playouts;
                 }
             } else if (cfg_ladder_mode == 2) {
                 get_ladder_detail(game, who, *search.get(), 1);
@@ -1347,9 +1349,10 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
             //avoid ladder
             if (cfg_ladder_mode == 1) {
-                auto avoid_num = set_ladder_avoid(game, who, movenum);
+                avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
-                    //search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                    search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
+                    cfg_max_playouts = 2*cfg_max_playouts;
                 }
             } else if (cfg_ladder_mode == 2) {
                 get_ladder_detail(game, who, *search.get(), 1);
@@ -1367,6 +1370,10 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             // Outputs winrate and pvs for lz-genmove_analyze
             int move = search->think(who);
             game.play_move(move);
+
+            if (avoid_num) {
+                cfg_max_playouts = cfg_max_playouts/2;
+            }
 
             std::string vertex = game.move_to_text(move);
             if (!analysis_output) {
