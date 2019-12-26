@@ -253,7 +253,7 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                     legal_sum += raw_netlist.policy_pass;
                 }
             } else {
-                if (to_move == FastBoard::WHITE) {
+                if (cfg_pacman && to_move==FastBoard::WHITE && state.get_capgo_pass()<cfg_capgo_pass) {
                 //capgo, when allow pass force pass'policy=policy_max
                 nodelist.emplace_back(policy_max, FastBoard::PASS);
                 legal_sum += policy_max;
