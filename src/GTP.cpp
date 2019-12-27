@@ -1188,7 +1188,11 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         else {
             s = cfg_weightsfile.substr(pos + 1);
         }
-        gtp_printf(id, s.c_str());
+        if (cfg_max_playouts!=UCTSearch::UNLIMITED_PLAYOUTS) {
+            gtp_printf(id, "%s-p%d", s.c_str(), cfg_max_playouts);
+        } else {
+            gtp_printf(id, s.c_str());
+        }
         //gtp_printf(id, PROGRAM_NAME);
         return;
     } else if (command == "version") {
@@ -1336,7 +1340,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
                     search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
-                    cfg_max_playouts = 2*cfg_max_playouts;
+                    //cfg_max_playouts = 2*cfg_max_playouts;
                 }
             } else if (cfg_ladder_mode == 2) {
                 get_ladder_detail(game, who, *search.get(), 1);
@@ -1352,7 +1356,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 avoid_num = set_ladder_avoid(game, who, movenum);
                 if (avoid_num) {
                     search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
-                    cfg_max_playouts = 2*cfg_max_playouts;
+                    //cfg_max_playouts = 2*cfg_max_playouts;
                 }
             } else if (cfg_ladder_mode == 2) {
                 get_ladder_detail(game, who, *search.get(), 1);
@@ -1372,7 +1376,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
             game.play_move(move);
 
             if (avoid_num) {
-                cfg_max_playouts = cfg_max_playouts/2;
+                //cfg_max_playouts = cfg_max_playouts/2;
             }
 
             std::string vertex = game.move_to_text(move);
