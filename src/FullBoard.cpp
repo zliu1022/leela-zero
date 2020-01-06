@@ -158,6 +158,8 @@ int FullBoard::update_board(const int color, const int i) {
     auto captured_stones = 0;
     int captured_vtx;
 
+    m_ladderforced = false; // ladder=4, sai
+
     for (int k = 0; k < 4; k++) {
         int ai = i + m_dirs[k];
 
@@ -167,9 +169,22 @@ int FullBoard::update_board(const int color, const int i) {
                 captured_vtx = ai;
                 captured_stones += this_captured;
             }
+            // ladder=4, sai
+            // if we are giving atari to an opponent chain, this may
+            // be a forced move, during a ladder
+            if (m_libs[m_parent[ai]] == 1) {
+                m_ladderforced = true;
+            }
         } else if (m_state[ai] == color) {
             int ip = m_parent[i];
             int aip = m_parent[ai];
+
+            // ladder=4, sai
+            // if we are extending our own chain which was in atari,
+            // this may be a forced move, during a ladder
+            if (m_libs[aip] <= 0) {
+                m_ladderforced = true;
+            }
 
             if (ip != aip) {
                 if (m_stones[ip] >= m_stones[aip]) {

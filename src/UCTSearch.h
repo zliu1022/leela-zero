@@ -50,6 +50,11 @@ public:
     SearchResult() = default;
     bool valid() const { return m_valid;  }
     float eval() const { return m_eval;  }
+
+    //ladder=4, sai
+    bool is_forced() const { return m_forced; }
+    void set_forced() { m_forced = true; }
+
     static SearchResult from_eval(float eval) {
         return SearchResult(eval);
     }
@@ -67,6 +72,7 @@ private:
         : m_valid(true), m_eval(eval) {}
     bool m_valid{false};
     float m_eval{0.0f};
+    bool m_forced{false}; //ladder=4, sai
 };
 
 namespace TimeManagement {

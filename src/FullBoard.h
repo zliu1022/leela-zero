@@ -46,6 +46,7 @@ public:
     void reset_board(int size);
     void display_board(int lastmove = -1);
 
+    bool ladder_forced() const { return m_ladderforced; } // ladder=4, sai
     std::uint64_t calc_hash(int komove = NO_VERTEX) const;
     std::uint64_t calc_symmetry_hash(int komove, int symmetry) const;
     std::uint64_t calc_ko_hash() const;
@@ -56,6 +57,7 @@ public:
 private:
     template<class Function>
     std::uint64_t calc_hash(int komove, Function transform) const;
+    bool m_ladderforced{false}; // ladder=4, sai
 };
 
 #endif

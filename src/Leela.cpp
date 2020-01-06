@@ -186,7 +186,8 @@ static void parse_commandline(int argc, char *argv[]) {
                     "0: close (default)\n"
                     "1: get ladder result and set avoid\n"
                     "2: set tree winrate before genmove\n"
-                    "3: set tree winrate during MCTS (under developing)\n")
+                    "3: set tree winrate during MCTS (under developing)\n"
+                    "4: sai ladder\n")
 #ifndef USE_CPU_ONLY
         ("cpu-only", "Use CPU-only implementation and do not use OpenCL device(s).")
 #endif

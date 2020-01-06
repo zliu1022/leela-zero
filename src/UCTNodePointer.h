@@ -128,6 +128,7 @@ public:
     // constructing UCTNode
     bool valid() const;
     int get_visits() const;
+    int get_denom() const; //ladder=4, sai
     float get_policy() const;
     bool active() const;
     int get_move() const;

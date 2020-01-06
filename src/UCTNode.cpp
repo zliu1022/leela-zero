@@ -65,7 +65,8 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                               GameState& state,
                               float& eval,
                               float min_psa_ratio) {
-    //myprintf("\ncreate_children: %d\n", state.board.get_to_move());
+    auto movenum = state.get_movenum();
+    //myprintf("\ncreate_children: color %d No %d\n", state.board.get_to_move(), movenum);
     // no successors in final state
     if (state.get_passes() >= 2) {
         return false;
@@ -162,6 +163,17 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
         const auto y = i / BOARD_SIZE;
         const auto vertex = state.board.get_vertex(x, y);
         if (state.is_move_legal(to_move, vertex)) {
+            if (raw_netlist.policy[i] > policy_max) {
+                policy_max = raw_netlist.policy[i];
+            }
+        }
+    }
+
+    for (auto i = 0; i < NUM_INTERSECTIONS; i++) {
+        const auto x = i % BOARD_SIZE;
+        const auto y = i / BOARD_SIZE;
+        const auto vertex = state.board.get_vertex(x, y);
+        if (state.is_move_legal(to_move, vertex)) {
             if (cfg_have_aux && to_move == FastBoard::BLACK) {
                 //myprintf("(cfg_have_aux && to_move == FastBoard::BLACK)\n");
                 if (cfg_auxmode==AuxMode::AVG) {
@@ -194,10 +206,15 @@ bool UCTNode::create_children(Network & network, Network & network_aux,
                     }
                 } else {
                     //myprintf("!cfg_have_aux\n");
-                    nodelist.emplace_back(raw_netlist.policy[i], vertex);
-                    legal_sum += raw_netlist.policy[i];
-                    if (raw_netlist.policy[i] > policy_max) {
-                        policy_max = raw_netlist.policy[i];
+                    // testing for ladder destroy in another point across the board
+                    if (0&to_move == FastBoard::BLACK && movenum>=40 && vertex==47) {
+                        //myprintf("vtx 47 -> 2*p_max\n");
+                        float tmp_co = 1.5 + 0.125*(movenum-40);
+                        nodelist.emplace_back(tmp_co*policy_max, vertex);
+                        legal_sum += tmp_co*policy_max;
+                    } else {
+                        nodelist.emplace_back(raw_netlist.policy[i], vertex);
+                        legal_sum += raw_netlist.policy[i];
                     }
                 }
             }
@@ -353,7 +370,7 @@ void UCTNode::virtual_loss_undo() {
     m_virtual_loss -= VIRTUAL_LOSS_COUNT;
 }
 
-void UCTNode::update(float eval) {
+void UCTNode::update(float eval, bool forced) {
     // Cache values to avoid race conditions.
     auto old_eval = static_cast<float>(m_blackevals);
     auto old_visits = static_cast<int>(m_visits);
@@ -364,6 +381,11 @@ void UCTNode::update(float eval) {
     // Welford's online algorithm for calculating variance.
     auto delta = old_delta * new_delta;
     atomic_add(m_squared_eval_diff, delta);
+
+    //ladder=4, sai
+    if (forced) {
+        m_forced++;
+    }
 }
 
 bool UCTNode::has_children() const {
@@ -395,6 +417,15 @@ float UCTNode::get_eval_variance(float default_var) const {
 
 int UCTNode::get_visits() const {
     return m_visits;
+}
+
+//ladder=4, sai
+int UCTNode::get_denom() const {
+    if (cfg_ladder_mode==4) {
+        return 1 + m_visits - m_forced;
+    } else {
+        return 1 + m_visits;
+    }
 }
 
 float UCTNode::get_eval_lcb(int color) const {
@@ -491,7 +522,8 @@ UCTNode* UCTNode::ladder_select_child(int color, bool is_root, bool is_hp, int m
             winrate = child.get_eval(color);
         }
         const auto psa = child.get_policy();
-        const auto denom = 1.0 + child.get_visits();
+        //const auto denom = 1.0 + child.get_visits();
+        const auto denom = child.get_denom();
         auto puct = cfg_puct * psa * (numerator / denom);
 
         //zliu: auxmode HP

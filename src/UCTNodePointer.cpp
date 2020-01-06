@@ -131,6 +131,13 @@ int UCTNodePointer::get_visits() const {
     return 0;
 }
 
+//ladder=4, sai
+int UCTNodePointer::get_denom() const {
+    auto v = m_data.load();
+    if (is_inflated(v)) return read_ptr(v)->get_denom();
+    return 1;
+}
+
 float UCTNodePointer::get_policy() const {
     auto v = m_data.load();
     if (is_inflated(v)) return read_ptr(v)->get_policy();

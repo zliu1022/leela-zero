@@ -276,11 +276,16 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
             next->invalidate();
         } else {
             result = play_simulation(currstate, next);
+
+            //ladder=4, sai
+            if (currstate.board.ladder_forced()) {
+                result.set_forced();
+            }
         }
     }
 
     if (result.valid()) {
-        node->update(result.eval());
+        node->update(result.eval(), result.is_forced()); //ladder=4, sai
     }
     node->virtual_loss_undo();
 
