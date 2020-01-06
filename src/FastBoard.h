@@ -151,6 +151,7 @@ public:
     static bool starpoint(int size, int x, int y);
 
     void print_stonelist(std::vector<StoneList> & stonelist) const;
+    bool is_neighbour_only_vertex(int i, int vertex) const ;
 protected:
     /*
         bit masks to detect eyes on neighbors

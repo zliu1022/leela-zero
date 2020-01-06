@@ -559,7 +559,7 @@ int UCTSearch::get_best_move(passflag_t passflag) {
     } else if (!cfg_dumbpass) {
         auto relative_score =
             (color == FastBoard::BLACK ? 1 : -1) * m_rootstate.final_score();
-        myprintf("relative_score %f\n", relative_score);
+        myprintf("relative_score %.1f\n", relative_score);
         if(cfg_pacman) {
             //capgo, close smart pass
             relative_score = 1.0;

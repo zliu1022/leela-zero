@@ -1024,3 +1024,16 @@ int FastBoard::count_capture_1lib(int vertex) const {
     return st.size();
 }
 
+bool FastBoard::is_neighbour_only_vertex(int i, int vertex) const {
+    auto color = get_state(vertex);
+    auto vtx_p = m_parent[vertex];
+    for (auto k = 0; k < 4; k++) {
+        auto ai = i + m_dirs[k];
+        auto aip = m_parent[ai];
+        if (get_state(ai) == color && aip!=vtx_p) {
+            return false;
+        }
+    }
+    return true;
+}
+

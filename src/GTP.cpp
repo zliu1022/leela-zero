@@ -1081,11 +1081,19 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
                             auto dep = game_history.size();
                             if ((dep-rootnum)>=15) {
                                 myprintf("dep %d", dep-rootnum);
+
+                    //auto sgf_text = SGFTree::state_to_string(ladder_succ[i], 0);
+                    //myprintf("\n%s", sgf_text.c_str());
+
                                 for (const auto &state : game_history) {
                                     auto num = state->get_movenum();
                                     if (num<=rootnum) { continue; }
                                     auto m = state->get_last_move();
                                     auto movestr = game.move_to_text(m);
+                                    if(!board.is_neighbour_only_vertex(m, vertex)){
+                                        myprintf(" skip %s\n", movestr.c_str());
+                                        break;
+                                    }
                                     myprintf(" %s\n", movestr.c_str());
                                     avoid_moves.push_back(m);
                                     break;
@@ -1111,7 +1119,7 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
     }
     Time elapsed;
     int elapsed_centis = Time::timediff_centis(start, elapsed);
-    myprintf("set_ladder_avoid %.3fs\n", (elapsed_centis+1)/100.0f);
+    myprintf("set_ladder_avoid %.3fms %.3fus %.3fns\n", elapsed_centis*10.0f, elapsed_centis*10000.0f, elapsed_centis*10000000.0f);
     return count;
 }
 
