@@ -1118,8 +1118,8 @@ int GTP::set_ladder_avoid(GameState & game, int color, int movenum) {
         }
     }
     Time elapsed;
-    int elapsed_centis = Time::timediff_centis(start, elapsed);
-    myprintf("set_ladder_avoid %.3fms %.3fus %.3fns\n", elapsed_centis*10.0f, elapsed_centis*10000.0f, elapsed_centis*10000000.0f);
+    double elapsed_seconds = Time::timediff_seconds(start, elapsed);
+    myprintf("set_ladder_avoid %.3lfs %.3lfms\n", elapsed_seconds, elapsed_seconds*1000.0f);
     return count;
 }
 
