@@ -622,10 +622,9 @@ class TFProcess:
     def construct_net(self, planes):
         # NCHW format
         # batch, 18 channels, 19 x 19
+        x_planes = tf.reshape(planes, [-1, 18, 19, 19])
         if self.cpuonly:
-            x_planes = tf.reshape(planes, [-1, 19, 19, 18])
-        else:
-            x_planes = tf.reshape(planes, [-1, 18, 19, 19])
+            x_planes = tf.transpose(x_planes, perm=[0, 2, 3, 1]) # NHWC input format: [-1, 19, 19, feature]
 
         # Input convolution
         flow = self.conv_block(x_planes, filter_size=3,
@@ -643,6 +642,8 @@ class TFProcess:
                                    input_channels=self.RESIDUAL_FILTERS,
                                    output_channels=2,
                                    name="policy_head", trainable=True)
+        if cpuonly:
+            conv_pol = tf.transpose(conv_pol, perm=[0, 3, 1, 2]) #NHWC output format: [-1, 19,19,channel], should transform to NCHW
         h_conv_pol_flat = tf.reshape(conv_pol, [-1, 2 * 19 * 19])
         W_fc1 = weight_variable("w_fc_1", [2 * 19 * 19, (19 * 19) + 1], self.model_dtype, trainable=True)
         b_fc1 = bias_variable("b_fc_1", [(19 * 19) + 1], self.model_dtype, trainable=True)
