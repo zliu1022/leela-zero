@@ -151,8 +151,7 @@ def main():
                               sample=args.sample,
                               batch_size=RAM_BATCH_SIZE).parse()
 
-    #tfprocess = TFProcess(args.cpuonly)
-    tfprocess = TFProcess(True)
+    tfprocess = TFProcess(args.cpuonly)
     tfprocess.init(RAM_BATCH_SIZE,
                    logbase=args.logbase,
                    macrobatch=BATCH_SIZE // RAM_BATCH_SIZE)
