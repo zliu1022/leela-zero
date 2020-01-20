@@ -53,6 +53,9 @@ public:
     static bool greater_len(const StoneList& st1, const StoneList& st2) {
         return st1.len > st2.len;
     }
+    int result;
+    int min_dep;
+    int max_dep;
 };
 
 class FastBoard {
@@ -152,6 +155,8 @@ public:
 
     void print_stonelist(std::vector<StoneList> & stonelist) const;
     bool is_neighbour_only_vertex(int i, int vertex) const ;
+    int get_neighbor(int vertex, int dir) const;
+    int get_next(int vertex) const;
 protected:
     /*
         bit masks to detect eyes on neighbors

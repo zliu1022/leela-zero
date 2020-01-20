@@ -157,8 +157,7 @@ private:
 
     static std::string get_life_list(const GameState & game, bool live);
     static void get_life_detail(const GameState & game);
-    static void get_ladder_detail(const GameState & game, int color, UCTSearch & search, int debug);
-    static int set_ladder_avoid(GameState & game, int color, int movenum) ;
+    static bool get_ladder_detail(GameState & game, int color, int debug=0);
     static int play_ladder_capture(const GameState & game, int vertex, int level) ;
     static int play_ladder_escape(const GameState & game, int vertex) ;
     static void print_ladder_move(GameState & game);

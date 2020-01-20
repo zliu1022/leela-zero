@@ -1024,6 +1024,7 @@ int FastBoard::count_capture_1lib(int vertex) const {
     return st.size();
 }
 
+// Does position i and vertex are only neighbour each other?
 bool FastBoard::is_neighbour_only_vertex(int i, int vertex) const {
     auto color = get_state(vertex);
     auto vtx_p = m_parent[vertex];
@@ -1035,5 +1036,13 @@ bool FastBoard::is_neighbour_only_vertex(int i, int vertex) const {
         }
     }
     return true;
+}
+
+int FastBoard::get_neighbor(int vertex, int dir) const {
+    return (vertex + m_dirs[dir]);
+}
+
+int FastBoard::get_next(int vertex) const {
+    return m_next[vertex];
 }
 

@@ -43,6 +43,9 @@
 #include "KoState.h"
 #include "UCTSearch.h"
 
+#include "Utils.h"
+using namespace Utils;
+
 void GameState::init_game(int size, float komi) {
     KoState::init_game(size, komi);
 
@@ -319,4 +322,203 @@ const FullBoard& GameState::get_past_board(int moves_ago) const {
 
 const std::vector<std::shared_ptr<const KoState>>& GameState::get_game_history() const {
     return game_history;
+}
+
+Ladder::LadderStatus Ladder::ladder_status(const FastState &state) {
+    const auto board = state.board;
+
+    Ladder::LadderStatus status;
+
+    for (auto i = 0; i < BOARD_SIZE; i++) {
+        for (auto j = 0; j < BOARD_SIZE; j++) {
+            auto vertex = board.get_vertex(i, j);
+            status[i][j] = NO_LADDER;
+            if (ladder_capture(state, vertex)) {
+                status[i][j] = CAPTURE;
+            }
+            if (ladder_escape(state, vertex)) {
+                status[i][j] = ESCAPE;
+            }
+        }
+    }
+    return status;
+}
+
+bool Ladder::ladder_capture(const FastState &state, int vertex, int group, int depth) {
+
+    const auto &board = state.board;
+    const auto capture_player = board.get_to_move();
+    const auto escape_player = capture_player==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
+
+    if (!state.is_move_legal(capture_player, vertex)) {
+        return false;
+    }
+
+    // Assume that capture succeeds if it takes this long
+    if (depth >= 100) {
+        return true;
+    }
+
+    std::vector<int> groups_in_ladder;
+
+    if (group == FastBoard::PASS) {
+        // Check if there are nearby groups with 2 liberties
+        for (int d = 0; d < 4; d++) {
+            int n_vtx = board.get_neighbor(vertex, d);
+            int n = board.get_state(n_vtx);
+            if ((n == escape_player) && (board.get_lib(n_vtx) == 2)) {
+                auto parent = board.get_parent_vertex(n_vtx);
+                if (std::find(groups_in_ladder.begin(), groups_in_ladder.end(), parent) == groups_in_ladder.end()) {
+                    groups_in_ladder.emplace_back(parent);
+                }
+            }
+        }
+    } else {
+        groups_in_ladder.emplace_back(group);
+    }
+
+    for (auto& group : groups_in_ladder) {
+        auto state_copy = std::make_unique<FastState>(state);
+        auto &board_copy = state_copy->board;
+
+        state_copy->play_move(vertex);
+
+        int escape = FastBoard::PASS;
+        int newpos = group;
+        do {
+            for (int d = 0; d < 4; d++) {
+                int stone = board_copy.get_neighbor(newpos, d);
+                // If the surrounding stones are in atari capture fails
+                if (board_copy.get_state(stone) == capture_player) {
+                    if (board_copy.get_lib(stone) == 1) {
+                        return false;
+                    }
+                }
+                // Possible move to escape
+                if (board_copy.get_state(stone) == FastBoard::EMPTY) {
+                    escape = stone;
+                }
+            }
+            newpos = board_copy.get_next(newpos);
+        } while (newpos != group);
+        
+        assert(escape != FastBoard::PASS);
+
+        // If escaping fails the capture was successful
+        if (!ladder_escape(*state_copy, escape, group, depth + 1)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Ladder::ladder_escape(const FastState &state, const int vertex, int group, int depth) {
+    const auto &board = state.board;
+    const auto escape_player = board.get_to_move();
+
+    if (!state.is_move_legal(escape_player, vertex)) {
+        return false;
+    }
+
+    // Assume that escaping failed if it takes this long
+    if (depth >= 100) {
+        return false;
+    }
+
+    std::vector<int> groups_in_ladder;
+
+    if (group == FastBoard::PASS) {
+        // Check if there are nearby groups with 1 liberties
+        for (int d = 0; d < 4; d++) {
+            int n_vtx = board.get_neighbor(vertex, d);
+            int n = board.get_state(n_vtx);
+            if ((n == escape_player) && (board.get_lib(n_vtx) == 1)) {
+                auto parent = board.get_parent_vertex(n_vtx);
+                if (std::find(groups_in_ladder.begin(), groups_in_ladder.end(), parent) == groups_in_ladder.end()) {
+                    groups_in_ladder.emplace_back(parent);
+                }
+            }
+        }
+    } else {
+        groups_in_ladder.emplace_back(group);
+    }
+
+    for (auto& group : groups_in_ladder) {
+        auto state_copy = std::make_unique<FastState>(state);
+        auto &board_copy = state_copy->board;
+
+        state_copy->play_move(vertex);
+
+        if (board_copy.get_lib(group) >= 3) {
+            // Opponent can't atari on the next turn
+            return true;
+        }
+
+        if (board_copy.get_lib(group) == 1) {
+            // Will get captured on the next turn
+            return false;
+        }
+
+        // Still two liberties left, check for possible captures
+        int newpos = group;
+        do {
+            for (int d = 0; d < 4; d++) {
+                int empty = board_copy.get_neighbor(newpos, d);
+                if (board_copy.get_state(empty) == FastBoard::EMPTY) {
+                    if (ladder_capture(*state_copy, empty, group, depth + 1)) {
+                        // Got captured
+                        return false;
+                    }
+                }
+            }
+            newpos = board_copy.get_next(newpos);
+        } while (newpos != group);
+
+        // Ladder capture failed, escape succeeded
+        return true;
+    }
+
+    return false;
+}
+
+static void print_columns() {
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        if (i < 25) {
+            myprintf("%c ", (('a' + i < 'i') ? 'a' + i : 'a' + i + 1));
+        }
+        else {
+            myprintf("%c ", (('A' + (i - 25) < 'I') ? 'A' + (i - 25) : 'A' + (i - 25) + 1));
+        }
+    }
+    myprintf("\n");
+}
+
+void Ladder::display_ladders(const LadderStatus &status) {
+    myprintf("\n   ");
+    print_columns();
+    for (int j = BOARD_SIZE-1; j >= 0; j--) {
+        myprintf("%2d", j+1);
+        myprintf(" ");
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            if (status[i][j] == CAPTURE) {
+                myprintf("C");
+            } else if (status[i][j] == ESCAPE) {
+                myprintf("E");
+            } else if (FastBoard::starpoint(BOARD_SIZE, i, j)) {
+                myprintf("+");
+            } else {
+                myprintf(".");
+            }
+            myprintf(" ");
+        }
+        myprintf("%2d\n", j+1);
+    }
+    myprintf("   ");
+    print_columns();
+    myprintf("\n");
+}
+
+void Ladder::display_ladders(const FastState &state) {
+    display_ladders(ladder_status(state));
 }

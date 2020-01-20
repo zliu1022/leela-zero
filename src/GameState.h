@@ -86,4 +86,22 @@ private:
     int m_resigned{FastBoard::EMPTY};
 };
 
+class Ladder {
+
+    enum ladder_status_t : char {
+        NO_LADDER = 0, CAPTURE = 1, ESCAPE = 2
+    };
+
+    using LadderStatus = std::array<std::array<ladder_status_t, BOARD_SIZE>, BOARD_SIZE>;
+
+    public:
+        static LadderStatus ladder_status(const FastState &state);
+
+        static bool ladder_capture(const FastState &state, int vertex, int group=FastBoard::PASS, int depth=0);
+        static bool ladder_escape(const FastState &state, int vertex, int group=FastBoard::PASS, int depth=0);
+
+        static void display_ladders(const LadderStatus &status);
+        static void display_ladders(const FastState &state);
+};
+
 #endif
