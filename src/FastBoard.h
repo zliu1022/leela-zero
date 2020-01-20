@@ -105,9 +105,12 @@ public:
     int count_pliberties(const int i) const;
     bool is_eye(const int color, const int vtx) const;
 
-    int get_parent_vertex(const int i) const;
     int count_liberties(const int i, const int k) const; // only for print different type of lib
+
+    int get_parent(const int i) const;
     int get_lib(const int i) const;
+    int get_neighbor(int vertex, int dir) const;
+    int get_next(int vertex) const;
 
     // two same function
     int get_stone(const int i) const;
@@ -155,8 +158,6 @@ public:
 
     void print_stonelist(std::vector<StoneList> & stonelist) const;
     bool is_neighbour_only_vertex(int i, int vertex) const ;
-    int get_neighbor(int vertex, int dir) const;
-    int get_next(int vertex) const;
 protected:
     /*
         bit masks to detect eyes on neighbors

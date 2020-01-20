@@ -531,7 +531,7 @@ void GTP::get_life_detail(const GameState & game) {
             if (board.get_state(vertex) != FastBoard::EMPTY) {
 
                 StoneList stonelist_tmp;
-                stonelist_tmp.vertex = board.get_parent_vertex(vertex);
+                stonelist_tmp.vertex = board.get_parent(vertex);
 
                 if (board.get_state(vertex)==FastBoard::BLACK) {
                     if (!stonelist_tmp.stonelist_include(stonelist_b, stonelist_tmp.vertex)){
@@ -595,7 +595,7 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
 
             if (board.get_state(vertex) != FastBoard::EMPTY) {
                 StoneList stonelist_tmp;
-                stonelist_tmp.vertex = board.get_parent_vertex(vertex);
+                stonelist_tmp.vertex = board.get_parent(vertex);
                 stonelist_tmp.lib = board.get_lib(vertex);
                 if ( (board.get_state(vertex)==color) && 
                     (!stonelist_tmp.stonelist_include(stonelist, stonelist_tmp.vertex)) &&

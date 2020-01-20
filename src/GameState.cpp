@@ -367,7 +367,7 @@ bool Ladder::ladder_capture(const FastState &state, int vertex, int group, int d
             int n_vtx = board.get_neighbor(vertex, d);
             int n = board.get_state(n_vtx);
             if ((n == escape_player) && (board.get_lib(n_vtx) == 2)) {
-                auto parent = board.get_parent_vertex(n_vtx);
+                auto parent = board.get_parent(n_vtx);
                 if (std::find(groups_in_ladder.begin(), groups_in_ladder.end(), parent) == groups_in_ladder.end()) {
                     groups_in_ladder.emplace_back(parent);
                 }
@@ -434,7 +434,7 @@ bool Ladder::ladder_escape(const FastState &state, const int vertex, int group, 
             int n_vtx = board.get_neighbor(vertex, d);
             int n = board.get_state(n_vtx);
             if ((n == escape_player) && (board.get_lib(n_vtx) == 1)) {
-                auto parent = board.get_parent_vertex(n_vtx);
+                auto parent = board.get_parent(n_vtx);
                 if (std::find(groups_in_ladder.begin(), groups_in_ladder.end(), parent) == groups_in_ladder.end()) {
                     groups_in_ladder.emplace_back(parent);
                 }

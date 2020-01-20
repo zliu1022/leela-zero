@@ -623,7 +623,7 @@ int FastBoard::count_liberties(const int i, const int k) const {
     }
 }
 
-int FastBoard::get_parent_vertex(const int i) const {
+int FastBoard::get_parent(const int i) const {
     return m_parent[i];
 }
 
