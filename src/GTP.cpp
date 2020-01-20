@@ -758,11 +758,13 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                 auto m = avoid_moves[i];
                 auto movestr = game.move_to_text(m);
                 if (m!=FastBoard::NO_VERTEX) {
-                    if(board.is_neighbour_only_vertex(m, vertex)){
+                    if(!board.is_neighbour_only_vertex(m, vertex)){
+                        myprintf("skip(opp neighbor) avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
+                    } else if (board.check_ladder_capture(vertex)) {
+                        myprintf("skip(1lib capture) avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
+                    } else {
                         myprintf("avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
                         cfg_analyze_tags.add_move_to_avoid(color, m, rootnum+1);
-                    } else {
-                        myprintf("skip avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
                     }
                 }
             }

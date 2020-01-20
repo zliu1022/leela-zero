@@ -130,8 +130,7 @@ public:
 
     int is_ladder_escape(int ver_st1lib, int ver_1lib) const ;
     int is_ladder(int vertex) const ;
-    int find_capture(int escape) const ;
-
+    //int find_capture(int escape) const ;
     int check_ladder_capture(int vertex) const ;
     int count_capture_1lib(int vertex) const ;
 

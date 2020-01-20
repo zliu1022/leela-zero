@@ -872,11 +872,11 @@ int FastBoard::is_ladder(int vertex) const {
     return is_ladder_escape(ver_1lib, ver_1libpos);
 }
 
+// num of capture stone with 1lib
 int FastBoard::check_ladder_capture(int vertex) const {
     auto color = get_state(vertex);
     auto opp_color = color==WHITE?BLACK:WHITE;
 
-    //check capture's lib after play escape move, capture's lib must >=2
     int count=0;
     int pos = vertex;
     //myprintf("\n");
