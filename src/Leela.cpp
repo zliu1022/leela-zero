@@ -184,10 +184,11 @@ static void parse_commandline(int argc, char *argv[]) {
         ("ladder", po::value<int>(),
                     "ladder detection:\n"
                     "0: close (default)\n"
-                    "1: get ladder result and set avoid\n"
+                    "1: detect ladder and avoid\n"
                     "2: set tree winrate before genmove\n"
                     "3: set tree winrate during MCTS (under developing)\n"
-                    "4: sai ladder, atari position ignore visits for UCT\n")
+                    "4: sai ladder, atari position ignore visits for UCT")
+        ("ladder-dep", po::value<int>(), "Depth(=18) to judge ladder avoid.")
 #ifndef USE_CPU_ONLY
         ("cpu-only", "Use CPU-only implementation and do not use OpenCL device(s).")
 #endif
@@ -314,6 +315,9 @@ static void parse_commandline(int argc, char *argv[]) {
         cfg_ladder_mode = vm["ladder"].as<int>();
     }
 
+    if (vm.count("ladder-dep")) {
+        cfg_ladder_dep = vm["ladder-dep"].as<int>();
+    }
 #ifdef USE_TUNER
     if (vm.count("puct")) {
         cfg_puct = vm["puct"].as<float>();

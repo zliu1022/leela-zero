@@ -66,6 +66,7 @@ int cfg_max_visits;
 bool cfg_pacman;
 int cfg_capgo_pass;
 int cfg_ladder_mode;
+int cfg_ladder_dep;
 size_t cfg_max_memory;
 size_t cfg_max_tree_size;
 int cfg_max_cache_ratio_percent;
@@ -379,6 +380,7 @@ void GTP::setup_default_parameters() {
     cfg_pacman = false;
     cfg_capgo_pass = 0;//capgo, default: not allow pass
     cfg_ladder_mode = 0;
+    cfg_ladder_dep = 18;
 #ifdef USE_OPENCL
     cfg_gpus = { };
     cfg_sgemm_exhaustive = false;
@@ -638,7 +640,7 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
 
                 for(size_t i=0; i<ladder_fail.size(); i++){
                     auto dep = ladder_fail[i].get_movenum();
-                    depth.push_back(dep-rootnum);
+                    depth.push_back(dep-rootnum-1);
                     myprintf("\n%s Answer ladder_fail No.%d dep %d (No.%d~%d)\n", coor.c_str(), i, dep-rootnum-1, rootnum+1, dep-1);
                     //ladder_fail[i].display_state();
                     auto sgf_text = SGFTree::state_to_string(ladder_fail[i], 0);
@@ -650,10 +652,10 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                 }
                 stonelist[i].max_dep = max_dep;
                 stonelist[i].min_dep = min_dep;
-                if (min_dep>=15) {
+                if (min_dep>=cfg_ladder_dep) {
                     for(size_t i=0; i<ladder_fail.size(); i++){
                         auto dep = ladder_fail[i].get_movenum();
-                        if ((dep-rootnum)>=15) {
+                        if ((dep-rootnum)>=cfg_ladder_dep) {
                             auto m = ladder_fail[i].get_move(rootnum+1);
                             avoid_moves.push_back(m);
                         }
@@ -710,13 +712,13 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                 myprintf("\n");
                 for(size_t i=0; i<ladder_succ.size(); i++){
                     auto dep = ladder_succ[i].get_movenum();
-                    depth.push_back(dep-rootnum);
+                    depth.push_back(dep-rootnum-1);
                     myprintf("\n%s Answer ladder_succ No.%d dep %d (No.%d~%d)\n", coor.c_str(), i, dep-rootnum-1, rootnum+1, dep-1);
                     //ladder_succ[i].display_state();
                     auto sgf_text = SGFTree::state_to_string(ladder_succ[i], 0);
                     myprintf("%s", sgf_text.c_str());
 
-                    if ((dep-rootnum)>=15) {
+                    if ((dep-rootnum)>=cfg_ladder_dep) {
                         auto m = ladder_succ[i].get_move(rootnum+1);
                         avoid_moves.push_back(m);
                     }
@@ -747,8 +749,6 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                 if (m!=FastBoard::NO_VERTEX) {
                     if(!board.is_neighbour_only_vertex(m, vertex)){
                         myprintf("skip(opp neighbor) avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
-                    } else if (board.check_ladder_capture(vertex)) {
-                        myprintf("skip(1lib capture) avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
                     } else {
                         myprintf("avoid_ladder_capture: %s %s(%d), move:%d\n", color==FastBoard::BLACK?"B":"W", movestr.c_str(), m, rootnum+1);
                         cfg_analyze_tags.add_move_to_avoid(color, m, rootnum+1);
@@ -772,7 +772,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
     auto color = board.get_state(vertex);
     std::vector<int> ret;
     int fail_sz = ladder_fail.size();
-    //int succ_sz = ladder_succ.size();
+    size_t succ_sz = ladder_succ.size();
 
     if( ladder_dep<level ) { ladder_dep = level; }
     auto num_1lib = board.count_capture_1lib(vertex);
@@ -831,25 +831,44 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
     }
     for(auto k=0; k<=level; k++) { myprintf("  "); }
     myprintf("%d escape summary (%d %d) ", level, ladder_fail.size(), ladder_succ.size());
-    auto count = 0;
+    auto count_succ = 0;
     auto count_fail = 0;
     for (size_t j = 0; j < ret.size(); j++) {
         myprintf("%d ", ret[j]);
         if (ret[j]!=0) {
-            count++;
+            count_succ++;
         }
         if (ret[j]==0) {
             count_fail++;
         }
     }
-    if (count>0) {
+    if (count_succ>0) {
         if (count_fail>0) {
             auto now_fail_sz = ladder_fail.size();
             for (size_t j = fail_sz; j <now_fail_sz; j++) {
                 ladder_fail.pop_back();
             }
         }
-        myprintf("succ (-%d %d)\n", ladder_fail.size(), ladder_succ.size());
+        if (count_succ>1) {
+            auto now_succ_sz = ladder_succ.size();
+            if ((now_succ_sz-succ_sz)>1) {
+                myprintf(" %d->%d ", succ_sz, now_succ_sz);
+                int min = 999;
+                GameState g_min;
+                for (size_t j=succ_sz; j<now_succ_sz; j++) {
+                    auto g = ladder_succ.back();
+                    int dep = g.get_movenum();
+                    myprintf("#%d ", dep);
+                    if( dep < min) {
+                        min = dep;
+                        g_min = g;
+                    }
+                    ladder_succ.pop_back();
+                }
+                ladder_succ.push_back(g_min);
+            }
+        }
+        myprintf("succ (-%d %d#)\n", ladder_fail.size(), ladder_succ.size());
         return 1;
     } else {
         myprintf("fail (%d %d)\n", ladder_fail.size(), ladder_succ.size());
@@ -1711,6 +1730,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
         } catch (const std::exception&) {
             gtp_fail_printf(id, "cannot load file");
         }
+        cfg_analyze_tags = {};
         return;
     } else if (command.find("kgs-chat") == 0) {
         // kgs-chat (game|private) Name Message

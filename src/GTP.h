@@ -100,6 +100,7 @@ extern bool cfg_dumbpass;
 extern bool cfg_pacman;
 extern int cfg_capgo_pass;
 extern int cfg_ladder_mode;
+extern int cfg_ladder_dep;
 #ifdef USE_OPENCL
 extern std::vector<int> cfg_gpus;
 extern bool cfg_sgemm_exhaustive;
