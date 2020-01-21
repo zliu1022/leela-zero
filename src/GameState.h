@@ -77,6 +77,7 @@ public:
     void display_state();
     bool has_resigned() const;
     int who_resigned() const;
+    int get_move(int n) const;
 
 private:
     bool valid_handicap(int stones);

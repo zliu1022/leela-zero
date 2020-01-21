@@ -324,6 +324,18 @@ const std::vector<std::shared_ptr<const KoState>>& GameState::get_game_history()
     return game_history;
 }
 
+int GameState::get_move(int n) const {
+    if (n>m_movenum) {
+        return FastBoard::NO_VERTEX;
+    }
+    for (const auto &s : game_history) {
+        auto num = s->get_movenum();
+        if (num<n) { continue; }
+        return s->get_last_move();
+    }
+    return FastBoard::NO_VERTEX;
+}
+
 Ladder::LadderStatus Ladder::ladder_status(const FastState &state) {
     const auto board = state.board;
 
