@@ -870,7 +870,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
         }
         return 1;
     } else {
-        if (count_fail>1) {
+        if (count_fail>1 && level>1) {
             auto now_fail_sz = ladder_fail.size();
             if ((now_fail_sz-fail_sz)>1) {
                 myprintf(" %d->%d ", fail_sz, now_fail_sz);
@@ -986,7 +986,7 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
         }
         return 1;
     } else {
-        if (count_fail>1) {
+        if (count_fail>1 && level>1) {
             auto now_succ_sz = ladder_succ.size();
             if ((now_succ_sz-succ_sz)>1) {
                 myprintf(" %d->%d ", succ_sz, now_succ_sz);
