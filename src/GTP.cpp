@@ -645,6 +645,11 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                     //ladder_fail[i].display_state();
                     auto sgf_text = SGFTree::state_to_string(ladder_fail[i], 0);
                     myprintf("%s", sgf_text.c_str());
+
+                    if ((dep-rootnum-1)>=(size_t)cfg_ladder_dep) {
+                        auto m = ladder_fail[i].get_move(rootnum+1);
+                        avoid_moves.push_back(m);
+                    }
                 }
                 if (depth.size()) {
                     max_dep = *max_element(depth.begin(), depth.end());
@@ -652,17 +657,9 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                 }
                 stonelist[i].max_dep = max_dep;
                 stonelist[i].min_dep = min_dep;
-                if (min_dep>=cfg_ladder_dep) {
-                    for(size_t i=0; i<ladder_fail.size(); i++){
-                        auto dep = ladder_fail[i].get_movenum();
-                        if ((dep-rootnum)>=cfg_ladder_dep) {
-                            auto m = ladder_fail[i].get_move(rootnum+1);
-                            avoid_moves.push_back(m);
-                        }
-                    }
-                    std::sort(begin(avoid_moves), end(avoid_moves));
-                    avoid_moves.erase(std::unique(begin(avoid_moves), end(avoid_moves)), end(avoid_moves));
-                }
+                std::sort(begin(avoid_moves), end(avoid_moves));
+                avoid_moves.erase(std::unique(begin(avoid_moves), end(avoid_moves)), end(avoid_moves));
+
                 myprintf("\n");
             }
             if (debug==1) { cfg_quiet = false; }
@@ -718,7 +715,7 @@ bool GTP::get_ladder_detail(GameState & game, int color, int debug) {
                     auto sgf_text = SGFTree::state_to_string(ladder_succ[i], 0);
                     myprintf("%s", sgf_text.c_str());
 
-                    if ((dep-rootnum)>=cfg_ladder_dep) {
+                    if ((dep-rootnum-1)>=(size_t)cfg_ladder_dep) {
                         auto m = ladder_succ[i].get_move(rootnum+1);
                         avoid_moves.push_back(m);
                     }
@@ -771,7 +768,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
     const auto& board = game.board;
     auto color = board.get_state(vertex);
     std::vector<int> ret;
-    int fail_sz = ladder_fail.size();
+    size_t fail_sz = ladder_fail.size();
     size_t succ_sz = ladder_succ.size();
 
     if( ladder_dep<level ) { ladder_dep = level; }
@@ -867,11 +864,34 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
                 }
                 ladder_succ.push_back(g_min);
             }
+            myprintf("succ (-%d %d#)\n", ladder_fail.size(), ladder_succ.size());
+        } else {
+            myprintf("succ (-%d %d)\n", ladder_fail.size(), ladder_succ.size());
         }
-        myprintf("succ (-%d %d#)\n", ladder_fail.size(), ladder_succ.size());
         return 1;
     } else {
-        myprintf("fail (%d %d)\n", ladder_fail.size(), ladder_succ.size());
+        if (count_fail>1) {
+            auto now_fail_sz = ladder_fail.size();
+            if ((now_fail_sz-fail_sz)>1) {
+                myprintf(" %d->%d ", fail_sz, now_fail_sz);
+                int max = 0;
+                GameState g_max;
+                for (size_t j=fail_sz; j<now_fail_sz; j++) {
+                    auto g = ladder_fail.back();
+                    int dep = g.get_movenum();
+                    myprintf("#%d ", dep);
+                    if( dep > max) {
+                        max = dep;
+                        g_max = g;
+                    }
+                    ladder_fail.pop_back();
+                }
+                ladder_fail.push_back(g_max);
+            }
+            myprintf("fail (#%d %d)\n", ladder_fail.size(), ladder_succ.size());
+        } else {
+            myprintf("fail (%d %d)\n", ladder_fail.size(), ladder_succ.size());
+        }
         return 0;
     }
 }
@@ -880,9 +900,9 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
     const auto& board = game.board;
     auto color = board.get_state(vertex);
     int opp_color = color==FastBoard::WHITE?FastBoard::BLACK:FastBoard::WHITE;
-    int ret[2] = {0, 0};
-    //int fail_sz = ladder_fail.size();
-    int succ_sz = ladder_succ.size();
+    std::vector<int> ret;
+    size_t fail_sz = ladder_fail.size();
+    size_t succ_sz = ladder_succ.size();
 
     for(auto i=0; i<2; i++) {
         for(auto k=0; k<=level; k++) {
@@ -898,7 +918,7 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
             continue;
         }
         if(!game.is_move_legal(opp_color, ver_capture)) {
-            ret[i] = 0;
+            ret.push_back(0);
             ladder_succ.push_back(*g);
             myprintf("%s illegal, escape success (%d %d+)\n", cor_c.c_str(), ladder_fail.size(), ladder_succ.size());
             continue;
@@ -907,39 +927,89 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
         ladder_leaf++;
         myprintf("%s ", cor_c.c_str());
         if(brd.get_lib(vertex)>1){
-            ret[i] = 0;
+            ret.push_back(0);
             myprintf("%d escape success, after capture, escape lib >1 %d\n", level, brd.get_lib(vertex));
             //print_ladder_move(*g);
             //if(!cfg_quiet){ g->display_state(); }
             continue;
         }
         myprintf("\n");
-        ret[i] = !play_ladder_escape_v1(*g, vertex, level+1);
+        auto result = !play_ladder_escape_v1(*g, vertex, level+1);
+        ret.push_back(result);
         for(auto k=0; k<=level; k++) {
             myprintf("  ");
         }
-        myprintf("%d capture feedback %s (%d %d)\n", level, ret[i]==0?"FAIL":"SUCC", ladder_fail.size(), ladder_succ.size());
+        myprintf("%d capture feedback %s (%d %d)\n", level, result==0?"FAIL":"SUCC", ladder_fail.size(), ladder_succ.size());
         //if (ret[i]) { break; }
     }
     for(auto k=0; k<=level; k++) { myprintf("  "); }
-    myprintf("%d capture summary (%d %d) %d %d ", level, ladder_fail.size(), ladder_succ.size(), ret[0], ret[1]);
-    if (ret[0] || ret[1]) {
-        if (ret[0]==0 || ret[1]==0) {
+    myprintf("%d capture summary (%d %d) ", level, ladder_fail.size(), ladder_succ.size());
+    auto count_succ = 0;
+    auto count_fail = 0;
+    for (size_t j = 0; j < ret.size(); j++) {
+        myprintf("%d ", ret[j]);
+        if (ret[j]!=0) {
+            count_succ++;
+        }
+        if (ret[j]==0) {
+            count_fail++;
+        }
+    }
+    if (count_succ>0) {
+        if (count_fail>0) {
             auto now_succ_sz = ladder_succ.size();
             for (size_t j = succ_sz; j <now_succ_sz; j++) {
                 ladder_succ.pop_back();
             }
         }
-        myprintf("succ (%d %d-)\n", ladder_fail.size(), ladder_succ.size());
-        return 1;
-    }
-    /*
-        for (size_t j = fail_sz; j <ladder_fail.size(); j++) {
-            ladder_fail.pop_back();
+        if (count_succ>1) {
+            auto now_fail_sz = ladder_fail.size();
+            if ((now_fail_sz-fail_sz)>1) {
+                myprintf(" %d->%d ", fail_sz, now_fail_sz);
+                int min = 999;
+                GameState g_min;
+                for (size_t j=fail_sz; j<now_fail_sz; j++) {
+                    auto g = ladder_fail.back();
+                    int dep = g.get_movenum();
+                    myprintf("#%d ", dep);
+                    if( dep < min) {
+                        min = dep;
+                        g_min = g;
+                    }
+                    ladder_fail.pop_back();
+                }
+                ladder_fail.push_back(g_min);
+            }
+            myprintf("succ (#%d %d-)\n", ladder_fail.size(), ladder_succ.size());
+        } else {
+            myprintf("succ (%d %d-)\n", ladder_fail.size(), ladder_succ.size());
         }
-    */
-    myprintf("fail (%d %d)\n", ladder_fail.size(), ladder_succ.size());
-    return 0;
+        return 1;
+    } else {
+        if (count_fail>1) {
+            auto now_succ_sz = ladder_succ.size();
+            if ((now_succ_sz-succ_sz)>1) {
+                myprintf(" %d->%d ", succ_sz, now_succ_sz);
+                int max = 0;
+                GameState g_max;
+                for (size_t j=succ_sz; j<now_succ_sz; j++) {
+                    auto g = ladder_succ.back();
+                    int dep = g.get_movenum();
+                    myprintf("#%d ", dep);
+                    if( dep > max) {
+                        max = dep;
+                        g_max = g;
+                    }
+                    ladder_succ.pop_back();
+                }
+                ladder_succ.push_back(g_max);
+            }
+            myprintf("fail (%d %d#)\n", ladder_fail.size(), ladder_succ.size());
+        } else {
+            myprintf("fail (%d %d)\n", ladder_fail.size(), ladder_succ.size());
+        }
+        return 0;
+    }
 }
 
 void GTP::print_ladder_move(GameState & game){
