@@ -794,6 +794,12 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
             //myprintf("%d ld_fail++ %d\n", level, ladder_fail.size());
             continue;
         }
+        if(game.superko()) {
+            ret.push_back(0);
+            ladder_fail.push_back(*g);
+            myprintf("%s-> superko, escape fail (+%d %d)\n", cor_e.c_str(), ladder_fail.size(), ladder_succ.size());
+            continue;
+        }
         g->play_move(ver_escape);
         ladder_leaf++;
         myprintf("%s-> ", cor_e.c_str());
@@ -921,6 +927,12 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
             ret.push_back(0);
             ladder_succ.push_back(*g);
             myprintf("%s illegal, escape success (%d %d+)\n", cor_c.c_str(), ladder_fail.size(), ladder_succ.size());
+            continue;
+        }
+        if(game.superko()) {
+            ret.push_back(0);
+            ladder_succ.push_back(*g);
+            myprintf("%s superko, escape success (%d %d+)\n", cor_c.c_str(), ladder_fail.size(), ladder_succ.size());
             continue;
         }
         g->play_move(ver_capture);
