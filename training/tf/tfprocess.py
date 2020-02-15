@@ -619,7 +619,7 @@ class TFProcess:
 
         return net
 
-    def construct_net(self, planes):
+    def construct_net(self, planes, cpuonly=False):
         # NCHW format
         # batch, 18 channels, 19 x 19
         x_planes = tf.reshape(planes, [-1, 18, 19, 19])
