@@ -1277,7 +1277,7 @@ void GTP::execute(GameState & game, const std::string& xinput) {
 
             //avoid ladder
             if (cfg_ladder_mode == 1) {
-                avoid_ladder = get_ladder_detail(game, who);
+                avoid_ladder = get_ladder_detail(game, who, 1);
                 if (avoid_ladder) {
                     search = std::make_unique<UCTSearch>(game, *s_network, *s_network_aux);
                 }
