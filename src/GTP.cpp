@@ -809,6 +809,8 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
                 g->play_move(brd.find_1lib(vertex));
                 ladder_fail.push_back(*g);
                 myprintf("escape fail, escape string has 1 lib (+%d %d)\n", ladder_fail.size(), ladder_succ.size());
+                auto sgf_text = SGFTree::state_to_string(*g, 0);
+                myprintf("%s", sgf_text.c_str());
                 //print_ladder_move(*g);
                 //if(!cfg_quiet){ g->display_state(); }
                 //myprintf("%d ld_fail++ %d\n", level, ladder_fail.size());
@@ -817,6 +819,8 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
                 ret.push_back(1);
                 ladder_succ.push_back(*g);
                 myprintf("escape success %d libs (%d %d+)\n", brd.get_lib(vertex), ladder_fail.size(), ladder_succ.size());
+                auto sgf_text = SGFTree::state_to_string(*g, 0);
+                myprintf("%s", sgf_text.c_str());
                 //print_ladder_move(*g);
                 //if(!cfg_quiet){ g->display_state(); }
                 //myprintf("%d ld_succ++ (%d %d)\n", level, ladder_fail.size(), ladder_succ.size());
@@ -830,7 +834,7 @@ int GTP::play_ladder_escape_v1(const GameState & game, int vertex, int level) {
             myprintf("  ");
         }
         myprintf("%d escape feedback %s (%d %d)\n", level, result==0?"FAIL":"SUCC", ladder_fail.size(), ladder_succ.size());
-        //if (result) { break; }
+        if (result) { break; }
     }
     for(auto k=0; k<=level; k++) { myprintf("  "); }
     myprintf("%d escape summary (%d %d) ", level, ladder_fail.size(), ladder_succ.size());
@@ -941,6 +945,8 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
         if(brd.get_lib(vertex)>1){
             ret.push_back(0);
             myprintf("%d escape success, after capture, escape lib >1 %d\n", level, brd.get_lib(vertex));
+            auto sgf_text = SGFTree::state_to_string(*g, 0);
+            myprintf("%s", sgf_text.c_str());
             //print_ladder_move(*g);
             //if(!cfg_quiet){ g->display_state(); }
             continue;
@@ -952,7 +958,7 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
             myprintf("  ");
         }
         myprintf("%d capture feedback %s (%d %d)\n", level, result==0?"FAIL":"SUCC", ladder_fail.size(), ladder_succ.size());
-        //if (ret[i]) { break; }
+        if (ret[i]) { break; }
     }
     for(auto k=0; k<=level; k++) { myprintf("  "); }
     myprintf("%d capture summary (%d %d) ", level, ladder_fail.size(), ladder_succ.size());
@@ -1024,6 +1030,7 @@ int GTP::play_ladder_capture_v1(const GameState & game, int vertex, int level) {
     }
 }
 
+// print ladder move using GTP format, can be replace by sgf
 void GTP::print_ladder_move(GameState & game){
     auto game_history = game.get_game_history();
     myprintf("\nmovenum %d\n", game.get_movenum());
