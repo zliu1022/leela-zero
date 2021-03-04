@@ -35,6 +35,7 @@ ifeq ($(THE_OS),Darwin)
 	LIBS += -framework Accelerate
 	LIBS += -framework OpenCL
 	CXXFLAGS += -I./Eigen
+	CXXFLAGS += -I/usr/local/Cellar/boost/1.67.0_1/include/
 	CXXFLAGS += -I/System/Library/Frameworks/Accelerate.framework/Versions/Current/Headers
 endif
 
